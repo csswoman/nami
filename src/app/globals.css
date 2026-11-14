@@ -1,26 +1,97 @@
 @import "tailwindcss";
+@import "./styles/tokens.css";
+@import "./styles/nami-components.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Utilidades de Tailwind mapeadas a los tokens de Ñami (bg-primary, text-ink, rounded-pill, text-title-lg…). */
+@theme {
+  /* Fuentes: next/font define --font-nunito y --font-figtree en <html> (ver app/fonts.ts) */
+  --font-display: var(--font-nunito), "Arial Rounded MT Bold", system-ui, sans-serif;
+  --font-sans: var(--font-figtree), system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* Breakpoints de Ñami (coinciden con sm/lg de Tailwind) */
+  --breakpoint-tablet: 40rem;
+  --breakpoint-desktop: 64rem;
+
+  /* Estilos de texto */
+  --text-display: 32px;
+  --text-display--line-height: 36px;
+  --text-display--font-weight: 800;
+  --text-display--letter-spacing: -0.01em;
+  --text-display-desktop: 48px;
+  --text-display-desktop--line-height: 52px;
+  --text-display-desktop--font-weight: 800;
+  --text-display-desktop--letter-spacing: -0.015em;
+  --text-title-lg: 22px;
+  --text-title-lg--line-height: 28px;
+  --text-title-lg--font-weight: 800;
+  --text-title-md: 18px;
+  --text-title-md--line-height: 24px;
+  --text-title-md--font-weight: 700;
+  --text-body: 15px;
+  --text-body--line-height: 22px;
+  --text-body--font-weight: 400;
+  --text-body-strong: 15px;
+  --text-body-strong--line-height: 22px;
+  --text-body-strong--font-weight: 600;
+  --text-price: 17px;
+  --text-price--line-height: 22px;
+  --text-price--font-weight: 700;
+  --text-button: 15px;
+  --text-button--line-height: 20px;
+  --text-button--font-weight: 700;
+  --text-caption: 13px;
+  --text-caption--line-height: 18px;
+  --text-caption--font-weight: 500;
+  --text-badge: 12px;
+  --text-badge--line-height: 16px;
+  --text-badge--font-weight: 700;
+  --text-nav: 12px;
+  --text-nav--line-height: 16px;
+  --text-nav--font-weight: 500;
 }
 
+/* Colores, radios y sombras: apuntan a las variables de tokens.css, así cambian solos con el tema oscuro. */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-brand: var(--brand);
+  --color-brand-orange: var(--brand-orange);
+  --color-brand-yellow: var(--brand-yellow);
+  --color-brand-blue: var(--brand-blue);
+  --color-brand-green: var(--brand-green);
+  --color-brand-cream: var(--brand-cream);
+  --color-primary: var(--primary);
+  --color-primary-pressed: var(--primary-pressed);
+  --color-on-primary: var(--on-primary);
+  --color-primary-text: var(--primary-text);
+  --color-primary-tint: var(--primary-tint);
+  --color-surface: var(--surface);
+  --color-surface-tile: var(--surface-tile);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-warm: var(--surface-warm);
+  --color-border: var(--border);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-promo: var(--promo);
+  --color-on-promo: var(--on-promo);
+  --color-plus: var(--plus);
+  --color-success: var(--success);
+  --color-success-tint: var(--success-tint);
+  --color-leaf: var(--leaf);
+  --color-danger: var(--danger);
+  --color-focus-ring: var(--focus-ring);
+  --shadow-header: var(--shadow-header);
+  --shadow-card: var(--shadow-card);
+  --shadow-nav: var(--shadow-nav);
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-pill: 999px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* Base: Figtree en todo; usa font-display (Nunito) solo en títulos y banners. */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
 }

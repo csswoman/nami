@@ -1,0 +1,102 @@
+/* Ñami — tokens generados desde design/tokens.json. No editar a mano: cambia tokens.json y regenera. */
+:root {
+  color-scheme: light;
+  --brand: #FF2D3B;
+  --brand-orange: #FF7A00;
+  --brand-yellow: #FFD23F;
+  --brand-blue: #2D7BFF;
+  --brand-green: #2EB85C;
+  --brand-cream: #FFF7EE;
+  --primary: #E8182E;
+  --primary-pressed: #C80F24;
+  --on-primary: #FFFFFF;
+  --primary-text: #D1102A;
+  --primary-tint: #FFE8EA;
+  --surface: #FFFFFF;
+  --surface-tile: #F7F3EE;
+  --surface-raised: #FFFFFF;
+  --surface-warm: var(--brand-cream);
+  --border: #E8E2DC;
+  --ink: #1F1A1C;
+  --ink-muted: #6B6266;
+  --promo: var(--brand-yellow);
+  --on-promo: #1F1A1C;
+  --plus: #1F63E0;
+  --success: #1A7F3C;
+  --success-tint: #DDF7E6;
+  --leaf: #1A7F3C;
+  --danger: #B3261E;
+  --focus-ring: var(--ink);
+  --shadow-header: 0 4px 16px rgba(120, 10, 25, 0.18);
+  --shadow-card: 0 2px 12px rgba(31, 26, 28, 0.08);
+  --shadow-nav: 0 -1px 0 rgba(31, 26, 28, 0.08);
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-pill: 999px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --primary: #E8182E;
+    --primary-pressed: #C80F24;
+    --on-primary: #FFFFFF;
+    --primary-text: #FF6B74;
+    --primary-tint: #3A1C20;
+    --surface: #141113;
+    --surface-tile: #221D20;
+    --surface-raised: #2A2326;
+    --surface-warm: #1F1A1C;
+    --border: #3A3336;
+    --ink: #F6EFE8;
+    --ink-muted: #B5AAAE;
+    --promo: var(--brand-yellow);
+    --on-promo: #1F1A1C;
+    --plus: #1F63E0;
+    --success: #4CD27A;
+    --success-tint: #173524;
+    --leaf: #1A7F3C;
+    --danger: #FF8A80;
+    --focus-ring: var(--ink);
+    --shadow-header: 0 4px 16px rgba(0, 0, 0, 0.5);
+    --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.45);
+    --shadow-nav: 0 -1px 0 rgba(255, 255, 255, 0.08);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --primary: #E8182E;
+  --primary-pressed: #C80F24;
+  --on-primary: #FFFFFF;
+  --primary-text: #FF6B74;
+  --primary-tint: #3A1C20;
+  --surface: #141113;
+  --surface-tile: #221D20;
+  --surface-raised: #2A2326;
+  --surface-warm: #1F1A1C;
+  --border: #3A3336;
+  --ink: #F6EFE8;
+  --ink-muted: #B5AAAE;
+  --promo: var(--brand-yellow);
+  --on-promo: #1F1A1C;
+  --plus: #1F63E0;
+  --success: #4CD27A;
+  --success-tint: #173524;
+  --leaf: #1A7F3C;
+  --danger: #FF8A80;
+  --focus-ring: var(--ink);
+  --shadow-header: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.45);
+  --shadow-nav: 0 -1px 0 rgba(255, 255, 255, 0.08);
+}

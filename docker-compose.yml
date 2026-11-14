@@ -1,0 +1,38 @@
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: nami-db
+    environment:
+      POSTGRES_USER: nami
+      POSTGRES_PASSWORD: nami
+      POSTGRES_DB: nami
+    ports:
+      - "5432:5432"
+    volumes:
+      - nami-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nami -d nami"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Base efímera para tests de integración (sin volumen).
+  db-test:
+    image: postgres:17-alpine
+    container_name: nami-db-test
+    environment:
+      POSTGRES_USER: nami
+      POSTGRES_PASSWORD: nami
+      POSTGRES_DB: nami_test
+    ports:
+      - "5433:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nami -d nami_test"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  nami-db-data:
