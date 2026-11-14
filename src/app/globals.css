@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @import "./styles/tokens.css";
-@import "./styles/nami-components.css";
+/* En layer(components) para que las utilidades de Tailwind puedan sobrescribir los .nm-* */
+@import "./styles/nami-components.css" layer(components);
+@import "./styles/utilities.css";
 
 /* Utilidades de Tailwind mapeadas a los tokens de Ñami (bg-primary, text-ink, rounded-pill, text-title-lg…). */
 @theme {

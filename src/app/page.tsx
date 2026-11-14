@@ -1,7 +1,142 @@
-export default function Home() {
+import Link from "next/link";
+import { connection } from "next/server";
+import { Suspense } from "react";
+import { Badge, CategoryTile, CuisineChip, Icon, PromoBanner, RestaurantCard, SectionHeader, StoreLogo } from "@/components/nami";
+import { AppShell } from "@/components/shell/AppShell";
+import { StoreMark } from "@/components/shell/StoreMark";
+import { caracasNow, isFranja } from "@/lib/demo/franja";
+import { PromoTabs, type PromoGroup } from "@/components/cart/PromoTabs";
+import { cartStoreOf } from "@/lib/cart/meta";
+import { chipTag } from "@/lib/demo/catalog";
+import { MARKETS, promosOf } from "@/lib/demo/mercado";
+import { FRANJA_CONTENT, TRUSTED_MARKETS, VERTICALS } from "@/lib/demo/home";
+import { formatUsd } from "@/lib/money";
+
+const PROMO_MARKETS = ["nami-market", "abasto-el-saman", "automercado-avila", "bodegon-la-candelaria", "farmacia-san-onofre", "farmacia-los-proceres"];
+const PROMO_GROUPS: PromoGroup[] = PROMO_MARKETS.map((s) => {
+  const m = MARKETS[s];
+  return { label: m.name, initials: m.initials, color: m.color === "primary" ? undefined : `var(--${m.color})`, store: cartStoreOf(m, "mercado"), products: promosOf(s) };
+});
+/** Cada tarjeta de categoría abre la pestaña del listado con ese índice (?v=). */
+const verticalHref = (i: number) => (i === 0 ? "/listado" : `/listado?v=${i}`);
+
+export default function HomePage({ searchParams }: PageProps<"/">) {
   return (
-    <main className="p-6 text-ink">
-      <h1 className="text-title-lg">Ñami</h1>
-    </main>
+    <AppShell activeNav={0}>
+      <Suspense fallback={<div className="page-x min-h-dvh" aria-busy="true" />}>
+        <HomeContent searchParams={searchParams} />
+      </Suspense>
+    </AppShell>
+  );
+}
+
+async function HomeContent({ searchParams }: { searchParams: PageProps<"/">["searchParams"] }) {
+  // La hora de Caracas cambia en cada petición: se calcula en tiempo de request, no al prerenderizar.
+  await connection();
+  const { franja: raw } = await searchParams;
+  const real = caracasNow();
+  const pick = typeof raw === "string" && isFranja(raw) ? raw : undefined;
+  const franja = pick ?? real.franja;
+  const content = FRANJA_CONTENT[franja];
+
+  return (
+    <div className="page-x flex flex-col gap-8 pt-4 desktop:gap-12 desktop:pt-7">
+      {/* Banner de campaña (en escritorio comparte fila con la tarjeta del demo) */}
+      <div className="grid gap-6 desktop:grid-cols-[2fr_1fr]">
+        <PromoBanner
+          className="nm-banner--hero"
+          eyebrow={content.eyebrow}
+          title={content.title}
+          image="/brand/guacamaya-moto.png"
+          slides={3}
+        />
+        <aside className="hidden flex-col justify-between gap-4 rounded-lg bg-surface-warm p-7 desktop:flex">
+          <div className="flex flex-col gap-2.5">
+            <Badge>Demo de portafolio</Badge>
+            <h2 className="font-display text-[28px] leading-8 font-extrabold">Pide como si estuvieras en Caracas</h2>
+            <p className="text-body text-ink-muted">Las tiendas siguen la hora de Caracas. Si todo está cerrado, cambia de franja con el modo demo.</p>
+          </div>
+          <Link href="/acerca" className="nm-btn nm-btn--secondary self-start bg-surface">Cómo funciona</Link>
+        </aside>
+      </div>
+
+      {/* Verticales: móvil 2 grandes + fila de pequeñas; escritorio 6 en rejilla */}
+      <section aria-label="Categorías" className="flex flex-col gap-3 desktop:hidden">
+        <div className="grid grid-cols-2 gap-3">
+          {VERTICALS.slice(0, 2).map((v, i) => (
+            <Link key={v.title} href={verticalHref(i)} className="flex"><CategoryTile className="w-full" size="lg" title={v.title} icon={v.icon} tone={v.tone} /></Link>
+          ))}
+        </div>
+        <div className="scroll-x -mx-4 flex gap-3 px-4">
+          {VERTICALS.slice(2).map((v, i) => <Link key={v.title} href={verticalHref(i + 2)} className="flex shrink-0"><CategoryTile className="w-33 shrink-0" title={v.title} icon={v.icon} tone={v.tone} /></Link>)}
+        </div>
+      </section>
+      <section aria-label="Categorías" className="hidden grid-cols-6 gap-4 desktop:grid">
+        {VERTICALS.map((v, i) => (
+          <Link key={v.title} href={verticalHref(i)} className="flex"><CategoryTile className="w-full" title={v.title} icon={v.icon} tone={v.tone} /></Link>
+        ))}
+      </section>
+      <section className="flex flex-col gap-4 desktop:gap-5">
+        <SectionHeader title="¿Qué se te antoja?" />
+        <div className="scroll-x -mx-4 flex gap-4 px-4 desktop:mx-0 desktop:gap-5 desktop:px-0">
+          {content.chips.map((c) => {
+            const tag = chipTag(c.label);
+            return <Link key={c.label} href={tag ? `/listado?chip=${tag}` : "/listado"} className="shrink-0"><CuisineChip icon={c.icon} label={c.label} /></Link>;
+          })}
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-4 desktop:gap-5">
+        <SectionHeader title={content.sectionTitle} action="Ver todo" href="/listado" />
+        <div className="scroll-x -mx-4 flex gap-4 px-4 desktop:mx-0 desktop:grid desktop:grid-cols-3 desktop:gap-6 desktop:overflow-visible desktop:px-0">
+          {content.open.map((r) => (
+            <Link key={r.slug} href={`/tienda/${r.slug}`} className="flex shrink-0 flex-col desktop:shrink">
+              <RestaurantCard
+                className="desktop:w-full"
+                name={r.name}
+                image={`/brand/food/${r.image}.svg`}
+                initials={r.initials}
+                rating={r.rating}
+                time={r.time}
+                fee={formatUsd(r.feeCents)}
+                plusFree={r.plusFree}
+              />
+            </Link>
+          ))}
+        </div>
+
+        <h3 className="mt-2 font-display text-title-md">Abren más tarde</h3>
+        <div className="grid gap-3 desktop:grid-cols-3 desktop:gap-4">
+          {content.closed.map((r) => (
+            <div key={r.name} className="flex items-center gap-3 rounded-lg border border-border p-3">
+              <StoreMark initials={r.initials} color={r.color} dim />
+              <span className="flex min-w-0 grow flex-col">
+                <span className="text-body-strong font-bold">{r.name}</span>
+                <span className="text-caption text-ink-muted">{r.kind}</span>
+              </span>
+              <span className="flex items-center gap-1 rounded-pill bg-surface-tile px-2.5 py-1.5 text-badge whitespace-nowrap [&_.nm-icon]:size-4">
+                <Icon name="clock" />
+                {r.opens}
+              </span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-1">
+        <SectionHeader title="Mercados de confianza" action="Ver todo" href="/listado?v=1" />
+        <p className="text-caption text-ink-muted desktop:hidden">Abastos, bodegones y farmacias abiertos todo el día.</p>
+        <div className="scroll-x -mx-4 flex gap-4 px-4 pt-4 desktop:mx-0 desktop:gap-6 desktop:px-0">
+          {TRUSTED_MARKETS.map((m) => (
+            <StoreLogo key={m.name} href={`/mercado/${m.slug}`} name={m.name} initials={m.initials} color={m.color ? `var(--${m.color})` : undefined} featured={m.featured} />
+          ))}
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-4">
+        <SectionHeader title="Promociones del día" action="Ver todo" href="/ofertas" />
+        <PromoTabs groups={PROMO_GROUPS} />
+      </section>
+    </div>
   );
 }

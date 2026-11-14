@@ -1,0 +1,33 @@
+/* Utilidades de layout propias de la app (no son tokens). */
+
+/* Carrusel horizontal sin barra de scroll visible; deja asomar la siguiente tarjeta. */
+@utility scroll-x {
+  overflow-x: auto;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Banner principal del Inicio en escritorio: más alto y con título grande. */
+@media (min-width: 64rem) {
+  .nm-banner--hero {
+    height: 100%;
+    min-height: 280px;
+  }
+  .nm-banner--hero .nm-banner__title {
+    font-size: 44px;
+    line-height: 48px;
+  }
+}
+
+/* Contenedor de página: 16px de margen en móvil, 1200px máx. y 32px en escritorio. */
+@utility page-x {
+  width: 100%;
+  margin-inline: auto;
+  padding-inline: var(--space-4);
+  @media (min-width: 64rem) {
+    max-width: 1264px;
+    padding-inline: var(--space-8);
+  }
+}
