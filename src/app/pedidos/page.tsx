@@ -4,6 +4,7 @@ import { AppShell } from "@/components/shell/AppShell";
 import { EmptyState } from "@/components/shell/EmptyState";
 import { PAST_ORDERS } from "@/lib/demo/pedidos";
 import { fromHistory } from "@/lib/orders/view";
+import { getMoneyPrefs } from "@/server/prefs";
 
 export const metadata = { title: "Mis pedidos · Ñami" };
 
@@ -19,6 +20,7 @@ async function Content({ searchParams }: { searchParams: PageProps<"/pedidos">["
   const sp = await searchParams;
   // Demo: ?vacio=1 muestra el estado sin pedidos.
   const empty = sp.vacio === "1";
+  const money = await getMoneyPrefs();
   return (
     <AppShell mobileHeader={false} activeNav={3}>
       <div className="page-x flex flex-col gap-8 pt-5 pb-28 desktop:pt-8 desktop:pb-8">
@@ -30,7 +32,7 @@ async function Content({ searchParams }: { searchParams: PageProps<"/pedidos">["
             primary={{ href: "/listado", label: "Explorar restaurantes" }}
           />
         ) : (
-          <OrdersView demo={PAST_ORDERS.map(fromHistory)} />
+          <OrdersView demo={PAST_ORDERS.map(fromHistory)} money={money} />
         )}
       </div>
     </AppShell>

@@ -11,10 +11,11 @@ import { StoreMark } from "@/components/shell/StoreMark";
 import { useCart } from "@/lib/cart/hooks";
 import { storeHref } from "@/lib/cart/meta";
 import { minOrderShortfall, sumLines, useCartStore } from "@/lib/cart/store";
+import { getLineImage } from "@/lib/cart/image";
 import { DEMO_RATE } from "@/lib/demo/home";
 import { formatUsd, formatVes } from "@/lib/money";
 
-type Extra = { id: string; name: string; priceCents: number; icon: IconName };
+type Extra = { id: string; name: string; priceCents: number; icon: IconName; image?: string };
 
 export function CarritoView({ extras }: { extras: Record<string, Extra[]> }) {
   const { ready, groups, delivery, subtotal, shippingCents, totalCents: total } = useCart();
@@ -55,7 +56,7 @@ export function CarritoView({ extras }: { extras: Record<string, Extra[]> }) {
             return (
               <section key={store.slug} aria-label={store.name} className="flex flex-col gap-4">
                 <div className="flex items-center gap-3 rounded-lg bg-surface-tile p-3.5">
-                  <StoreMark initials={store.initials} color={store.color} size={48} />
+                  <StoreMark initials={store.initials} color={store.color} slug={store.slug} size={48} />
                   <span className="flex min-w-0 grow flex-col">
                     <span className="text-body-strong font-bold">{store.name}</span>
                     <span className="text-caption text-ink-muted">{multi && delivery === "combined" ? "Parada de recogida" : `Envío ${formatUsd(store.feeCents)}`}</span>
@@ -64,17 +65,27 @@ export function CarritoView({ extras }: { extras: Record<string, Extra[]> }) {
                   {multi ? <button type="button" onClick={() => removeStore(store.slug)} aria-label={`Quitar ${store.name}`} className="text-button text-ink-muted">Quitar</button> : null}
                 </div>
                 <ul className="flex flex-col">
-                  {g.lines.map((l) => (
-                    <li key={l.key} className="flex items-center gap-4 border-b border-border py-4">
-                      <span className="grid size-16 shrink-0 place-items-center rounded-md bg-surface-tile [&_.nm-icon]:size-8"><Icon name={l.icon} /></span>
-                      <span className="flex min-w-0 grow flex-col gap-0.5">
-                        <span className="text-body-strong font-bold">{l.name}</span>
-                        {l.note ? <span className="text-caption text-ink-muted">{l.note}</span> : null}
-                        <span className="text-price">{formatUsd(l.qty * l.unitCents)}</span>
-                      </span>
-                      <Stepper qty={l.qty} name={l.name} onMinus={() => setQty(store.slug, l.key, l.qty - 1)} onPlus={() => setQty(store.slug, l.key, l.qty + 1)} />
-                    </li>
-                  ))}
+                  {g.lines.map((l) => {
+                    const imgSrc = getLineImage(l, store.slug);
+                    return (
+                      <li key={l.key} className="flex items-center gap-4 border-b border-border py-4">
+                        <span className="relative grid size-16 shrink-0 place-items-center overflow-hidden rounded-md border border-border/50 bg-surface-tile">
+                          {imgSrc ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={imgSrc} alt="" className="size-full object-cover" />
+                          ) : (
+                            <span className="[&_.nm-icon]:size-8"><Icon name={l.icon} /></span>
+                          )}
+                        </span>
+                        <span className="flex min-w-0 grow flex-col gap-0.5">
+                          <span className="text-body-strong font-bold">{l.name}</span>
+                          {l.note ? <span className="text-caption text-ink-muted">{l.note}</span> : null}
+                          <span className="text-price">{formatUsd(l.qty * l.unitCents)}</span>
+                        </span>
+                        <Stepper qty={l.qty} name={l.name} onMinus={() => setQty(store.slug, l.key, l.qty - 1)} onPlus={() => setQty(store.slug, l.key, l.qty + 1)} />
+                      </li>
+                    );
+                  })}
                 </ul>
                 {multi ? <div className="flex justify-between text-body"><span className="text-ink-muted">Subtotal {store.name}</span><b>{formatUsd(sub)}</b></div> : null}
                 {shortfall > 0 ? <MinNotice shortfall={shortfall} min={store.minOrderCents} href={storeHref(store)} /> : null}
@@ -82,11 +93,14 @@ export function CarritoView({ extras }: { extras: Record<string, Extra[]> }) {
                   <div className="flex flex-col gap-3">
                     <h2 className="font-display text-title-lg">¿Te provoca algo más?</h2>
                     <div className="scroll-x -mx-4 flex gap-4 px-4 desktop:mx-0 desktop:px-0">
-                      {offer.map((x) => (
-                        <div key={x.id} className="shrink-0">
-                          <ProductCard className="w-40" name={x.name} price={formatUsd(x.priceCents)} onAdd={() => add(store, { productId: x.id, name: x.name, unitCents: x.priceCents, icon: x.icon })} />
-                        </div>
-                      ))}
+                      {offer.map((x) => {
+                        const xImg = x.image ?? getLineImage({ productId: x.id, icon: x.icon }, store.slug);
+                        return (
+                          <div key={x.id} className="shrink-0">
+                            <ProductCard className="w-40" name={x.name} price={formatUsd(x.priceCents)} image={xImg} onAdd={() => add(store, { productId: x.id, name: x.name, unitCents: x.priceCents, icon: x.icon, image: xImg })} />
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 ) : null}

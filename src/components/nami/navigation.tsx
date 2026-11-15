@@ -4,6 +4,7 @@ import { cx } from "./cx";
 import { Icon, type IconName } from "./icon";
 import { SearchBar } from "./client";
 import { CartLink } from "@/components/cart/CartLink";
+import { CurrencyToggle } from "@/components/shell/CurrencyToggle";
 import { ThemeToggle } from "@/components/shell/ThemeToggle";
 import { NavClock } from "@/components/shell/NavClock";
 
@@ -31,6 +32,7 @@ export function AppHeader({ address = "Elegir dirección", placeholder, unread, 
         </button>
         <div className="nm-header__actions">
           <NavClock variant="header" />
+          <CurrencyToggle />
           <ThemeToggle />
           <button className="nm-iconbtn" type="button" aria-label="Notificaciones">
             <Icon name="bell" />
@@ -83,6 +85,7 @@ export function TopBar({
         <div className="nm-topbar__actions">
           <NavClock variant="topbar" />
           <Link className="nm-topbar__link" href={ordersHref}>Mis pedidos</Link>
+          <CurrencyToggle />
           <ThemeToggle />
           <CartLink variant="topbar" />
         </div>

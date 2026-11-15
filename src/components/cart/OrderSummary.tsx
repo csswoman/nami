@@ -16,7 +16,7 @@ export function OrderSummary({ order: o }: { order: Order }) {
     <section className="flex flex-col gap-3 border-t border-border pt-4">
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="font-display text-title-md">Tu pedido</h2>
-        <span className="text-caption text-ink-muted">#{o.id}</span>
+        <span className="text-caption text-ink-muted">#{o.code ?? o.id}</span>
       </div>
       <div className="flex flex-col gap-3 text-body">
         {o.stops.map((s) => (

@@ -7,6 +7,7 @@ import { StoreMark } from "@/components/shell/StoreMark";
 import { useCart } from "@/lib/cart/hooks";
 import { storeHref } from "@/lib/cart/meta";
 import { EXTRA_STOP_CENTS, minOrderShortfall, shippingOf, sumLines, useCartStore, type DeliveryMode } from "@/lib/cart/store";
+import { getLineImage } from "@/lib/cart/image";
 import { DEMO_RATE } from "@/lib/demo/home";
 import { formatUsd, formatVes } from "@/lib/money";
 
@@ -79,7 +80,7 @@ export function CartPanel({ onNavigate }: { onNavigate?: () => void }) {
               return (
                 <section key={g.store.slug} aria-label={g.store.name} className="border-b border-border last:border-b-0">
                   <div className="flex items-center gap-2.5 bg-surface-tile px-4 py-2.5">
-                    <StoreMark initials={g.store.initials} color={g.store.color} size={28} />
+                    <StoreMark initials={g.store.initials} color={g.store.color} slug={g.store.slug} size={28} />
                     <span className="flex min-w-0 grow flex-col">
                       <Link href={storeHref(g.store)} onClick={onNavigate} className="truncate text-[13px] leading-4 font-bold">{g.store.name}</Link>
                       <span className="text-caption text-ink-muted">{multi && delivery === "combined" ? "Parada de recogida" : `Envío ${formatUsd(g.store.feeCents)}`}</span>
@@ -87,17 +88,27 @@ export function CartPanel({ onNavigate }: { onNavigate?: () => void }) {
                     <button type="button" onClick={() => removeStore(g.store.slug)} aria-label={`Quitar ${g.store.name} del carrito`} className="text-caption font-bold text-primary-text">Quitar</button>
                   </div>
                   <ul className="m-0 list-none px-4">
-                    {g.lines.map((l) => (
-                      <li key={l.key} className="nm-cart-popover__item">
-                        <span className="nm-cart-popover__item-art"><Icon name={l.icon} /></span>
-                        <div className="flex min-w-0 grow flex-col">
-                          <span className="truncate text-[13px] leading-4 font-semibold">{l.name}</span>
-                          {l.note ? <span className="truncate text-caption text-ink-muted">{l.note}</span> : null}
-                          <span className="text-price text-[13px] font-bold">{formatUsd(l.qty * l.unitCents)}</span>
-                        </div>
-                        <Stepper qty={l.qty} name={l.name} onMinus={() => setQty(g.store.slug, l.key, l.qty - 1)} onPlus={() => setQty(g.store.slug, l.key, l.qty + 1)} />
-                      </li>
-                    ))}
+                    {g.lines.map((l) => {
+                      const imgSrc = getLineImage(l, g.store.slug);
+                      return (
+                        <li key={l.key} className="nm-cart-popover__item">
+                          <span className="nm-cart-popover__item-art overflow-hidden border border-border/40">
+                            {imgSrc ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={imgSrc} alt="" className="size-full object-cover" />
+                            ) : (
+                              <Icon name={l.icon} />
+                            )}
+                          </span>
+                          <div className="flex min-w-0 grow flex-col">
+                            <span className="truncate text-[13px] leading-4 font-semibold">{l.name}</span>
+                            {l.note ? <span className="truncate text-caption text-ink-muted">{l.note}</span> : null}
+                            <span className="text-price text-[13px] font-bold">{formatUsd(l.qty * l.unitCents)}</span>
+                          </div>
+                          <Stepper qty={l.qty} name={l.name} onMinus={() => setQty(g.store.slug, l.key, l.qty - 1)} onPlus={() => setQty(g.store.slug, l.key, l.qty + 1)} />
+                        </li>
+                      );
+                    })}
                   </ul>
                   <div className="flex justify-between px-4 py-2 text-caption text-ink-muted"><span>Subtotal {multi ? g.store.name : ""}</span><span className="font-semibold text-ink">{formatUsd(sub)}</span></div>
                   {shortfall > 0 ? <div className="px-4 pb-3"><MinNotice shortfall={shortfall} min={g.store.minOrderCents} href={storeHref(g.store)} /></div> : null}

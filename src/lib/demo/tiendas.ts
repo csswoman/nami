@@ -3,8 +3,80 @@ import type { IconName } from "@/components/nami";
 import type { MenuItem, MenuSection, StoreDetail } from "./catalog";
 import type { BrandColor, FoodImage } from "./home";
 
-type Extra = Pick<MenuItem, "low" | "soldOut">;
-const it = (id: string, name: string, desc: string, priceCents: number, icon: IconName, extra: Extra = {}): MenuItem => ({ id, name, desc, priceCents, icon, ...extra });
+type Extra = Pick<MenuItem, "low" | "soldOut" | "image">;
+
+const DISH_IMAGE_MAP: Record<string, string> = {
+  "asado-negro": "/brand/food/asado-negro.jpg",
+  "pabellon": "/brand/food/pabellon.jpg",
+  "pollo-guisado": "/brand/food/pollo-guisado.jpg",
+  "pescado-frito": "/brand/food/pescado-frito.jpg",
+  "tajadas": "/brand/food/tajadas.jpg",
+  "hallaca": "/brand/food/hallaca.jpg",
+  "empanada-mama": "/brand/food/empanada.jpg",
+  "empanada-queso": "/brand/food/empanada-queso.jpg",
+  "empanada-llanos": "/brand/food/empanada-queso.jpg",
+  "chicha": "/brand/food/chicha-vaso.jpg",
+  "chicha-clara": "/brand/food/chicha-vaso.jpg",
+  "pollo-entero": "/brand/food/pollo-en-brasa.jpg",
+  "medio-pollo": "/brand/food/pollo-en-brasa.jpg",
+  "cuarto": "/brand/food/pollo-en-brasa.jpg",
+  "yuca": "/brand/food/yuca-frita.jpg",
+  "arepa-sola": "/brand/food/arepa.jpg",
+  "tequenos-6": "/brand/food/tequeno.jpg",
+  "tequenos-12": "/brand/food/tequeno.jpg",
+  "tequenos-gocho": "/brand/food/tequeno.jpg",
+  "tequenos-choco": "/brand/food/tequenos-chocolate.jpg",
+  "tostones": "/brand/food/patacon.jpg",
+  "mandocas": "/brand/food/mandocas.jpg",
+  "churrasco": "/brand/food/churrasco.jpg",
+  "parrilla-mixta": "/brand/food/parrilla-mixta.jpg",
+  "chorizo": "/brand/food/parrilla-mixta.jpg",
+  "patacones": "/brand/food/patacon.jpg",
+  "patacon": "/brand/food/patacon.jpg",
+  "cachapa-llanos": "/brand/food/cachapa-queso.jpg",
+  "cachapa": "/brand/food/cachapa-queso.jpg",
+  "perro-todo": "/brand/food/perro-caliente.jpg",
+  "perro-queso": "/brand/food/perro.jpg",
+  "perro-doble": "/brand/food/perro-caliente.jpg",
+  "papitas": "/brand/food/papas-fritas.jpg",
+  "papas": "/brand/food/papas-fritas.jpg",
+  "papas-curva": "/brand/food/papas-fritas.jpg",
+  "pepito-carne": "/brand/food/pepito.jpg",
+  "pepito-pollo": "/brand/food/pepito-mixto.jpg",
+  "pepito-mixto": "/brand/food/pepito-mixto.jpg",
+  "clasica": "/brand/food/hamburguesa.jpg",
+  "doble": "/brand/food/hamburguesa-criolla.jpg",
+  "criolla": "/brand/food/hamburguesa-criolla.jpg",
+  "aros": "/brand/food/aros-cebolla.jpg",
+  "pelota-reina": "/brand/food/reina-pepiada.jpg",
+  "pelota-pernil": "/brand/food/pernil-queso.jpg",
+  "pelota-domino": "/brand/food/arepa-domino.jpg",
+  "campesino": "/brand/food/pan-campesino.jpg",
+  "sobao": "/brand/food/pan-sobao.jpg",
+  "pan-ajo": "/brand/food/pan-ajo.jpg",
+  "combo-jamon": "/brand/food/sandwich-jamon.jpg",
+  "tostada": "/brand/food/arepa.jpg",
+  "cafe-leche": "/brand/food/cafe-con-leche.jpg",
+  "guayoyo": "/brand/food/cafe-guayoyo.jpg",
+  "tres-leches": "/brand/food/tres-leches.jpg",
+  "chocolate": "/brand/food/torta-chocolate.jpg",
+  "torta-entera": "/brand/food/torta-chocolate.jpg",
+  "alfajores": "/brand/food/alfajores.jpg",
+  "catalinas": "/brand/food/catalinas.jpg",
+  "golfeado-clara": "/brand/food/golfeado.jpg",
+  "papelon": "/brand/food/papelon-vaso.jpg",
+  "malta": "/brand/products/malta-6.jpg"
+};
+
+const it = (id: string, name: string, desc: string, priceCents: number, icon: IconName, extra: Extra = {}): MenuItem => ({
+  id,
+  name,
+  desc,
+  priceCents,
+  icon,
+  image: extra.image ?? DISH_IMAGE_MAP[id],
+  ...extra,
+});
 const sec = (id: string, title: string, items: MenuItem[]): MenuSection => ({ id, title, items });
 const BEBIDAS = (...items: MenuItem[]) => sec("bebidas", "Bebidas", items);
 const PAPELON = it("papelon", "Papelón con limón", "Bien frío, 16 oz.", 150, "papelon");
@@ -38,7 +110,7 @@ export const MORE_STORES: StoreDetail[] = [
     ],
   }),
   mk({
-    slug: "pollos-en-brasa-el-rey", name: "Pollos en Brasa El Rey", initials: "ER", color: "brand-orange", heroImage: "pabellon", kind: "Pollo en brasa · Almuerzos · Chacao",
+    slug: "pollos-en-brasa-el-rey", name: "Pollos en Brasa El Rey", initials: "ER", color: "brand-orange", heroImage: "pollo-en-brasa", kind: "Pollo en brasa · Almuerzos · Chacao",
     rating: "4,7", reviews: "1,4 mil", time: "25–35 min", feeCents: 120, openUntil: "Hasta las 9:00 p. m.", opensAt: "Abre mañana a las 11:30 a. m.", minOrderCents: 900,
     menu: [
       sec("pollos", "Pollos", [
@@ -72,7 +144,7 @@ export const MORE_STORES: StoreDetail[] = [
     ],
   }),
   mk({
-    slug: "parrilla-los-llanos", name: "Parrilla Los Llanos", initials: "LL", color: "leaf", heroImage: "pabellon", kind: "Parrillas · Cenas · Las Mercedes",
+    slug: "parrilla-los-llanos", name: "Parrilla Los Llanos", initials: "LL", color: "leaf", heroImage: "parrilla-mixta", kind: "Parrillas · Cenas · Las Mercedes",
     rating: "4,8", reviews: "980", time: "35–45 min", feeCents: 160, openUntil: "Hasta las 11:00 p. m.", opensAt: "Abre a las 6:00 p. m.", minOrderCents: 1200,
     menu: [
       sec("parrilla", "Parrilla", [

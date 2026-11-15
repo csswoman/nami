@@ -43,6 +43,34 @@
       "when": 1794615478278,
       "tag": "0005_thankful_scalphunter",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794754146432,
+      "tag": "0006_schema_interfaz",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1794754423806,
+      "tag": "0007_catalogo_lectura",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794756295355,
+      "tag": "0008_pedidos_servidor",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794766105123,
+      "tag": "0009_giant_radioactive_man",
+      "breakpoints": true
     }
   ]
 }

@@ -4,9 +4,10 @@ import { OrderDetail } from "@/components/orders/OrderDetail";
 import { EmptyState } from "@/components/shell/EmptyState";
 import { useNow, useOrders } from "@/lib/cart/hooks";
 import { fromOrder } from "@/lib/orders/view";
+import type { Currency } from "@/lib/money";
 
 /** Detalle de un pedido hecho en este navegador (se lee de localStorage). */
-export function LocalOrderDetail({ id }: { id: string }) {
+export function LocalOrderDetail({ id, money }: { id: string; money?: { currency: Currency; rate: number } }) {
   const now = useNow(60_000);
   const { ready, byId } = useOrders(now);
   if (!ready) return <div className="min-h-[60dvh]" aria-busy="true" />;
@@ -17,5 +18,5 @@ export function LocalOrderDetail({ id }: { id: string }) {
   if (!t.progress.finished) {
     return <EmptyState title="Este pedido sigue en curso" text="Cuando llegue y confirmes que lo recibiste, aquí verás el resumen completo." primary={{ href: `/seguimiento?id=${encodeURIComponent(id)}`, label: "Ver recorrido" }} />;
   }
-  return <OrderDetail o={fromOrder(t.order, t.progress, now)} />;
+  return <OrderDetail o={fromOrder(t.order, t.progress, now)} money={money} />;
 }

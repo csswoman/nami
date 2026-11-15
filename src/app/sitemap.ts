@@ -1,7 +1,6 @@
 import type { MetadataRoute } from "next";
-import { STORES } from "@/lib/demo/catalog";
-import { MARKETS } from "@/lib/demo/mercado";
 import { getSiteUrl } from "@/lib/seo";
+import { getStores } from "@/server/catalog";
 
 const STATIC_ROUTES: Array<{
   path: string;
@@ -17,7 +16,8 @@ const STATIC_ROUTES: Array<{
   { path: "/sistema", changeFrequency: "monthly", priority: 0.5 },
 ];
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const all = await getStores();
   const baseUrl = getSiteUrl().origin;
   const now = new Date();
 
@@ -28,15 +28,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: route.priority,
   }));
 
-  const storeEntries: MetadataRoute.Sitemap = Object.keys(STORES).map((slug) => ({
-    url: `${baseUrl}/tienda/${slug}`,
+  const storeEntries: MetadataRoute.Sitemap = all.filter((s) => s.kind === "restaurante").map((s) => ({
+    url: `${baseUrl}/tienda/${s.slug}`,
     lastModified: now,
     changeFrequency: "weekly",
     priority: 0.8,
   }));
 
-  const marketEntries: MetadataRoute.Sitemap = Object.keys(MARKETS).map((slug) => ({
-    url: `${baseUrl}/mercado/${slug}`,
+  const marketEntries: MetadataRoute.Sitemap = all.filter((s) => s.kind === "mercado").map((s) => ({
+    url: `${baseUrl}/mercado/${s.slug}`,
     lastModified: now,
     changeFrequency: "weekly",
     priority: 0.8,

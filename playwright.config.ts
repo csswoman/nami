@@ -1,6 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const port = 3100;
+// E2E_PORT=3000 reutiliza el `next dev` que ya tengas corriendo (Next no deja abrir dos en la misma carpeta).
+const port = Number(process.env.E2E_PORT ?? 3100);
 
 export default defineConfig({
   testDir: "./tests/e2e",

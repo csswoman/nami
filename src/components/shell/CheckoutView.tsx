@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { placeOrder as placeOrderAction } from "@/app/checkout/actions";
 import { Icon, type IconName } from "@/components/nami";
 import { EmptyState } from "@/components/shell/EmptyState";
 import { ScreenBar } from "@/components/shell/ScreenBar";
@@ -13,11 +14,13 @@ import { StoreMark } from "@/components/shell/StoreMark";
 import { useCart } from "@/lib/cart/hooks";
 import { storeHref } from "@/lib/cart/meta";
 import { minOrderShortfall, sumLines, useCartStore, type PayMethod } from "@/lib/cart/store";
+import { getLineImage } from "@/lib/cart/image";
 import { formatUsd, formatVes } from "@/lib/money";
 import { formatWhen } from "@/lib/orders/progress";
+import { useRemoteOrders } from "@/lib/orders/remote";
 import { scheduledFor } from "@/lib/orders/schedule";
 
-type Extra = { id: string; name: string; priceCents: number; icon: IconName };
+type Extra = { id: string; name: string; priceCents: number; icon: IconName; image?: string };
 type Extras = Record<string, Extra[]>;
 
 const PAYS: { id: PayMethod; label: string; hint: string }[] = [
@@ -42,7 +45,11 @@ export function CheckoutView({ extras, rate }: { extras: Extras; rate: number })
   const setQty = useCartStore((s) => s.setQty);
   const removeStore = useCartStore((s) => s.removeStore);
   const add = useCartStore((s) => s.add);
-  const placeOrder = useCartStore((s) => s.placeOrder);
+  const placeLocal = useCartStore((s) => s.placeOrder);
+  const addOrderId = useCartStore((s) => s.addOrderId);
+  const clear = useCartStore((s) => s.clear);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const [pay, setPay] = useState<PayMethod>("movil");
   const [tip, setTip] = useState(2);
@@ -68,10 +75,37 @@ export function CheckoutView({ extras, rate }: { extras: Extras; rate: number })
   const names = groups.map((g) => g.store.name).join(" + ");
   const scheduled = scheduledFor(groups.map((g) => g.store), Date.now());
   const shipLabel = multi ? (delivery === "combined" ? `Envío (un motorizado, ${groups.length} paradas)` : `Envíos (${groups.length})`) : "Envío";
-  function confirm() {
-    if (blocked) return;
-    const order = placeOrder({ tipCents, payment: pay });
-    if (order) router.push(pay === "movil" ? "/pago" : `/seguimiento?id=${encodeURIComponent(order.id)}`);
+  const go = (id: string) => router.push(pay === "movil" ? `/pago?id=${encodeURIComponent(id)}` : `/seguimiento?id=${encodeURIComponent(id)}`);
+  /** Manda al servidor solo ids, cantidades, opciones, notas, propina, pago y dirección; él calcula los montos. */
+  async function confirm() {
+    if (blocked || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await placeOrderAction({
+        delivery,
+        tipCents,
+        payment: pay,
+        address,
+        items: groups.flatMap((g) => g.lines.map((l) => ({ store: g.store.slug, product: l.productId, qty: l.qty, options: l.options, note: l.userNote ?? (l.options ? undefined : l.note) }))),
+      });
+      if (res.ok) {
+        useRemoteOrders.getState().put(res.order);
+        addOrderId(res.order.id);
+        clear();
+        go(res.order.id);
+      } else if (res.error.code === "STORE_NOT_FOUND") {
+        // Tienda que el servidor no conoce: el pedido sigue el camino local.
+        const local = placeLocal({ tipCents, payment: pay });
+        if (local) go(local.id);
+      } else {
+        setError(res.error.message);
+      }
+    } catch {
+      setError("No pudimos crear el pedido. Revisa tu conexión e intenta de nuevo.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -164,17 +198,41 @@ export function CheckoutView({ extras, rate }: { extras: Extras; rate: number })
             </section>
 
             {/* Resumen (móvil) */}
-            <section aria-label="Resumen" className="flex flex-col gap-2 rounded-lg bg-surface-tile p-5 desktop:hidden">
-              <h2 className="font-display text-title-lg">Resumen</h2>
+            <section aria-label="Resumen" className="flex flex-col gap-3 rounded-lg bg-surface-tile p-5 desktop:hidden">
+              <h2 className="font-display text-title-lg">Resumen del pedido</h2>
               {groups.map((g) => (
-                <div key={g.store.slug} className="flex flex-col gap-1">
-                  {multi ? <span className="pt-1 text-caption font-bold">{g.store.name}</span> : null}
-                  {g.lines.map((l) => (
-                    <div key={l.key} className="flex justify-between text-body"><span>{l.qty}× {l.name}</span><span>{formatUsd(l.qty * l.unitCents)}</span></div>
-                  ))}
+                <div key={g.store.slug} className="flex flex-col gap-2.5">
+                  {multi ? (
+                    <div className="flex items-center gap-2 border-b border-border/40 pt-1 pb-1.5">
+                      <StoreMark initials={g.store.initials} color={g.store.color} slug={g.store.slug} size={22} />
+                      <span className="text-caption font-bold">{g.store.name}</span>
+                    </div>
+                  ) : null}
+                  {g.lines.map((l) => {
+                    const imgSrc = getLineImage(l, g.store.slug);
+                    return (
+                      <div key={l.key} className="flex items-center justify-between gap-3 text-body">
+                        <div className="flex min-w-0 items-center gap-2.5">
+                          <div className="relative size-10 shrink-0 overflow-hidden rounded-md border border-border/50 bg-surface">
+                            {imgSrc ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={imgSrc} alt="" className="size-full object-cover" />
+                            ) : (
+                              <span className="grid size-full place-items-center text-ink [&_.nm-icon]:size-4"><Icon name={l.icon} /></span>
+                            )}
+                          </div>
+                          <div className="flex min-w-0 flex-col">
+                            <span className="truncate text-body font-medium">{l.qty}× {l.name}</span>
+                            {l.note ? <span className="truncate text-caption text-ink-muted">{l.note}</span> : null}
+                          </div>
+                        </div>
+                        <span className="shrink-0 font-medium">{formatUsd(l.qty * l.unitCents)}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               ))}
-              <div className="flex justify-between text-body text-ink-muted"><span>{shipLabel}</span><span>{formatUsd(shippingCents)}</span></div>
+              <div className="flex justify-between border-t border-border pt-2 text-body text-ink-muted"><span>{shipLabel}</span><span>{formatUsd(shippingCents)}</span></div>
               <div className="flex justify-between border-b border-dashed border-border pb-2 text-body text-ink-muted"><span>Propina</span><span>{formatUsd(tipCents)}</span></div>
               <div className="flex items-baseline justify-between pt-1">
                 <b className="text-body-strong">Total</b>
@@ -193,24 +251,56 @@ export function CheckoutView({ extras, rate }: { extras: Extras; rate: number })
               return (
                 <div key={store.slug} className="flex flex-col gap-4">
                   <div className="flex items-center gap-3">
-                    <StoreMark initials={store.initials} color={store.color} size={44} />
+                    <StoreMark initials={store.initials} color={store.color} slug={store.slug} size={44} />
                     <span className="flex grow flex-col"><span className="text-body-strong font-bold">{store.name}</span><span className="text-caption text-ink-muted">{multi ? `Parada ${groups.indexOf(g) + 1}` : "Tu carrito"}</span></span>
                     <Link href={storeHref(store)} className="text-button text-primary-text">Ver menú</Link>
                     {multi ? <button type="button" onClick={() => removeStore(store.slug)} aria-label={`Quitar ${store.name}`} className="text-button text-ink-muted">Quitar</button> : null}
                   </div>
-                  {g.lines.map((l) => (
-                    <div key={l.key} className="flex items-center gap-3">
-                      <span className="grid size-12 shrink-0 place-items-center rounded-md bg-surface-tile [&_.nm-icon]:size-5"><Icon name={l.icon} /></span>
-                      <span className="flex min-w-0 grow flex-col"><span className="text-body-strong font-semibold">{l.name}</span><span className="text-caption font-semibold text-ink-muted">{formatUsd(l.qty * l.unitCents)}</span></span>
-                      <Stepper qty={l.qty} name={l.name} onMinus={() => setQty(store.slug, l.key, l.qty - 1)} onPlus={() => setQty(store.slug, l.key, l.qty + 1)} />
-                    </div>
-                  ))}
+                  {g.lines.map((l) => {
+                    const imgSrc = getLineImage(l, store.slug);
+                    return (
+                      <div key={l.key} className="flex items-center gap-3">
+                        <div className="relative size-12 shrink-0 overflow-hidden rounded-md border border-border/60 bg-surface-tile">
+                          {imgSrc ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={imgSrc} alt="" className="size-full object-cover" />
+                          ) : (
+                            <span className="grid size-full place-items-center text-ink [&_.nm-icon]:size-5"><Icon name={l.icon} /></span>
+                          )}
+                        </div>
+                        <span className="flex min-w-0 grow flex-col">
+                          <span className="truncate text-body-strong font-semibold">{l.name}</span>
+                          {l.note ? <span className="truncate text-caption text-ink-muted">{l.note}</span> : null}
+                          <span className="text-caption font-semibold text-ink-muted">{formatUsd(l.qty * l.unitCents)}</span>
+                        </span>
+                        <Stepper qty={l.qty} name={l.name} onMinus={() => setQty(store.slug, l.key, l.qty - 1)} onPlus={() => setQty(store.slug, l.key, l.qty + 1)} />
+                      </div>
+                    );
+                  })}
                   {offer.length ? (
-                    <div className="flex flex-wrap gap-2">
-                      <span className="w-full text-caption font-semibold text-ink-muted">¿Te provoca algo más?</span>
-                      {offer.map((x) => (
-                        <button key={x.id} type="button" aria-label={`Agregar ${x.name}`} onClick={() => add(store, { productId: x.id, name: x.name, unitCents: x.priceCents, icon: x.icon })} className="min-h-9 rounded-pill border border-border px-3 text-caption font-semibold">+ {x.name} · {formatUsd(x.priceCents)}</button>
-                      ))}
+                    <div className="flex flex-col gap-2 pt-1">
+                      <span className="text-caption font-semibold text-ink-muted">¿Te provoca algo más?</span>
+                      <div className="flex flex-wrap gap-2">
+                        {offer.map((x) => {
+                          const xImg = x.image ?? getLineImage({ productId: x.id, icon: x.icon }, store.slug);
+                          return (
+                            <button
+                              key={x.id}
+                              type="button"
+                              aria-label={`Agregar ${x.name}`}
+                              onClick={() => add(store, { productId: x.id, name: x.name, unitCents: x.priceCents, icon: x.icon, image: xImg })}
+                              className="group flex min-h-9 items-center gap-2 rounded-pill border border-border bg-surface px-2.5 py-1 text-caption font-semibold transition-colors hover:border-primary hover:bg-surface-tile"
+                            >
+                              {xImg ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={xImg} alt="" className="size-5 rounded-full object-cover" />
+                              ) : null}
+                              <span>+ {x.name}</span>
+                              <span className="font-normal text-ink-muted">· {formatUsd(x.priceCents)}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   ) : null}
                 </div>
@@ -226,13 +316,15 @@ export function CheckoutView({ extras, rate }: { extras: Extras; rate: number })
               </div>
             </div>
             {blocked ? <MinNotice shortfall={shortfall} min={blocked.store.minOrderCents} href={storeHref(blocked.store)} /> : null}
-            <button type="button" onClick={confirm} disabled={!!blocked} className="nm-btn nm-btn--primary nm-btn--block">{cta}</button>
+            {error ? <p role="alert" className="text-caption font-bold text-danger">{error}</p> : null}
+            <button type="button" onClick={() => void confirm()} disabled={!!blocked || busy} className="nm-btn nm-btn--primary nm-btn--block">{cta}</button>
           </aside>
 
           {/* Barra de acción (móvil) */}
           <div className="fixed inset-x-0 bottom-0 z-20 flex flex-col gap-2 bg-surface p-4 shadow-nav desktop:hidden">
             {blocked ? <MinNotice shortfall={shortfall} min={blocked.store.minOrderCents} href={storeHref(blocked.store)} /> : null}
-            <button type="button" onClick={confirm} disabled={!!blocked} className="nm-btn nm-btn--primary nm-btn--block">{cta}</button>
+            {error ? <p role="alert" className="text-caption font-bold text-danger">{error}</p> : null}
+            <button type="button" onClick={() => void confirm()} disabled={!!blocked || busy} className="nm-btn nm-btn--primary nm-btn--block">{cta}</button>
           </div>
         </div>
       </div>

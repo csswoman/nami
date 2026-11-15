@@ -8,7 +8,7 @@ import { EmptyState } from "@/components/shell/EmptyState";
 import { BackIcon, RoundLink } from "@/components/shell/ScreenBar";
 import { ROUTE_POINTS, STORE_SPOTS, TrackingMap, type Rider } from "@/components/tracking/TrackingMap";
 import { useNow, useOrders } from "@/lib/cart/hooks";
-import { useCartStore } from "@/lib/cart/store";
+import { useOrderActions } from "@/lib/orders/remote";
 import { STAGE_COUNT, couriersOf, formatClock, stageHeadline, stageLabels } from "@/lib/orders/progress";
 
 const pts = (a: [number, number][]) => a.map((q) => `${q[0].toFixed(1)},${q[1].toFixed(1)}`).join(" ");
@@ -38,14 +38,12 @@ function along(route: [number, number][], t: number) {
   return out;
 }
 
-/** Seguimiento de un pedido hecho en este navegador: etapas con su hora real o estimada, mapa y resumen. */
+/** Seguimiento de un pedido hecho en este navegador (consulta el servidor cada pocos segundos; la moto se mueve aquí): etapas con su hora real o estimada, mapa y resumen. */
 export function TrackingView({ id }: { id?: string }) {
   const router = useRouter();
   const now = useNow(250); // fino para que el motorizado avance suave
   const { ready, active, byId } = useOrders(now);
-  const advance = useCartStore((s) => s.advanceOrder);
-  const restart = useCartStore((s) => s.restartOrder);
-  const confirm = useCartStore((s) => s.confirmDelivered);
+  const { advance, restart, confirm } = useOrderActions();
 
   if (!ready) return <div className="min-h-dvh" aria-busy="true" />;
   const t = id ? byId(id) : active[0];
@@ -76,9 +74,8 @@ export function TrackingView({ id }: { id?: string }) {
   const first = o.courier.name.split(" ")[0];
   const range = `entre ${formatClock(p.etaAt - 60_000)} y ${formatClock(p.etaAt + 60_000)}`;
 
-  function received() {
-    confirm(o.id);
-    router.push(`/entregado?id=${encodeURIComponent(o.id)}`);
+  async function received() {
+    if (await confirm(o.id)) router.push(`/entregado?id=${encodeURIComponent(o.id)}`);
   }
 
   return (
@@ -151,16 +148,16 @@ export function TrackingView({ id }: { id?: string }) {
             <span className="text-caption text-ink-muted">{o.address.reference}</span>
           </div>
         </div>
-        {p.arrived && !done ? <button type="button" onClick={received} className="nm-btn nm-btn--primary nm-btn--block">Confirmar que lo recibí</button> : null}
+        {p.arrived && !done ? <button type="button" onClick={() => void received()} className="nm-btn nm-btn--primary nm-btn--block">Confirmar que lo recibí</button> : null}
         {done ? <Link href={`/pedidos/${encodeURIComponent(o.id)}`} className="nm-btn nm-btn--primary nm-btn--block">Ver detalle del pedido</Link> : null}
         <OrderSummary order={o} />
         {done ? null : (
           <div className="flex flex-col gap-2.5 rounded-lg border border-dashed border-border p-4">
             <span className="text-caption font-bold text-ink-muted">Modo demo · El recorrido avanza solo con el tiempo</span>
             {p.arrived ? (
-              <button type="button" onClick={() => restart(o.id)} className="nm-btn nm-btn--secondary nm-btn--block"><Icon name="repeat" />Reiniciar simulación</button>
+              <button type="button" onClick={() => void restart(o.id)} className="nm-btn nm-btn--secondary nm-btn--block"><Icon name="repeat" />Reiniciar simulación</button>
             ) : (
-              <button type="button" onClick={() => advance(o.id)} className="nm-btn nm-btn--secondary nm-btn--block"><Icon name="chevronRight" />Saltar a «{labels[st + 1]}»</button>
+              <button type="button" onClick={() => void advance(o.id)} className="nm-btn nm-btn--secondary nm-btn--block"><Icon name="chevronRight" />Saltar a «{labels[st + 1]}»</button>
             )}
           </div>
         )}

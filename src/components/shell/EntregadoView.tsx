@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { CloseIcon } from "@/components/shell/glyphs";
-import { useCartReady } from "@/lib/cart/hooks";
+import { useNow, useOrders } from "@/lib/cart/hooks";
 import { orderStoreName, useCartStore } from "@/lib/cart/store";
 import { formatClock } from "@/lib/orders/progress";
 
@@ -34,10 +34,9 @@ type Props = { id?: string; storeName: string; deliveredAt: string; earlyMin: nu
 /** Pedido entregado: calificación local (estrellas, etiquetas y comentario); el envío real lo conecta la lógica. */
 export function EntregadoView({ id, storeName: demoStore, deliveredAt: demoAt, earlyMin: demoEarly, courier: demoCourier }: Props) {
   const router = useRouter();
-  const orders = useCartStore((st) => st.orders);
   const add = useCartStore((st) => st.add);
-  const ready = useCartReady();
-  const order = ready ? (orders.find((o) => o.id === id) ?? (id ? null : orders.find((o) => o.status === "delivered") ?? null)) : null;
+  const { ready, byId, past } = useOrders(useNow(60_000));
+  const order = ready ? ((id ? byId(id)?.order : past.find((t) => t.order.status === "delivered")?.order) ?? null) : null;
   const storeName = order ? orderStoreName(order) : demoStore;
   const deliveredAt = order?.deliveredAt ? formatClock(order.deliveredAt) : demoAt;
   // Minutos de diferencia con la hora que prometimos al hacer el pedido.
@@ -45,7 +44,7 @@ export function EntregadoView({ id, storeName: demoStore, deliveredAt: demoAt, e
   const courier = order ? order.courier.name.split(" ")[0] : demoCourier;
   const market = Boolean(order?.stops.every((s) => s.store.kind === "mercado"));
   const repeat = () => {
-    if (order) for (const st of order.stops) for (const l of st.lines) add(st.store, { productId: l.productId, name: l.name, unitCents: l.unitCents, icon: l.icon, note: l.note, qty: l.qty });
+    if (order) for (const st of order.stops) for (const l of st.lines) add(st.store, { productId: l.productId, name: l.name, unitCents: l.unitCents, icon: l.icon, note: l.note, options: l.options, userNote: l.userNote, qty: l.qty });
     router.push("/carrito");
   };
   const [food, setFood] = useState(5);

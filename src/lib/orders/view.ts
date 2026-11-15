@@ -1,7 +1,23 @@
 import type { IconName } from "@/components/nami";
 import type { CartStore, Order, PayMethod } from "@/lib/cart/store";
+import { getStore } from "@/lib/demo/catalog";
+import { MARKETS } from "@/lib/demo/mercado";
 import { marketIcon, storeKindLabel, type HistoryOrder } from "@/lib/demo/pedidos";
 import { formatClock, formatWhen, minutesBetween, stageLabels, type Progress } from "@/lib/orders/progress";
+
+function findProductImage(storeSlug: string, productId: string): string | undefined {
+  const rest = getStore(storeSlug);
+  if (rest) {
+    const it = rest.menu.flatMap((s) => s.items).find((i) => i.id === productId);
+    if (it?.image) return it.image;
+  }
+  const mk = MARKETS[storeSlug];
+  if (mk) {
+    const p = mk.sections.flatMap((s) => s.products).find((i) => i.id === productId);
+    if (p?.image) return p.image;
+  }
+  return undefined;
+}
 
 /**
  * Forma común de un pedido para "Mis pedidos" y el detalle, venga del historial de ejemplo
@@ -10,12 +26,16 @@ import { formatClock, formatWhen, minutesBetween, stageLabels, type Progress } f
 
 export type OrderViewLine = {
   key: string; productId: string; name: string; qty: number;
-  unitCents: number; nowCents: number; icon: IconName; note?: string; available: boolean;
+  unitCents: number; nowCents: number; icon: IconName; image?: string; note?: string; available: boolean;
+  /** Opciones y nota del cliente, para repetir el pedido tal cual. */
+  options?: Record<string, string[]>; userNote?: string;
 };
 export type OrderViewStop = { store: CartStore; kindLabel: string; lines: OrderViewLine[]; subtotalCents: number };
 
 export type OrderView = {
   id: string;
+  /** Número que se muestra (ÑM-2101). */
+  code: string;
   status: "delivered" | "cancelled";
   when: string;
   whenLong: string;
@@ -39,6 +59,7 @@ export type OrderView = {
 export function fromHistory(h: HistoryOrder): OrderView {
   return {
     id: h.id,
+    code: h.id,
     status: h.status,
     when: h.date,
     whenLong: h.dateLong,
@@ -46,7 +67,7 @@ export function fromHistory(h: HistoryOrder): OrderView {
       store: h.store,
       kindLabel: h.kindLabel,
       subtotalCents: h.subtotalCents,
-      lines: h.lines.map((l) => ({ key: `${l.id}|${l.note ?? ""}`, productId: l.id, name: l.name, qty: l.qty, unitCents: l.unitCents, nowCents: l.nowCents, icon: l.icon, note: l.note, available: l.available })),
+      lines: h.lines.map((l) => ({ key: `${l.id}|${l.note ?? ""}`, productId: l.id, name: l.name, qty: l.qty, unitCents: l.unitCents, nowCents: l.nowCents, icon: l.icon, image: l.image, note: l.note, available: l.available })),
     }],
     itemCount: h.itemCount,
     subtotalCents: h.subtotalCents,
@@ -78,6 +99,7 @@ export function fromOrder(o: Order, p: Progress, now: number): OrderView {
   const end = p.times[p.times.length - 1];
   return {
     id: o.id,
+    code: o.code ?? o.id,
     status: o.status === "cancelled" ? "cancelled" : "delivered",
     when: formatWhen(o.createdAt, now),
     whenLong: formatWhen(o.createdAt, now).replace(", ", " · "),
@@ -87,7 +109,9 @@ export function fromOrder(o: Order, p: Progress, now: number): OrderView {
       subtotalCents: s.subtotalCents,
       lines: s.lines.map((l) => ({
         key: l.key, productId: l.productId, name: l.name, qty: l.qty, unitCents: l.unitCents, nowCents: l.unitCents,
-        icon: s.store.kind === "mercado" && l.icon === "basket" ? marketIcon(s.store.slug) : l.icon, note: l.note, available: true,
+        icon: s.store.kind === "mercado" && l.icon === "basket" ? marketIcon(s.store.slug) : l.icon,
+        image: findProductImage(s.store.slug, l.productId),
+        note: l.note, available: true, options: l.options, userNote: l.userNote,
       })),
     })),
     itemCount: o.lines.reduce((n, l) => n + l.qty, 0),

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { CurrencyToggle } from "@/components/shell/CurrencyToggle";
 import { ThemeToggle } from "@/components/shell/ThemeToggle";
 import { AppHeader, BottomNav, TopBar } from "@/components/nami";
 
@@ -33,6 +34,7 @@ export function AppShell({ children, activeNav = 0, mobileHeader = true, bottomN
                 <img className="nm-topbar__logo" src="/brand/nami-logo.png" alt="Ñami" />
               </Link>
               <div className="nm-topbar__actions">
+                <CurrencyToggle />
                 <ThemeToggle />
               </div>
             </div>

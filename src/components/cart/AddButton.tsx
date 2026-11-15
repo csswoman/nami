@@ -5,7 +5,7 @@ import { Icon, type IconName } from "@/components/nami";
 import { useCart } from "@/lib/cart/hooks";
 import { groupOf, useCartStore, type CartStore } from "@/lib/cart/store";
 
-type Item = { id: string; name: string; priceCents: number; icon: IconName };
+type Item = { id: string; name: string; priceCents: number; icon: IconName; image?: string };
 
 const base = "flex h-10 min-w-10 items-center justify-center gap-1 rounded-pill bg-primary px-2.5 text-button text-on-primary shadow-card [&_.nm-icon]:size-5";
 
@@ -17,7 +17,7 @@ export function AddButton({ store, item, href, hasOptions, className = "" }: { s
   const lines = (groupOf(groups, store.slug)?.lines ?? []).filter((l) => l.productId === item.id);
   const qty = lines.reduce((n, l) => n + l.qty, 0);
   const last = lines[lines.length - 1];
-  const addOne = () => add(store, { productId: item.id, name: item.name, unitCents: item.priceCents, icon: item.icon });
+  const addOne = () => add(store, { productId: item.id, name: item.name, unitCents: item.priceCents, icon: item.icon, image: item.image });
   const content = <>{qty > 0 ? <span>{qty}</span> : null}<Icon name="plus" /></>;
 
   if (hasOptions) {

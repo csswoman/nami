@@ -4,3 +4,4 @@ export { Button, Badge, CuisineChip, SectionHeader } from "./controls";
 export { SearchBar, Tabs } from "./client";
 export { AppHeader, TopBar, BottomNav } from "./navigation";
 export { PromoBanner, CategoryTile, StoreLogo, ProductCard, RestaurantCard, OrderCard } from "./cards";
+export type { PromoBannerSlide, PromoBannerProps } from "./cards";

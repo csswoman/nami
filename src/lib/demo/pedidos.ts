@@ -88,7 +88,9 @@ export type HistoryLine = {
   unitCents: number;
   /** Precio de hoy, el que se usa al repetir. */
   nowCents: number;
-  icon: IconName; note?: string;
+  icon: IconName;
+  image?: string;
+  note?: string;
   /** false si hoy el producto está agotado o ya no existe */
   available: boolean;
 };
@@ -128,10 +130,10 @@ function resolve(r: Raw): HistoryOrder | null {
   const lines: HistoryLine[] = r.lines.flatMap((l): HistoryLine[] => {
     if (rest) {
       const it = rest.menu.flatMap((s) => s.items).find((i) => i.id === l.id);
-      return it ? [{ id: l.id, name: it.name, qty: l.qty, unitCents: l.paid, nowCents: it.priceCents, icon: it.icon, note: l.note, available: !it.soldOut }] : [];
+      return it ? [{ id: l.id, name: it.name, qty: l.qty, unitCents: l.paid, nowCents: it.priceCents, icon: it.icon, image: it.image, note: l.note, available: !it.soldOut }] : [];
     }
     const p = mk?.sections.flatMap((s) => s.products).find((i) => i.id === l.id);
-    return p ? [{ id: l.id, name: p.name, qty: l.qty, unitCents: l.paid, nowCents: p.priceCents, icon: marketIcon(r.slug), note: l.note, available: !p.soldOut }] : [];
+    return p ? [{ id: l.id, name: p.name, qty: l.qty, unitCents: l.paid, nowCents: p.priceCents, icon: marketIcon(r.slug), image: p.image, note: l.note, available: !p.soldOut }] : [];
   });
   const subtotalCents = lines.reduce((n, l) => n + l.qty * l.unitCents, 0);
   return {

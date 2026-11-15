@@ -44,12 +44,12 @@ export const MARKETS: Record<string, Market> = {
     categories: ["Medicinas", "Cuidado personal", "Bebé"],
     sections: [
       { id: "medicinas", title: "Medicinas", products: [
-        { id: "aceta", name: "Acetaminofén 500 mg x20", unit: "20 tabletas", priceCents: 180, oldPriceCents: 220 },
+        { id: "aceta", name: "Acetaminofén 500 mg x20", unit: "20 tabletas", priceCents: 180, oldPriceCents: 220, image: "/brand/products/aceta.jpg" },
         { id: "ibu", name: "Ibuprofeno 400 mg x10", unit: "10 tabletas", priceCents: 210, image: "/brand/products/ibu.jpg" },
         { id: "suero", name: "Suero oral sabor limón", unit: "500 ml", priceCents: 250, stock: 5, image: "/brand/products/suero.jpg" },
       ] },
       { id: "cuidado", title: "Cuidado personal", products: [
-        { id: "solar", name: "Protector solar FPS 50", unit: "120 ml", priceCents: 890, oldPriceCents: 1100 },
+        { id: "solar", name: "Protector solar FPS 50", unit: "120 ml", priceCents: 890, oldPriceCents: 1100, image: "/brand/products/solar.jpg" },
         { id: "jabon", name: "Jabón de tocador x3", unit: "3 unidades", priceCents: 195, image: "/brand/products/jabon.jpg" },
       ] },
     ],
@@ -71,12 +71,12 @@ export const MARKETS: Record<string, Market> = {
         { id: "chuleta", name: "Chuleta de cerdo 500 g", unit: "500 g", priceCents: 490, oldPriceCents: 560, image: "/brand/products/chuleta.jpg" },
       ] },
       { id: "snacks", title: "Snacks y dulces", products: [
-        { id: "platanitos", name: "Platanitos fritos 100 g", unit: "100 g", priceCents: 150 },
+        { id: "platanitos", name: "Platanitos fritos 100 g", unit: "100 g", priceCents: 150, image: "/brand/products/platanitos.jpg" },
         { id: "galletas", name: "Galletas de coco 6 paquetes", unit: "6 paquetes", priceCents: 230, image: "/brand/products/galletas.jpg" },
         { id: "chocolate", name: "Chocolate con leche 100 g", unit: "100 g", priceCents: 190, stock: 4, image: "/brand/products/chocolate.jpg" },
       ] },
       { id: "bebidas", title: "Bebidas", products: [
-        { id: "agua", name: "Agua mineral 5 l", unit: "5 l", priceCents: 160 },
+        { id: "agua", name: "Agua mineral 5 l", unit: "5 l", priceCents: 160, image: "/brand/products/agua.jpg" },
         { id: "jugo", name: "Jugo de naranja 1 l", unit: "1 l", priceCents: 210, image: "/brand/products/jugo.jpg" },
         { id: "malta-6", name: "Malta x6", unit: "6 botellas", priceCents: 520, oldPriceCents: 600, image: "/brand/products/malta-6.jpg" },
       ] },
@@ -88,22 +88,22 @@ export const MARKETS: Record<string, Market> = {
     categories: ["Frutas y verduras", "Charcutería", "Congelados", "Hogar"],
     sections: [
       { id: "frutas", title: "Frutas y verduras", products: [
-        { id: "cambur", name: "Cambur maduro 1 kg", unit: "1 kg", priceCents: 150 },
+        { id: "cambur", name: "Cambur maduro 1 kg", unit: "1 kg", priceCents: 150, image: "/brand/products/cambur.jpg" },
         { id: "tomate", name: "Tomate perita 1 kg", unit: "1 kg", priceCents: 210, stock: 9, image: "/brand/products/tomate.jpg" },
         { id: "aguacate", name: "Aguacate 2 unidades", unit: "2 unidades", priceCents: 280, oldPriceCents: 330, image: "/brand/products/aguacate.jpg" },
         { id: "papa", name: "Papa 1 kg", unit: "1 kg", priceCents: 170, soldOut: SOLD, image: "/brand/products/papa.jpg" },
       ] },
       { id: "charcuteria", title: "Charcutería", products: [
-        { id: "jamon-ahumado", name: "Jamón ahumado 200 g", unit: "200 g", priceCents: 360 },
+        { id: "jamon-ahumado", name: "Jamón ahumado 200 g", unit: "200 g", priceCents: 360, image: "/brand/products/jamon-ahumado.jpg" },
         { id: "queso-amarillo", name: "Queso amarillo en lonjas 200 g", unit: "200 g", priceCents: 330, image: "/brand/products/queso-amarillo.jpg" },
         { id: "salchicha", name: "Salchichas de pollo x10", unit: "10 unidades", priceCents: 290, image: "/brand/products/salchicha.jpg" },
       ] },
       { id: "congelados", title: "Congelados", products: [
-        { id: "hamburguesas", name: "Hamburguesas de res x4", unit: "4 unidades", priceCents: 640, oldPriceCents: 720 },
+        { id: "hamburguesas", name: "Hamburguesas de res x4", unit: "4 unidades", priceCents: 640, oldPriceCents: 720, image: "/brand/products/hamburguesas.jpg" },
         { id: "helado", name: "Helado de vainilla 1 l", unit: "1 l", priceCents: 450, stock: 5, image: "/brand/products/helado.jpg" },
       ] },
       { id: "hogar", title: "Hogar", products: [
-        { id: "papel", name: "Papel higiénico x4", unit: "4 rollos", priceCents: 320 },
+        { id: "papel", name: "Papel higiénico x4", unit: "4 rollos", priceCents: 320, image: "/brand/products/papel.jpg" },
         { id: "detergente", name: "Detergente líquido 1 l", unit: "1 l", priceCents: 480, image: "/brand/products/detergente.jpg" },
       ] },
     ],
@@ -114,17 +114,17 @@ export const MARKETS: Record<string, Market> = {
     categories: ["Licores y vinos", "Delicatessen", "Café y desayuno"],
     sections: [
       { id: "licores", title: "Licores y vinos", products: [
-        { id: "ron", name: "Ron añejo 750 ml", unit: "750 ml", priceCents: 1450, stock: 6 },
+        { id: "ron", name: "Ron añejo 750 ml", unit: "750 ml", priceCents: 1450, stock: 6, image: "/brand/products/ron.jpg" },
         { id: "vino", name: "Vino tinto 750 ml", unit: "750 ml", priceCents: 1190, oldPriceCents: 1350, image: "/brand/products/vino.jpg" },
         { id: "cerveza", name: "Cerveza lager x6", unit: "6 botellas", priceCents: 780, image: "/brand/products/cerveza.jpg" },
       ] },
       { id: "deli", title: "Delicatessen", products: [
-        { id: "aceitunas", name: "Aceitunas rellenas 240 g", unit: "240 g", priceCents: 420 },
+        { id: "aceitunas", name: "Aceitunas rellenas 240 g", unit: "240 g", priceCents: 420, image: "/brand/products/aceitunas.jpg" },
         { id: "queso-crema", name: "Queso crema 250 g", unit: "250 g", priceCents: 310, soldOut: SOLD, image: "/brand/products/queso-crema.jpg" },
         { id: "pate", name: "Paté de jamón 150 g", unit: "150 g", priceCents: 260, image: "/brand/products/pate.jpg" },
       ] },
       { id: "cafe", title: "Café y desayuno", products: [
-        { id: "cafe-molido", name: "Café molido tostado 250 g", unit: "250 g", priceCents: 480 },
+        { id: "cafe-molido", name: "Café molido tostado 250 g", unit: "250 g", priceCents: 480, image: "/brand/products/cafe-molido.jpg" },
         { id: "miel", name: "Miel de abeja 350 g", unit: "350 g", priceCents: 550, oldPriceCents: 620, image: "/brand/products/miel.jpg" },
         { id: "avena", name: "Avena en hojuelas 400 g", unit: "400 g", priceCents: 210, stock: 7, image: "/brand/products/avena.jpg" },
       ] },
@@ -136,16 +136,16 @@ export const MARKETS: Record<string, Market> = {
     categories: ["Medicinas", "Vitaminas", "Higiene"],
     sections: [
       { id: "medicinas", title: "Medicinas", products: [
-        { id: "loratadina", name: "Loratadina 10 mg x10", unit: "10 tabletas", priceCents: 230 },
+        { id: "loratadina", name: "Loratadina 10 mg x10", unit: "10 tabletas", priceCents: 230, image: "/brand/products/loratadina.jpg" },
         { id: "omeprazol", name: "Omeprazol 20 mg x14", unit: "14 cápsulas", priceCents: 320, stock: 6, image: "/brand/products/omeprazol.jpg" },
         { id: "diclofenac", name: "Diclofenac gel 50 g", unit: "50 g", priceCents: 380, oldPriceCents: 430, image: "/brand/products/diclofenac.jpg" },
       ] },
       { id: "vitaminas", title: "Vitaminas", products: [
-        { id: "vitc", name: "Vitamina C 500 mg x30", unit: "30 tabletas", priceCents: 560 },
+        { id: "vitc", name: "Vitamina C 500 mg x30", unit: "30 tabletas", priceCents: 560, image: "/brand/products/vitc.jpg" },
         { id: "multi", name: "Multivitamínico x60", unit: "60 tabletas", priceCents: 1190, oldPriceCents: 1400, image: "/brand/products/multi.jpg" },
       ] },
       { id: "higiene", title: "Higiene", products: [
-        { id: "alcohol", name: "Alcohol antiséptico 250 ml", unit: "250 ml", priceCents: 190 },
+        { id: "alcohol", name: "Alcohol antiséptico 250 ml", unit: "250 ml", priceCents: 190, image: "/brand/products/alcohol.jpg" },
         { id: "crema-dental", name: "Crema dental 100 ml", unit: "100 ml", priceCents: 240, soldOut: SOLD, image: "/brand/products/crema-dental.jpg" },
         { id: "mascarillas", name: "Mascarillas desechables x20", unit: "20 unidades", priceCents: 350, image: "/brand/products/mascarillas.jpg" },
       ] },
@@ -157,17 +157,17 @@ export const MARKETS: Record<string, Market> = {
     categories: ["Primeros auxilios", "Bebé", "Cuidado de la piel"],
     sections: [
       { id: "auxilios", title: "Primeros auxilios", products: [
-        { id: "curitas", name: "Curitas surtidas x30", unit: "30 unidades", priceCents: 210 },
+        { id: "curitas", name: "Curitas surtidas x30", unit: "30 unidades", priceCents: 210, image: "/brand/products/curitas.jpg" },
         { id: "gasa", name: "Gasa estéril x10", unit: "10 sobres", priceCents: 260, image: "/brand/products/gasa.jpg" },
         { id: "termometro", name: "Termómetro digital", unit: "1 unidad", priceCents: 690, stock: 4, image: "/brand/products/termometro.jpg" },
       ] },
       { id: "bebe", title: "Bebé", products: [
-        { id: "panales", name: "Pañales talla M x30", unit: "30 unidades", priceCents: 1250, oldPriceCents: 1450 },
+        { id: "panales", name: "Pañales talla M x30", unit: "30 unidades", priceCents: 1250, oldPriceCents: 1450, image: "/brand/products/panales.jpg" },
         { id: "toallitas", name: "Toallitas húmedas x80", unit: "80 unidades", priceCents: 430, image: "/brand/products/toallitas.jpg" },
         { id: "formula", name: "Fórmula infantil 400 g", unit: "400 g", priceCents: 1650, soldOut: SOLD, image: "/brand/products/formula.jpg" },
       ] },
       { id: "piel", title: "Cuidado de la piel", products: [
-        { id: "hidratante", name: "Crema hidratante 200 ml", unit: "200 ml", priceCents: 520 },
+        { id: "hidratante", name: "Crema hidratante 200 ml", unit: "200 ml", priceCents: 520, image: "/brand/products/hidratante.jpg" },
         { id: "labial", name: "Protector labial FPS 15", unit: "1 unidad", priceCents: 180, stock: 8, image: "/brand/products/labial.jpg" },
       ] },
     ],
@@ -178,13 +178,13 @@ export const MARKETS: Record<string, Market> = {
     categories: ["Picoteo", "Bebidas", "Despensa"],
     sections: [
       { id: "picoteo", title: "Picoteo", products: [
-        { id: "mani", name: "Maní salado 200 g", unit: "200 g", priceCents: 190 },
+        { id: "mani", name: "Maní salado 200 g", unit: "200 g", priceCents: 190, image: "/brand/products/mani.jpg" },
         { id: "chicharron", name: "Chicharrón de cerdo 150 g", unit: "150 g", priceCents: 320, stock: 6, image: "/brand/products/chicharron.jpg" },
         { id: "queso-ahumado", name: "Queso ahumado 250 g", unit: "250 g", priceCents: 440, oldPriceCents: 500, image: "/brand/products/queso-ahumado.jpg" },
         { id: "tostones-bolsa", name: "Tostones congelados 500 g", unit: "500 g", priceCents: 360, soldOut: SOLD, image: "/brand/products/tostones-bolsa.jpg" },
       ] },
       { id: "bebidas", title: "Bebidas", products: [
-        { id: "cerveza-lata", name: "Cerveza lata x12", unit: "12 latas", priceCents: 1380 },
+        { id: "cerveza-lata", name: "Cerveza lata x12", unit: "12 latas", priceCents: 1380, image: "/brand/products/cerveza-lata.jpg" },
         { id: "refresco", name: "Refresco de cola 2 l", unit: "2 l", priceCents: 230, image: "/brand/products/refresco.jpg" },
         { id: "ron-reserva", name: "Ron reserva 750 ml", unit: "750 ml", priceCents: 1890, oldPriceCents: 2100, stock: 3, image: "/brand/products/ron-reserva.jpg" },
       ] },
@@ -201,18 +201,18 @@ export const MARKETS: Record<string, Market> = {
     categories: ["Cocina", "Limpieza", "Electrónica básica"],
     sections: [
       { id: "cocina", title: "Cocina", products: [
-        { id: "budare", name: "Budare de hierro 30 cm", unit: "1 unidad", priceCents: 1450, stock: 4 },
+        { id: "budare", name: "Budare de hierro 30 cm", unit: "1 unidad", priceCents: 1450, stock: 4, image: "/brand/products/budare.jpg" },
         { id: "olla", name: "Olla de aluminio 4 l", unit: "1 unidad", priceCents: 1800, oldPriceCents: 2100, image: "/brand/products/olla.jpg" },
         { id: "cuchillos", name: "Juego de cuchillos x3", unit: "3 piezas", priceCents: 990, image: "/brand/products/cuchillos.jpg" },
         { id: "colador", name: "Colador de café de tela", unit: "1 unidad", priceCents: 350, soldOut: SOLD, image: "/brand/products/colador.jpg" },
       ] },
       { id: "limpieza", title: "Limpieza", products: [
-        { id: "escoba", name: "Escoba con mango", unit: "1 unidad", priceCents: 520 },
+        { id: "escoba", name: "Escoba con mango", unit: "1 unidad", priceCents: 520, image: "/brand/products/escoba.jpg" },
         { id: "cloro", name: "Cloro 1 l", unit: "1 l", priceCents: 160, image: "/brand/products/cloro.jpg" },
         { id: "esponjas", name: "Esponjas x4", unit: "4 unidades", priceCents: 190, image: "/brand/products/esponjas.jpg" },
       ] },
       { id: "electro", title: "Electrónica básica", products: [
-        { id: "bombillo", name: "Bombillo LED 12 W", unit: "1 unidad", priceCents: 290 },
+        { id: "bombillo", name: "Bombillo LED 12 W", unit: "1 unidad", priceCents: 290, image: "/brand/products/bombillo.jpg" },
         { id: "regleta", name: "Regleta de 6 tomas", unit: "1 unidad", priceCents: 950, oldPriceCents: 1100, image: "/brand/products/regleta.jpg" },
         { id: "pilas", name: "Pilas AA x4", unit: "4 unidades", priceCents: 430, stock: 7, image: "/brand/products/pilas.jpg" },
       ] },
@@ -224,19 +224,19 @@ export const MARKETS: Record<string, Market> = {
     categories: ["Escolar", "Oficina", "Manualidades"],
     sections: [
       { id: "escolar", title: "Escolar", products: [
-        { id: "cuaderno", name: "Cuaderno universitario 100 hojas", unit: "1 unidad", priceCents: 240 },
-        { id: "lapices", name: "Lápices de grafito x12", unit: "12 unidades", priceCents: 280, oldPriceCents: 330 },
-        { id: "mochila", name: "Mochila escolar", unit: "1 unidad", priceCents: 1650, stock: 5 },
+        { id: "cuaderno", name: "Cuaderno universitario 100 hojas", unit: "1 unidad", priceCents: 240, image: "/brand/products/cuaderno.jpg" },
+        { id: "lapices", name: "Lápices de grafito x12", unit: "12 unidades", priceCents: 280, oldPriceCents: 330 , image: "/brand/products/lapices.jpg" },
+        { id: "mochila", name: "Mochila escolar", unit: "1 unidad", priceCents: 1650, stock: 5 , image: "/brand/products/mochila.jpg" },
       ] },
       { id: "oficina", title: "Oficina", products: [
-        { id: "resma", name: "Resma de papel carta 500 hojas", unit: "500 hojas", priceCents: 690 },
-        { id: "boligrafos", name: "Bolígrafos azules x10", unit: "10 unidades", priceCents: 310 },
-        { id: "carpeta", name: "Carpeta con gancho x5", unit: "5 unidades", priceCents: 420, soldOut: SOLD },
+        { id: "resma", name: "Resma de papel carta 500 hojas", unit: "500 hojas", priceCents: 690, image: "/brand/products/resma.jpg" },
+        { id: "boligrafos", name: "Bolígrafos azules x10", unit: "10 unidades", priceCents: 310 , image: "/brand/products/boligrafos.jpg" },
+        { id: "carpeta", name: "Carpeta con gancho x5", unit: "5 unidades", priceCents: 420, soldOut: SOLD , image: "/brand/products/carpeta.jpg" },
       ] },
       { id: "manualidades", title: "Manualidades", products: [
-        { id: "colores", name: "Colores de madera x24", unit: "24 unidades", priceCents: 520 },
-        { id: "pega", name: "Pega blanca 250 ml", unit: "250 ml", priceCents: 180 },
-        { id: "cartulina", name: "Cartulinas surtidas x10", unit: "10 unidades", priceCents: 260, stock: 9 },
+        { id: "colores", name: "Colores de madera x24", unit: "24 unidades", priceCents: 520, image: "/brand/products/colores.jpg" },
+        { id: "pega", name: "Pega blanca 250 ml", unit: "250 ml", priceCents: 180 , image: "/brand/products/pega.jpg" },
+        { id: "cartulina", name: "Cartulinas surtidas x10", unit: "10 unidades", priceCents: 260, stock: 9 , image: "/brand/products/cartulina.jpg" },
       ] },
     ],
   },
@@ -254,7 +254,7 @@ export const MARKETS: Record<string, Market> = {
         { id: "queso-blanco", name: "Queso blanco duro 500 g", unit: "500 g", priceCents: 380, soldOut: SOLD, image: "/brand/products/queso.jpg" },
       ] },
       { id: "chucherias", title: "Chucherías", products: [
-        { id: "cocosette", name: "Cocosette (paquete)", unit: "1 paquete", priceCents: 120, stock: 15 },
+        { id: "cocosette", name: "Cocosette (paquete)", unit: "1 paquete", priceCents: 120, stock: 15, image: "/brand/products/cocosette.jpg" },
         { id: "pirulin", name: "Pirulín (tubo)", unit: "1 unidad", priceCents: 90, image: "/brand/products/pirulin.jpg" },
         { id: "susy", name: "Susy de chocolate x6", unit: "6 unidades", priceCents: 240, oldPriceCents: 280, image: "/brand/products/susy.jpg" },
         { id: "cheese-tris", name: "Cheese Tris 150 g", unit: "150 g", priceCents: 160, image: "/brand/products/cheese-tris.jpg" },
@@ -263,14 +263,14 @@ export const MARKETS: Record<string, Market> = {
         { id: "chicle", name: "Chicles surtidos x10", unit: "10 unidades", priceCents: 100, image: "/brand/products/chicle.jpg" },
       ] },
       { id: "dulces", title: "Dulces criollos", products: [
-        { id: "papelon", name: "Papelón en panela 500 g", unit: "500 g", priceCents: 170 },
+        { id: "papelon", name: "Papelón en panela 500 g", unit: "500 g", priceCents: 170, image: "/brand/products/papelon.jpg" },
         { id: "bocadillo", name: "Bocadillo de guayaba", unit: "1 unidad", priceCents: 150, image: "/brand/products/bocadillo.jpg" },
         { id: "dulce-leche", name: "Dulce de leche cortada 250 g", unit: "250 g", priceCents: 280, stock: 5, image: "/brand/products/dulce-leche.jpg" },
         { id: "conserva-coco", name: "Conserva de coco 200 g", unit: "200 g", priceCents: 260, oldPriceCents: 300, image: "/brand/products/conserva-coco.jpg" },
         { id: "quesillo", name: "Quesillo individual", unit: "1 porción", priceCents: 250, soldOut: SOLD, image: "/brand/products/quesillo.jpg" },
       ] },
       { id: "bebidas", title: "Bebidas", products: [
-        { id: "maltin", name: "Maltín 355 ml", unit: "1 botella", priceCents: 110 },
+        { id: "maltin", name: "Maltín 355 ml", unit: "1 botella", priceCents: 110, image: "/brand/products/maltin.jpg" },
         { id: "toddy", name: "Chocolate en polvo 400 g", unit: "400 g", priceCents: 420, oldPriceCents: 480, image: "/brand/products/toddy.jpg" },
         { id: "chicha-lista", name: "Chicha lista para beber 1 l", unit: "1 l", priceCents: 240, image: "/brand/products/chicha-lista.jpg" },
         { id: "jugo-guanabana", name: "Jugo de guanábana 1 l", unit: "1 l", priceCents: 230, image: "/brand/products/jugo-guanabana.jpg" },

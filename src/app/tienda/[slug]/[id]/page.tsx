@@ -3,9 +3,8 @@ import { Suspense } from "react";
 import { AppShell } from "@/components/shell/AppShell";
 import { ProductoView } from "@/components/shell/ProductoView";
 import { cartStoreOf } from "@/lib/cart/meta";
-import { getStore } from "@/lib/demo/catalog";
 import { DEMO_RATE } from "@/lib/demo/home";
-import { optionGroupsFor } from "@/lib/demo/producto";
+import { getProduct } from "@/server/catalog";
 
 export const metadata = { title: "Producto · Ñami" };
 
@@ -19,25 +18,25 @@ export default function ProductoPage({ params }: PageProps<"/tienda/[slug]/[id]"
 
 async function Content({ params }: { params: PageProps<"/tienda/[slug]/[id]">["params"] }) {
   const { slug, id } = await params;
-  const store = getStore(slug);
-  const section = store?.menu.find((s) => s.items.some((i) => i.id === id));
-  const item = section?.items.find((i) => i.id === id);
-  if (!store || !section || !item || item.soldOut) notFound();
+  const found = await getProduct(slug, id);
+  if (!found || found.store.kind !== "restaurante" || found.product.soldOut) notFound();
+  const { store, product: item, groups } = found;
 
   return (
     <AppShell mobileHeader={false} bottomNav={false}>
       <ProductoView
-        store={cartStoreOf(store)}
+        store={cartStoreOf({ slug: store.slug, name: store.name, initials: store.initials, color: store.color, feeCents: store.feeCents, minOrderCents: store.minOrderCents })}
         productId={item.id}
         name={item.name}
-        desc={item.desc}
-        icon={item.icon}
+        desc={item.description}
+        icon={item.icon ?? "utensils"}
+        image={item.image ?? undefined}
         priceCents={item.priceCents}
         rate={DEMO_RATE}
         storeName={store.name}
-        storeArea="Chacao"
+        storeArea={store.area ?? ""}
         backHref={`/tienda/${store.slug}`}
-        groups={optionGroupsFor(section.id)}
+        groups={groups}
       />
     </AppShell>
   );

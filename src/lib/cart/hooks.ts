@@ -3,6 +3,7 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { cartTotals, useCartStore, type CartGroup, type Order } from "@/lib/cart/store";
 import { progressOf, type Progress } from "@/lib/orders/progress";
+import { useRemoteOrders, useRemoteOrdersSync } from "@/lib/orders/remote";
 
 const EMPTY: CartGroup[] = [];
 const NO_ORDERS: Order[] = [];
@@ -76,11 +77,22 @@ export function useNow(intervalMs = 15_000): number {
 
 export type TrackedOrder = { order: Order; progress: Progress };
 
-/** Pedidos del navegador con su recorrido: en curso y terminados. Vacío hasta leer localStorage. */
+const NO_IDS: string[] = [];
+/**
+ * Pedidos del navegador con su recorrido: en curso y terminados. Los del servidor se consultan por sus ids
+ * (polling); los locales (tiendas que el servidor no conoce) salen de localStorage. Vacío hasta leer localStorage.
+ */
 export function useOrders(now: number) {
-  const ready = useCartReady();
-  const raw = useCartStore((s) => s.orders);
-  const orders = ready ? raw : NO_ORDERS;
+  const cartReady = useCartReady();
+  const rawLocal = useCartStore((s) => s.orders);
+  const rawIds = useCartStore((s) => s.orderIds);
+  const ids = cartReady ? rawIds : NO_IDS;
+  useRemoteOrdersSync(ids);
+  const remote = useRemoteOrders((s) => s.orders);
+  const settled = useRemoteOrders((s) => s.settled);
+  const ready = cartReady && ids.every((id) => settled[id]);
+  const mine = ids.flatMap((id) => (remote[id] ? [remote[id]] : []));
+  const orders = cartReady ? [...mine, ...rawLocal].sort((a, b) => b.createdAt - a.createdAt) : NO_ORDERS;
   const tracked: TrackedOrder[] = orders.map((order) => ({ order, progress: progressOf(order, now) }));
   return {
     ready,

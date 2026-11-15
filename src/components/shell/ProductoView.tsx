@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Icon, type IconName } from "@/components/nami";
 import { CheckIcon, CloseIcon } from "@/components/shell/glyphs";
-import type { OptionGroup } from "@/lib/demo/producto";
+import type { OptionGroup } from "@/lib/catalog";
 import { useCartStore, type CartStore } from "@/lib/cart/store";
 import { formatUsd, formatVes } from "@/lib/money";
 
@@ -15,6 +15,7 @@ type Props = {
   name: string;
   desc: string;
   icon: IconName;
+  image?: string;
   priceCents: number;
   rate: number;
   storeName: string;
@@ -34,7 +35,7 @@ const SCATTER: { icon: IconName; x: number; y: number; s: number }[] = [
 ];
 
 /** Detalle de producto: opciones, nota, cantidad y total. Estado local; agregar al carrito lo conecta la lógica. */
-export function ProductoView({ store, productId, name, desc, icon, priceCents, rate, storeName, storeArea, backHref, groups }: Props) {
+export function ProductoView({ store, productId, name, desc, icon, image, priceCents, rate, storeName, storeArea, backHref, groups }: Props) {
   const [picked, setPicked] = useState<Record<string, string[]>>(() => Object.fromEntries(groups.map((g) => [g.id, g.defaults])));
   const [qty, setQty] = useState(1);
   const [note, setNote] = useState("");
@@ -56,11 +57,16 @@ export function ProductoView({ store, productId, name, desc, icon, priceCents, r
   function addToCart() {
     const chosen = groups.flatMap((g) => g.options.filter((o) => picked[g.id]?.includes(o.id)).map((o) => o.label));
     const text = [...chosen, note.trim()].filter(Boolean).join(" · ");
-    add(store, { productId, name, unitCents: priceCents + extras, icon, note: text || undefined, qty });
+    add(store, { productId, name, unitCents: priceCents + extras, icon, image, note: text || undefined, options: groups.length ? picked : undefined, userNote: note.trim() || undefined, qty });
     router.push(backHref);
   }
 
-  const hero = (
+  const hero = image ? (
+    <div className="relative h-72 overflow-hidden rounded-xl bg-surface-tile desktop:h-86">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={image} alt="" className="size-full object-cover" />
+    </div>
+  ) : (
     <div className="relative h-72 overflow-hidden rounded-xl bg-brand-orange text-on-primary desktop:h-86">
       <div className="absolute inset-y-0 right-0 aspect-square h-full translate-x-[8%] rounded-pill bg-on-primary/10" />
       {SCATTER.map((d, i) => (

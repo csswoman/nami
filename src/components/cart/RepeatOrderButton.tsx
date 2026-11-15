@@ -12,7 +12,7 @@ export function RepeatOrderButton({ stops, className = "nm-btn nm-btn--secondary
     const { add, openCart } = useCartStore.getState();
     for (const s of stops) {
       for (const l of s.lines) {
-        if (l.available) add(s.store, { productId: l.productId, name: l.name, unitCents: l.nowCents, icon: l.icon, qty: l.qty, note: l.note });
+        if (l.available) add(s.store, { productId: l.productId, name: l.name, unitCents: l.nowCents, icon: l.icon, image: l.image, qty: l.qty, note: l.note, options: l.options, userNote: l.userNote });
       }
     }
     openCart();

@@ -5,7 +5,22 @@
 import type { FoodIconName } from "@/components/nami";
 import type { Franja } from "./franja";
 
-export type FoodImage = "arepa" | "empanada" | "golfeado" | "pabellon" | "cachapa" | "tequeno" | "perro" | "pepito" | "hamburguesa";
+export type FoodImage =
+  | "arepa"
+  | "empanada"
+  | "golfeado"
+  | "pabellon"
+  | "cachapa"
+  | "tequeno"
+  | "perro"
+  | "pepito"
+  | "hamburguesa"
+  | "pollo-en-brasa"
+  | "parrilla-mixta"
+  | "pan-de-jamon"
+  | "asado-negro"
+  | "churrasco"
+  | "pescado-frito";
 export type BrandColor = "primary" | "primary-pressed" | "leaf" | "ink" | "plus" | "brand-orange";
 
 export type OpenStore = { slug: string; name: string; image: FoodImage; initials: string; rating: string; time: string; feeCents: number; plusFree: boolean };
@@ -91,13 +106,13 @@ export const FRANJA_CONTENT: Record<Franja, FranjaContent> = {
 };
 
 export const VERTICALS = [
-  { title: "Restaurantes", icon: "utensils", tone: "red" },
-  { title: "Súper", icon: "basket", tone: "green" },
-  { title: "Farmacias", icon: "pill", tone: "blue" },
-  { title: "Bodegones", icon: "malta", tone: "ink" },
-  { title: "Panaderías", icon: "pan-de-jamon", tone: "red" },
-  { title: "Tiendas", icon: "bag", tone: "ink" },
-] as const satisfies readonly { title: string; icon: FoodIconName | "utensils" | "basket" | "pill" | "bag"; tone: string }[];
+  { title: "Restaurantes", icon: "utensils", tone: "red", image: "/brand/categories/restaurantes.jpg" },
+  { title: "Súper", icon: "basket", tone: "green", image: "/brand/categories/super.jpg" },
+  { title: "Farmacias", icon: "pill", tone: "blue", image: "/brand/categories/farmacias.jpg" },
+  { title: "Bodegones", icon: "malta", tone: "ink", image: "/brand/categories/bodegones.jpg" },
+  { title: "Panaderías", icon: "pan-de-jamon", tone: "red", image: "/brand/categories/panaderias.jpg" },
+  { title: "Tiendas", icon: "bag", tone: "ink", image: "/brand/categories/tiendas.jpg" },
+] as const satisfies readonly { title: string; icon: FoodIconName | "utensils" | "basket" | "pill" | "bag"; tone: string; image?: string }[];
 
 export const TRUSTED_MARKETS: { slug: string; name: string; initials: string; color?: BrandColor; featured?: boolean }[] = [
   { slug: "nami-market", name: "Ñami Market", initials: "Ñ", featured: true },

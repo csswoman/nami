@@ -3,27 +3,7 @@ import type { ReactNode } from "react";
 import { cx } from "./cx";
 import { Badge, Button } from "./controls";
 import { Icon, type IconName } from "./icon";
-
-export function PromoBanner({ title, eyebrow, badge, image, slides, current = 0, className }: {
-  title: string; eyebrow?: string; badge?: ReactNode; image?: string; slides?: number; current?: number; className?: string;
-}) {
-  return (
-    <section className={cx("nm-banner", className)}>
-      <div className="nm-banner__copy">
-        {badge}
-        {eyebrow ? <span className="nm-banner__eyebrow">{eyebrow}</span> : null}
-        <h2 className="nm-banner__title">{title}</h2>
-        <i className="nm-banner__underline" />
-      </div>
-      {image ? <img className="nm-banner__art" src={image} alt="" /> : null}
-      {slides ? (
-        <div className="nm-banner__dots" aria-hidden="true">
-          {Array.from({ length: slides }, (_, i) => <i key={i} className={i === current ? "on" : ""} />)}
-        </div>
-      ) : null}
-    </section>
-  );
-}
+export { PromoBanner, type PromoBannerSlide, type PromoBannerProps } from "./PromoBanner";
 
 export function CategoryTile({ title, size = "sm", tone = "red", icon = "utensils", image, badge, onClick, className }: {
   title: string; size?: "sm" | "lg"; tone?: "red" | "green" | "blue" | "dark" | (string & {}); icon?: IconName; image?: string; badge?: ReactNode; onClick?: () => void; className?: string;
@@ -46,7 +26,12 @@ export function StoreLogo({ name, href = "#", logo, initials, color, featured, s
     <a className="nm-store" href={href}>
       <span className={cx("nm-store__tile", featured && "nm-store__tile--brand")}>
         {badge}
-        {logo ? <img src={logo} alt="" /> : <span className="nm-store__mark" style={color ? { background: color } : undefined}>{initials ?? name.slice(0, 2)}</span>}
+        {logo ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={logo} alt="" className="size-16 rounded-md object-cover" />
+        ) : (
+          <span className="nm-store__mark" style={color ? { background: color } : undefined}>{initials ?? name.slice(0, 2)}</span>
+        )}
       </span>
       {showName ? <span className="nm-store__name">{name}</span> : null}
     </a>

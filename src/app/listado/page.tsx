@@ -7,12 +7,12 @@ import { CuisineChip, Icon, RestaurantCard } from "@/components/nami";
 import { AppShell } from "@/components/shell/AppShell";
 import { ScreenBar, SearchLink } from "@/components/shell/ScreenBar";
 import { StoreMark } from "@/components/shell/StoreMark";
-import { LISTING_CHIPS, restaurantsAt, STORES } from "@/lib/demo/catalog";
+import { hoursText, isOpenAt, LISTING_TABS, opensText, type StoreSummary } from "@/lib/catalog";
+import { LISTING_CHIPS } from "@/lib/demo/catalog";
 import { caracasNow, FRANJA_COOKIE, horaToMinutes, resolveFranja } from "@/lib/demo/franja";
-import { FRANJA_CONTENT, type BrandColor } from "@/lib/demo/home";
-import { MARKETS } from "@/lib/demo/mercado";
-import { BAKERY_SLUGS } from "@/lib/demo/tiendas";
+import { FRANJA_CONTENT } from "@/lib/demo/home";
 import { formatUsd } from "@/lib/money";
+import { getStores } from "@/server/catalog";
 
 export const metadata: Metadata = {
   title: "Restaurantes y tiendas · Ñami",
@@ -21,23 +21,15 @@ export const metadata: Metadata = {
 };
 
 /** El orden es el de `?v=`: 0 restaurantes, 1 súper, 2 farmacias, 3 bodegones, 4 panaderías, 5 tiendas. */
-const VERTICALS = ["Restaurantes", "Súper", "Farmacia", "Bodegones", "Panaderías", "Tiendas"] as const;
+const VERTICALS = LISTING_TABS;
 
 type Query = { franja?: string; v?: string; chip?: string; open?: string; free?: string };
 
-type Row = { slug: string; name: string; initials: string; color: BrandColor; meta: string; hours: string; href: string };
-
-function rowsFor(vi: number): Row[] {
-  if (vi === 4) {
-    return BAKERY_SLUGS.flatMap((slug) => {
-      const b = STORES[slug];
-      return b ? [{ slug, name: b.name, initials: b.initials, color: b.color, meta: `${b.kind.split(" · ")[0]} · ${b.time} · ${formatUsd(b.feeCents)}`, hours: b.openUntil.replace("Hasta", "hasta"), href: `/tienda/${slug}` }] : [];
-    });
-  }
-  return Object.values(MARKETS)
-    .filter((m) => m.vertical === vi)
-    .map((m) => ({ slug: m.slug, name: m.name, initials: m.initials, color: m.color, meta: `${m.kind} · ${m.time} · ${formatUsd(m.feeCents)}`, hours: m.hours, href: `/mercado/${m.slug}` }));
-}
+const rowOf = (s: StoreSummary) => ({
+  slug: s.slug, name: s.name, initials: s.initials, color: s.color,
+  meta: `${s.description.split(" · ")[0]} · ${s.time} · ${formatUsd(s.feeCents)}`,
+  hours: hoursText(s), href: s.kind === "mercado" ? `/mercado/${s.slug}` : `/tienda/${s.slug}`,
+});
 
 function href(q: Query): string {
   const p = new URLSearchParams();
@@ -69,10 +61,14 @@ async function Content({ searchParams }: { searchParams: PageProps<"/listado">["
   const franja = resolveFranja(q.franja, (await cookies()).get(FRANJA_COOKIE)?.value);
   const label = FRANJA_CONTENT[franja ?? real.franja].label;
   const hora = franja ? FRANJA_CONTENT[franja].hora : real.hora;
-  const { open: openNow, closed: closedNow } = restaurantsAt(horaToMinutes(hora));
+  const minutes = horaToMinutes(hora);
+  const listed = await getStores({ vertical: vi });
+  const restaurants = vi === 0 ? listed : [];
+  const openNow = restaurants.filter((r) => isOpenAt(r, minutes));
+  const closedNow = restaurants.filter((r) => !isOpenAt(r, minutes));
   const open = openNow.filter((r) => (!q.chip || r.tags.includes(q.chip)) && (q.free !== "1" || r.plusFree));
   const showClosed = vi === 0 && q.open !== "1";
-  const rows = vi === 0 ? [] : rowsFor(vi);
+  const rows = vi === 0 ? [] : listed.map(rowOf);
   const count = vi === 0 ? `${openNow.length} abiertas · ${closedNow.length} cerradas` : `${rows.length} abiertas`;
 
   const filters = [
@@ -144,9 +140,10 @@ async function Content({ searchParams }: { searchParams: PageProps<"/listado">["
                       <RestaurantCard
                         className="w-full"
                         name={r.name}
-                        image={`/brand/food/${r.image}.svg`}
+                        image={r.imageUrl ?? ""}
+                        logo={`/brand/stores/${r.slug}.jpg`}
                         initials={r.initials}
-                        rating={r.rating}
+                        rating={r.rating ?? ""}
                         time={r.time}
                         fee={formatUsd(r.feeCents)}
                         plusFree={r.plusFree}
@@ -164,7 +161,7 @@ async function Content({ searchParams }: { searchParams: PageProps<"/listado">["
               <div className="grid gap-3 desktop:grid-cols-2 desktop:gap-4">
                 {rows.map((s) => (
                   <Link key={s.slug} href={s.href} className="flex min-h-22 items-center gap-3.5 rounded-lg border border-border p-4 text-ink">
-                    <StoreMark initials={s.initials} color={s.color} />
+                    <StoreMark initials={s.initials} color={s.color} slug={s.slug} />
                     <span className="flex grow flex-col gap-0.5">
                       <span className="text-body-strong font-bold">{s.name}</span>
                       <span className="text-caption text-ink-muted">{s.meta}</span>
@@ -181,17 +178,17 @@ async function Content({ searchParams }: { searchParams: PageProps<"/listado">["
                 <h2 className="font-display text-title-md desktop:text-[20px]">Cerradas ahora</h2>
                 <div className="flex flex-col gap-3 desktop:grid desktop:grid-cols-3 desktop:gap-4">
                   {closedNow.map((r) => (
-                    <div key={r.name} className="flex items-center gap-3 rounded-lg border border-border p-3">
-                      <StoreMark initials={r.initials} color={r.color} dim />
+                    <Link key={r.slug} href={`/tienda/${r.slug}`} className="flex items-center gap-3 rounded-lg border border-border p-3">
+                      <StoreMark initials={r.initials} color={r.color} slug={r.slug} dim />
                       <span className="flex min-w-0 grow flex-col gap-0.5">
                         <span className="text-body-strong font-bold text-ink-muted">{r.name}</span>
-                        <span className="text-caption text-ink-muted desktop:hidden">{r.kind}</span>
-                        <span className="hidden items-center gap-1 text-badge text-ink desktop:flex [&_.nm-icon]:size-4"><Icon name="clock" />{r.opens}</span>
+                        <span className="text-caption text-ink-muted desktop:hidden">{r.description}</span>
+                        <span className="hidden items-center gap-1 text-badge text-ink desktop:flex [&_.nm-icon]:size-4"><Icon name="clock" />{opensText(r, minutes)}</span>
                       </span>
                       <span className="flex items-center gap-1 rounded-pill bg-surface-tile px-2.5 py-1.5 text-badge whitespace-nowrap desktop:hidden [&_.nm-icon]:size-4">
-                        <Icon name="clock" />{r.opens}
+                        <Icon name="clock" />{opensText(r, minutes)}
                       </span>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               </section>

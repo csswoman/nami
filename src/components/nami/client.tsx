@@ -25,7 +25,7 @@ export function SearchBar({ placeholder = "Restaurantes, platos y productos", de
   );
 }
 
-export type TabItem = string | { label: string; initials?: string; color?: string };
+export type TabItem = string | { label: string; initials?: string; color?: string; logo?: string };
 
 type TabsProps = {
   items: TabItem[];
@@ -51,7 +51,12 @@ export function Tabs({ items, active = 0, onChange, className }: TabsProps) {
               onChange?.(i);
             }}
           >
-            {"initials" in o && o.initials ? (
+            {"logo" in o && o.logo ? (
+              <span className="nm-tab__logo overflow-hidden border border-border">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={o.logo} alt="" className="size-full object-cover" />
+              </span>
+            ) : "initials" in o && o.initials ? (
               <span className="nm-tab__logo" style={o.color ? { background: o.color } : undefined}>{o.initials}</span>
             ) : null}
             {o.label}

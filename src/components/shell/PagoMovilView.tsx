@@ -5,9 +5,9 @@ import { useState } from "react";
 import { CheckIcon, CopyIcon } from "@/components/shell/glyphs";
 import { EmptyState } from "@/components/shell/EmptyState";
 import { ScreenBar } from "@/components/shell/ScreenBar";
-import { useCartReady } from "@/lib/cart/hooks";
-import { orderStoreName, useCartStore } from "@/lib/cart/store";
-import { formatUsd, formatVes } from "@/lib/money";
+import { useNow, useOrders } from "@/lib/cart/hooks";
+import { orderStoreName } from "@/lib/cart/store";
+import { formatBs, formatUsd, formatVes } from "@/lib/money";
 
 type Props = {
   rate: number;
@@ -16,9 +16,9 @@ type Props = {
 };
 
 /** Pago móvil simulado. Estado local solo para copiar, escribir la referencia y mostrar el resultado. */
-export function PagoMovilView({ rate, banks, receiver }: Props) {
-  const order = useCartStore((st) => st.orders[0] ?? null);
-  const ready = useCartReady();
+export function PagoMovilView({ rate, banks, receiver, id }: Props & { id?: string }) {
+  const { ready, byId, active } = useOrders(useNow(60_000));
+  const order = (id ? byId(id)?.order : active[0]?.order) ?? null;
   const [bank, setBank] = useState(banks[0]);
   const [ref, setRef] = useState("");
   const [copied, setCopied] = useState<string | null>(null);
@@ -34,11 +34,11 @@ export function PagoMovilView({ rate, banks, receiver }: Props) {
     );
   }
   const storeName = orderStoreName(order);
-  const orderCode = `#${order.id}`;
+  const orderCode = `#${order.code ?? order.id}`;
   const lines = order.lines.map((l) => ({ id: l.key, label: `${l.qty}× ${l.name}`, amount: formatUsd(l.qty * l.unitCents) }));
   const extrasLabel = formatUsd(order.shippingCents + order.tipCents);
   const totalUsd = formatUsd(order.totalCents);
-  const totalVes = formatVes(order.totalCents, rate);
+  const totalVes = order.totalBsCents !== undefined ? formatBs(order.totalBsCents) : formatVes(order.totalCents, rate);
   const dateLabel = new Date(order.createdAt).toLocaleString("es-VE", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true });
 
   function copy(label: string, value: string) {

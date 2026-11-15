@@ -5,19 +5,17 @@ import { Suspense } from "react";
 import { Badge, CategoryTile, CuisineChip, Icon, PromoBanner, RestaurantCard, SectionHeader, StoreLogo } from "@/components/nami";
 import { AppShell } from "@/components/shell/AppShell";
 import { StoreMark } from "@/components/shell/StoreMark";
-import { caracasNow, FRANJA_COOKIE, resolveFranja } from "@/lib/demo/franja";
+import { caracasNow, FRANJA_COOKIE, horaToMinutes, resolveFranja } from "@/lib/demo/franja";
 import { PromoTabs, type PromoGroup } from "@/components/cart/PromoTabs";
 import { cartStoreOf } from "@/lib/cart/meta";
+import { isOpenAt, marketCard, opensText } from "@/lib/catalog";
 import { chipTag } from "@/lib/demo/catalog";
-import { MARKETS, promosOf } from "@/lib/demo/mercado";
 import { FRANJA_CONTENT, TRUSTED_MARKETS, VERTICALS } from "@/lib/demo/home";
 import { formatUsd } from "@/lib/money";
+import { getPromos, getStores } from "@/server/catalog";
+import { getMoneyPrefs } from "@/server/prefs";
 
 const PROMO_MARKETS = ["nami-market", "abasto-el-saman", "automercado-avila", "bodegon-la-candelaria", "farmacia-san-onofre", "farmacia-los-proceres"];
-const PROMO_GROUPS: PromoGroup[] = PROMO_MARKETS.map((s) => {
-  const m = MARKETS[s];
-  return { label: m.name, initials: m.initials, color: m.color === "primary" ? undefined : `var(--${m.color})`, store: cartStoreOf(m, "mercado"), products: promosOf(s) };
-});
 /** Cada tarjeta de categoría abre la pestaña del listado con ese índice (?v=). */
 const verticalHref = (i: number) => (i === 0 ? "/listado" : `/listado?v=${i}`);
 
@@ -39,7 +37,21 @@ async function HomeContent({ searchParams }: { searchParams: PageProps<"/">["sea
   const pick = resolveFranja(typeof raw === "string" ? raw : undefined, (await cookies()).get(FRANJA_COOKIE)?.value);
   const franja = pick ?? real.franja;
   const content = FRANJA_CONTENT[franja];
-
+  const minutes = horaToMinutes(content.hora);
+  const [money, restaurants, markets, promos] = await Promise.all([
+    getMoneyPrefs(),
+    getStores({ vertical: 0 }),
+    getStores(),
+    Promise.all(PROMO_MARKETS.map((s) => getPromos(s))),
+  ]);
+  const rate = (r: { rating: string | null }) => Number(r.rating?.replace(",", ".") ?? 0);
+  const openStores = restaurants.filter((r) => isOpenAt(r, minutes)).sort((a, b) => rate(b) - rate(a)).slice(0, 3);
+  const closedStores = restaurants.filter((r) => !isOpenAt(r, minutes)).slice(0, 2);
+  const trusted = TRUSTED_MARKETS.flatMap((t) => { const m = markets.find((x) => x.slug === t.slug); return m ? [{ ...m, featured: t.featured }] : []; });
+  const promoGroups: PromoGroup[] = PROMO_MARKETS.flatMap((slug, i) => {
+    const m = markets.find((x) => x.slug === slug);
+    return m ? [{ label: m.name, initials: m.initials, color: m.color === "primary" ? undefined : `var(--${m.color})`, logo: `/brand/stores/${m.slug}.jpg`, store: cartStoreOf(m, "mercado"), products: promos[i].map((p) => marketCard(p)) }] : [];
+  });
   return (
     <div className="page-x flex flex-col gap-8 pt-4 desktop:gap-12 desktop:pt-7">
       {/* Banner de campaña (en escritorio comparte fila con la tarjeta del demo) */}
@@ -65,16 +77,16 @@ async function HomeContent({ searchParams }: { searchParams: PageProps<"/">["sea
       <section aria-label="Categorías" className="flex flex-col gap-3 desktop:hidden">
         <div className="grid grid-cols-2 gap-3">
           {VERTICALS.slice(0, 2).map((v, i) => (
-            <Link key={v.title} href={verticalHref(i)} className="flex"><CategoryTile className="w-full" size="lg" title={v.title} icon={v.icon} tone={v.tone} /></Link>
+            <Link key={v.title} href={verticalHref(i)} className="flex"><CategoryTile className="w-full" size="lg" title={v.title} icon={v.icon} tone={v.tone} image={v.image} /></Link>
           ))}
         </div>
         <div className="scroll-x -mx-4 flex gap-3 px-4">
-          {VERTICALS.slice(2).map((v, i) => <Link key={v.title} href={verticalHref(i + 2)} className="flex shrink-0"><CategoryTile className="w-33 shrink-0" title={v.title} icon={v.icon} tone={v.tone} /></Link>)}
+          {VERTICALS.slice(2).map((v, i) => <Link key={v.title} href={verticalHref(i + 2)} className="flex shrink-0"><CategoryTile className="w-33 shrink-0" title={v.title} icon={v.icon} tone={v.tone} image={v.image} /></Link>)}
         </div>
       </section>
       <section aria-label="Categorías" className="hidden grid-cols-6 gap-4 desktop:grid">
         {VERTICALS.map((v, i) => (
-          <Link key={v.title} href={verticalHref(i)} className="flex"><CategoryTile className="w-full" title={v.title} icon={v.icon} tone={v.tone} /></Link>
+          <Link key={v.title} href={verticalHref(i)} className="flex"><CategoryTile className="w-full" title={v.title} icon={v.icon} tone={v.tone} image={v.image} /></Link>
         ))}
       </section>
       <section className="flex flex-col gap-4 desktop:gap-5">
@@ -90,14 +102,15 @@ async function HomeContent({ searchParams }: { searchParams: PageProps<"/">["sea
       <section className="flex flex-col gap-4 desktop:gap-5">
         <SectionHeader title={content.sectionTitle} action="Ver todo" href="/listado" />
         <div className="scroll-x -mx-4 flex gap-4 px-4 desktop:mx-0 desktop:grid desktop:grid-cols-3 desktop:gap-6 desktop:overflow-visible desktop:px-0">
-          {content.open.map((r) => (
+          {openStores.map((r) => (
             <Link key={r.slug} href={`/tienda/${r.slug}`} className="flex shrink-0 flex-col desktop:shrink">
               <RestaurantCard
                 className="desktop:w-full"
                 name={r.name}
-                image={`/brand/food/${r.image}.svg`}
+                image={r.imageUrl ?? ""}
+                logo={`/brand/stores/${r.slug}.jpg`}
                 initials={r.initials}
-                rating={r.rating}
+                rating={r.rating ?? ""}
                 time={r.time}
                 fee={formatUsd(r.feeCents)}
                 plusFree={r.plusFree}
@@ -107,19 +120,25 @@ async function HomeContent({ searchParams }: { searchParams: PageProps<"/">["sea
         </div>
 
         <h3 className="mt-2 font-display text-title-md">Abren más tarde</h3>
-        <div className="grid gap-3 desktop:grid-cols-3 desktop:gap-4">
-          {content.closed.map((r) => (
-            <div key={r.name} className="flex items-center gap-3 rounded-lg border border-border p-3">
-              <StoreMark initials={r.initials} color={r.color} dim />
-              <span className="flex min-w-0 grow flex-col">
-                <span className="text-body-strong font-bold">{r.name}</span>
-                <span className="text-caption text-ink-muted">{r.kind}</span>
-              </span>
-              <span className="flex items-center gap-1 rounded-pill bg-surface-tile px-2.5 py-1.5 text-badge whitespace-nowrap [&_.nm-icon]:size-4">
+        <div className="grid gap-3 desktop:grid-cols-2 desktop:gap-4">
+          {closedStores.map((r) => (
+            <Link
+              key={r.slug}
+              href={`/tienda/${r.slug}`}
+              className="group flex flex-col justify-between gap-3 rounded-lg border border-border p-3 transition-colors hover:border-ink/20 hover:bg-surface-tile/40 tablet:flex-row tablet:items-center tablet:gap-4 desktop:p-3.5"
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <StoreMark initials={r.initials} color={r.color} slug={r.slug} dim />
+                <span className="flex min-w-0 flex-col">
+                  <span className="truncate text-body-strong font-bold text-ink transition-colors group-hover:text-primary-text">{r.name}</span>
+                  <span className="truncate text-caption text-ink-muted">{r.description}</span>
+                </span>
+              </div>
+              <span className="flex w-fit shrink-0 items-center gap-1.5 self-start rounded-pill bg-surface-tile px-2.5 py-1.5 text-badge text-ink whitespace-nowrap tablet:self-auto [&_.nm-icon]:size-4">
                 <Icon name="clock" />
-                {r.opens}
+                {opensText(r, minutes)}
               </span>
-            </div>
+            </Link>
           ))}
         </div>
       </section>
@@ -128,15 +147,15 @@ async function HomeContent({ searchParams }: { searchParams: PageProps<"/">["sea
         <SectionHeader title="Mercados de confianza" action="Ver todo" href="/listado?v=1" />
         <p className="text-caption text-ink-muted desktop:hidden">Abastos, bodegones y farmacias abiertos todo el día.</p>
         <div className="scroll-x -mx-4 flex gap-4 px-4 pt-4 desktop:mx-0 desktop:gap-6 desktop:px-0">
-          {TRUSTED_MARKETS.map((m) => (
-            <StoreLogo key={m.name} href={`/mercado/${m.slug}`} name={m.name} initials={m.initials} color={m.color ? `var(--${m.color})` : undefined} featured={m.featured} />
+          {trusted.map((m) => (
+            <StoreLogo key={m.slug} href={`/mercado/${m.slug}`} name={m.name} logo={`/brand/stores/${m.slug}.jpg`} initials={m.initials} color={m.slug === "nami-market" ? undefined : `var(--${m.color})`} featured={m.featured} />
           ))}
         </div>
       </section>
 
       <section className="flex flex-col gap-4">
         <SectionHeader title="Promociones del día" action="Ver todo" href="/ofertas" />
-        <PromoTabs groups={PROMO_GROUPS} />
+        <PromoTabs groups={promoGroups} money={money} />
       </section>
     </div>
   );

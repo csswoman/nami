@@ -5,6 +5,7 @@ import { AppShell } from "@/components/shell/AppShell";
 import { ScreenBar } from "@/components/shell/ScreenBar";
 import { getPastOrder } from "@/lib/demo/pedidos";
 import { fromHistory } from "@/lib/orders/view";
+import { getMoneyPrefs } from "@/server/prefs";
 
 export const metadata = { title: "Detalle del pedido · Ñami" };
 
@@ -21,8 +22,7 @@ export default function DetallePedidoPage({ params }: PageProps<"/pedidos/[id]">
 
 async function Content({ params }: { params: PageProps<"/pedidos/[id]">["params"] }) {
   const id = decodeURIComponent((await params).id);
-  // Demo: el historial de ejemplo vive en el servidor; los pedidos que haces se leen del navegador.
-  // La lógica real lo leerá por id + guestToken.
+  const money = await getMoneyPrefs();
   const demo = getPastOrder(id);
-  return demo ? <OrderDetail o={fromHistory(demo)} /> : <LocalOrderDetail id={id} />;
+  return demo ? <OrderDetail o={fromHistory(demo)} money={money} /> : <LocalOrderDetail id={id} money={money} />;
 }

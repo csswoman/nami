@@ -27,3 +27,8 @@ export function formatVes(usdCents: number, rate: number): string {
 export function formatMoney(usdCents: number, currency: Currency, rate: number): string {
   return currency === "USD" ? formatUsd(usdCents) : formatVes(usdCents, rate);
 }
+
+/** Monto que ya está en céntimos de bolívar (p. ej. el total en Bs. guardado en el pedido). */
+export function formatBs(vesCents: number): string {
+  return `Bs. ${formatNumber(vesCents)}`;
+}

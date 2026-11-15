@@ -7,6 +7,7 @@ import type { BrandColor } from "@/lib/demo/home";
 import { STAGE_COUNT, planFor, pickCourier, reachedStage, type Courier } from "@/lib/orders/progress";
 import { cartTotals, minOrderShortfall, sumLines, type DeliveryMode } from "@/lib/pricing";
 import { scheduledFor } from "@/lib/orders/schedule";
+import { lineKey } from "@/lib/cart/line";
 
 /**
  * Estado de cliente del invitado: carrito, dirección elegida y sus pedidos (todo en el navegador).
@@ -34,9 +35,14 @@ export type CartLine = {
   unitCents: number;
   qty: number;
   icon: IconName;
+  image?: string;
+  /** Texto para mostrar: opciones elegidas + nota. */
   note?: string;
+  /** Opciones elegidas (grupo → ids); es lo que viaja al servidor. */
+  options?: Record<string, string[]>;
+  /** Nota escrita por el cliente, sin las opciones. */
+  userNote?: string;
 };
-
 export type Address = { name: string; line: string; reference: string };
 export type PayMethod = "movil" | "zelle" | "efectivo";
 export type CartGroup = { store: CartStore; lines: CartLine[] };
@@ -46,6 +52,11 @@ export type OrderStatus = "active" | "delivered" | "cancelled";
 
 export type Order = {
   id: string;
+  /** Número visible (ÑM-2101) de los pedidos guardados en el servidor. */
+  code?: string;
+  /** Total en bolívares (céntimos) y tasa Bs./$ fijados al crear el pedido (solo pedidos del servidor). */
+  totalBsCents?: number;
+  rate?: number;
   /** Tiendas del pedido, en el orden en que se recogen. */
   stops: OrderStop[];
   delivery: DeliveryMode;
@@ -84,8 +95,11 @@ type State = {
   groups: CartGroup[];
   delivery: DeliveryMode;
   address: Address;
-  /** Pedidos hechos en este navegador, el más reciente primero. */
+  /** Pedidos locales (tiendas que el servidor no conoce), el más reciente primero. */
   orders: Order[];
+  /** Ids de los pedidos de este navegador guardados en el servidor; el contenido vive en la BD. */
+  orderIds: string[];
+  addOrderId: (id: string) => void;
   /** Contador para el número de pedido (ÑM-2101, ÑM-2102…), así no se repite. */
   seq: number;
   isOpen: boolean;
@@ -110,7 +124,7 @@ type State = {
   confirmDelivered: (id: string) => void;
 };
 
-export const lineKey = (productId: string, note?: string) => `${productId}|${note ?? ""}`;
+export { lineKey };
 // Reexportados para no tocar a quienes ya importan de aquí; el código nuevo debe usar "@/lib/pricing".
 export { EXTRA_STOP_CENTS, cartTotals, countGroups, countLines, minOrderShortfall, shippingOf, subtotalGroups, sumLines, type CartTotals, type DeliveryMode } from "@/lib/pricing";
 export const groupOf = (groups: CartGroup[], slug: string) => groups.find((g) => g.store.slug === slug);
@@ -126,6 +140,8 @@ export const useCartStore = create<State>()(
       delivery: "combined",
       address: DEFAULT_ADDRESS,
       orders: [],
+      orderIds: [],
+      addOrderId: (id) => set((s) => ({ orderIds: s.orderIds.includes(id) ? s.orderIds : [id, ...s.orderIds] })),
       seq: 0,
       isOpen: false,
       openCart: () => set({ isOpen: true }),
@@ -258,7 +274,7 @@ export const useCartStore = create<State>()(
       version: 5,
       storage: createJSONStorage(() => localStorage),
       skipHydration: true,
-      partialize: (s) => ({ groups: s.groups, delivery: s.delivery, address: s.address, orders: s.orders, seq: s.seq }),
+      partialize: (s) => ({ groups: s.groups, delivery: s.delivery, address: s.address, orders: s.orders, orderIds: s.orderIds, seq: s.seq }),
       // v1: una sola tienda (store + lines). v2: varias tiendas y un solo pedido (`order`). v3: lista de pedidos con estado. v4: pedidos programados. v5: recorrido rápido de la demo (los pedidos en curso con tiempos largos se reinician).
       // Se ejecuta siempre al leer (no solo al cambiar de versión): descarta carritos o pedidos con forma inválida.
       merge: (persisted, current) => {
@@ -269,6 +285,7 @@ export const useCartStore = create<State>()(
           ...current,
           groups,
           orders,
+          orderIds: Array.isArray(p.orderIds) ? p.orderIds.filter((x: unknown) => typeof x === "string") : [],
           delivery: p.delivery === "separate" ? "separate" : "combined",
           address: p.address && typeof p.address.line === "string" ? p.address : current.address,
           seq: typeof p.seq === "number" ? p.seq : orders.length,
@@ -286,7 +303,7 @@ export const useCartStore = create<State>()(
             return []; // un pedido guardado que no se puede leer no debe romper todo el carrito
           }
         });
-        return { groups, delivery: p.delivery ?? "combined", address: p.address ?? DEFAULT_ADDRESS, orders, seq: typeof p.seq === "number" ? p.seq : orders.length } as never;
+        return { groups, delivery: p.delivery ?? "combined", address: p.address ?? DEFAULT_ADDRESS, orders, orderIds: Array.isArray(p.orderIds) ? p.orderIds : [], seq: typeof p.seq === "number" ? p.seq : orders.length } as never;
       },
     },
   ),

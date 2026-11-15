@@ -14,12 +14,12 @@ export type Restaurant = {
 export const RESTAURANTS: Restaurant[] = [
   { slug: "arepera-dona-chela", name: "Arepera Doña Chela", image: "arepa", initials: "DC", color: "brand-orange", rating: "4,8", time: "20–30 min", feeCents: 120, plusFree: true, tags: ["arepa", "cafe", "empanada", "criolla"] },
   { slug: "empanadas-el-puerto", name: "Empanadas El Puerto", image: "empanada", initials: "EP", color: "primary", rating: "4,6", time: "15–25 min", feeCents: 90, plusFree: false, tags: ["empanada", "tequeno", "patacones", "malta", "papelon"] },
-  { slug: "panaderia-la-reina", name: "Panadería La Reina", image: "golfeado", initials: "LR", color: "primary", rating: "4,7", time: "25–35 min", feeCents: 100, plusFree: true, tags: ["pan-de-jamon", "cafe", "golfeado", "catalina", "chicha"] },
+  { slug: "panaderia-la-reina", name: "Panadería La Reina", image: "pan-de-jamon", initials: "LR", color: "primary", rating: "4,7", time: "25–35 min", feeCents: 100, plusFree: true, tags: ["pan-de-jamon", "cafe", "golfeado", "catalina", "chicha"] },
   { slug: "cachapas-el-tio", name: "Cachapas El Tío", image: "cachapa", initials: "ET", color: "brand-orange", rating: "4,8", time: "20–30 min", feeCents: 110, plusFree: false, tags: ["cachapa", "arepa", "papelon", "chicha", "malta"] },
   { slug: "cocina-de-mama-rosa", name: "Cocina de Mamá Rosa", image: "pabellon", initials: "MR", color: "leaf", rating: "4,9", time: "30–40 min", feeCents: 140, plusFree: true, tags: ["criolla", "tajadas", "hallaca", "empanada", "papelon", "chicha", "cafe"] },
-  { slug: "pollos-en-brasa-el-rey", name: "Pollos en Brasa El Rey", image: "pabellon", initials: "ER", color: "brand-orange", rating: "4,7", time: "25–35 min", feeCents: 120, plusFree: false, tags: ["criolla", "tajadas", "papelon", "malta", "arepa"] },
+  { slug: "pollos-en-brasa-el-rey", name: "Pollos en Brasa El Rey", image: "pollo-en-brasa", initials: "ER", color: "brand-orange", rating: "4,7", time: "25–35 min", feeCents: 120, plusFree: false, tags: ["criolla", "tajadas", "papelon", "malta", "arepa"] },
   { slug: "tequenos-la-esquina", name: "Tequeños La Esquina", image: "tequeno", initials: "TE", color: "primary", rating: "4,6", time: "15–25 min", feeCents: 90, plusFree: false, tags: ["tequeno", "empanada", "patacones", "malta", "papelon"] },
-  { slug: "parrilla-los-llanos", name: "Parrilla Los Llanos", image: "pabellon", initials: "LL", color: "leaf", rating: "4,8", time: "35–45 min", feeCents: 160, plusFree: false, tags: ["parrilla", "criolla", "patacones", "cachapa", "empanada", "arepa", "malta", "papelon"] },
+  { slug: "parrilla-los-llanos", name: "Parrilla Los Llanos", image: "parrilla-mixta", initials: "LL", color: "leaf", rating: "4,8", time: "35–45 min", feeCents: 160, plusFree: false, tags: ["parrilla", "criolla", "patacones", "cachapa", "empanada", "arepa", "malta", "papelon"] },
   { slug: "perros-el-gocho", name: "Perros El Gocho", image: "perro", initials: "EG", color: "ink", rating: "4,7", time: "15–25 min", feeCents: 80, plusFree: true, tags: ["perro", "tequeno", "patacones", "malta", "papelon"] },
   { slug: "pepitos-la-castellana", name: "Pepitos La Castellana", image: "pepito", initials: "PC", color: "plus", rating: "4,6", time: "20–30 min", feeCents: 100, plusFree: false, tags: ["pepito", "perro", "patacones", "malta", "papelon"] },
   { slug: "hamburguesas-la-curva", name: "Hamburguesas La Curva", image: "hamburguesa", initials: "LC", color: "primary", rating: "4,5", time: "25–35 min", feeCents: 120, plusFree: true, tags: ["hamburguesa", "patacones", "malta", "papelon", "tequeno"] },
@@ -89,6 +89,7 @@ export type MenuItem = {
   /** Unidades que quedan (aviso "Quedan N") */
   low?: number;
   soldOut?: boolean;
+  image?: string;
 };
 export type MenuSection = { id: string; title: string; items: MenuItem[] };
 
@@ -103,75 +104,75 @@ export type StoreDetail = {
 
 const CHELA_MENU: MenuSection[] = [
   { id: "arepas", title: "Arepas", items: [
-    { id: "reina", name: "Reina pepiada", desc: "Pollo desmechado con aguacate y mayonesa. La de siempre.", priceCents: 350, icon: "arepa" },
-    { id: "domino", name: "Dominó", desc: "Caraotas negras y queso blanco rallado.", priceCents: 280, icon: "arepa", low: 4 },
-    { id: "mechada", name: "Carne mechada", desc: "Carne mechada jugosa, hecha en casa cada mañana.", priceCents: 380, icon: "arepa" },
-    { id: "pelua", name: "Pelúa", desc: "Carne mechada con queso amarillo rallado.", priceCents: 420, icon: "arepa", soldOut: true },
-    { id: "perico", name: "Perico", desc: "Huevos revueltos con tomate y cebolla.", priceCents: 290, icon: "arepa" },
+    { id: "reina", name: "Reina pepiada", desc: "Pollo desmechado con aguacate y mayonesa. La de siempre.", priceCents: 350, icon: "arepa", image: "/brand/food/reina-pepiada.jpg" },
+    { id: "domino", name: "Dominó", desc: "Caraotas negras y queso blanco rallado.", priceCents: 280, icon: "arepa", low: 4, image: "/brand/food/arepa-domino.jpg" },
+    { id: "mechada", name: "Carne mechada", desc: "Carne mechada jugosa, hecha en casa cada mañana.", priceCents: 380, icon: "arepa", image: "/brand/food/arepa-mechada.jpg" },
+    { id: "pelua", name: "Pelúa", desc: "Carne mechada con queso amarillo rallado.", priceCents: 420, icon: "arepa", soldOut: true, image: "/brand/food/arepa-pelua.jpg" },
+    { id: "perico", name: "Perico", desc: "Huevos revueltos con tomate y cebolla.", priceCents: 290, icon: "arepa", image: "/brand/food/arepa-perico.jpg" },
   ] },
   { id: "empanadas", title: "Empanadas", items: [
-    { id: "emp-queso", name: "Empanada de queso", desc: "Masa de maíz frita, rellena de queso blanco.", priceCents: 150, icon: "empanada" },
-    { id: "emp-cazon", name: "Empanada de cazón", desc: "Al estilo oriental, con su toque de ají dulce.", priceCents: 220, icon: "empanada", low: 6 },
+    { id: "emp-queso", name: "Empanada de queso", desc: "Masa de maíz frita, rellena de queso blanco.", priceCents: 150, icon: "empanada", image: "/brand/food/empanada-queso.jpg" },
+    { id: "emp-cazon", name: "Empanada de cazón", desc: "Al estilo oriental, con su toque de ají dulce.", priceCents: 220, icon: "empanada", low: 6, image: "/brand/food/empanada-cazon.jpg" },
   ] },
   { id: "bebidas", title: "Bebidas", items: [
-    { id: "guayoyo", name: "Guayoyo", desc: "Café negro colado, suave y largo.", priceCents: 100, icon: "cafe" },
-    { id: "papelon", name: "Papelón con limón", desc: "Bien frío, 16 oz.", priceCents: 150, icon: "papelon" },
-    { id: "chicha", name: "Chicha", desc: "De arroz, con canela por encima.", priceCents: 180, icon: "chicha" },
+    { id: "guayoyo", name: "Guayoyo", desc: "Café negro colado, suave y largo.", priceCents: 100, icon: "cafe", image: "/brand/food/cafe-guayoyo.jpg" },
+    { id: "papelon", name: "Papelón con limón", desc: "Bien frío, 16 oz.", priceCents: 150, icon: "papelon", image: "/brand/food/papelon-vaso.jpg" },
+    { id: "chicha", name: "Chicha", desc: "De arroz, con canela por encima.", priceCents: 180, icon: "chicha", image: "/brand/food/chicha-vaso.jpg" },
   ] },
 ];
 
 const PUERTO_MENU: MenuSection[] = [
   { id: "empanadas", title: "Empanadas", items: [
-    { id: "carne-mechada", name: "Carne mechada", desc: "Masa de maíz crujiente con carne mechada guisada.", priceCents: 200, icon: "empanada" },
-    { id: "pollo", name: "Pollo desmechado", desc: "Pollo guisado con pimentón y cebollín.", priceCents: 190, icon: "empanada" },
-    { id: "queso", name: "Queso blanco", desc: "Queso blanco semiduro que se estira al partirla.", priceCents: 150, icon: "empanada" },
-    { id: "cazon", name: "Cazón", desc: "Cazón guisado con ají dulce, al estilo oriental.", priceCents: 240, icon: "empanada", low: 5 },
-    { id: "pabellon", name: "Pabellón", desc: "Carne, caraotas, plátano y queso rallado.", priceCents: 260, icon: "empanada", soldOut: true },
+    { id: "carne-mechada", name: "Carne mechada", desc: "Masa de maíz crujiente con carne mechada guisada.", priceCents: 200, icon: "empanada", image: "/brand/food/arepa-mechada.jpg" },
+    { id: "pollo", name: "Pollo desmechado", desc: "Pollo guisado con pimentón y cebollín.", priceCents: 190, icon: "empanada", image: "/brand/food/empanada.jpg" },
+    { id: "queso", name: "Queso blanco", desc: "Queso blanco semiduro que se estira al partirla.", priceCents: 150, icon: "empanada", image: "/brand/food/empanada-queso.jpg" },
+    { id: "cazon", name: "Cazón", desc: "Cazón guisado con ají dulce, al estilo oriental.", priceCents: 240, icon: "empanada", low: 5, image: "/brand/food/empanada-cazon.jpg" },
+    { id: "pabellon", name: "Pabellón", desc: "Carne, caraotas, plátano y queso rallado.", priceCents: 260, icon: "empanada", soldOut: true, image: "/brand/food/pabellon.jpg" },
   ] },
   { id: "frituras", title: "Frituras", items: [
-    { id: "tequenos", name: "Tequeños (6 unidades)", desc: "Queso blanco envuelto en masa crujiente, con salsa de ajo.", priceCents: 450, icon: "tequeno" },
-    { id: "tostones", name: "Tostones", desc: "Plátano verde frito con salsa rosada.", priceCents: 300, icon: "platano" },
+    { id: "tequenos", name: "Tequeños (6 unidades)", desc: "Queso blanco envuelto en masa crujiente, con salsa de ajo.", priceCents: 450, icon: "tequeno", image: "/brand/food/tequeno.jpg" },
+    { id: "tostones", name: "Tostones", desc: "Plátano verde frito con salsa rosada.", priceCents: 300, icon: "platano", image: "/brand/food/patacon.jpg" },
   ] },
   { id: "bebidas", title: "Bebidas", items: [
-    { id: "malta", name: "Malta", desc: "Botella de 355 ml, bien fría.", priceCents: 120, icon: "malta" },
-    { id: "papelon", name: "Papelón con limón", desc: "Bien frío, 16 oz.", priceCents: 150, icon: "papelon" },
-    { id: "guayoyo", name: "Guayoyo", desc: "Café negro colado.", priceCents: 100, icon: "cafe" },
+    { id: "malta", name: "Malta", desc: "Botella de 355 ml, bien fría.", priceCents: 120, icon: "malta", image: "/brand/products/malta-6.jpg" },
+    { id: "papelon", name: "Papelón con limón", desc: "Bien frío, 16 oz.", priceCents: 150, icon: "papelon", image: "/brand/food/papelon-vaso.jpg" },
+    { id: "guayoyo", name: "Guayoyo", desc: "Café negro colado.", priceCents: 100, icon: "cafe", image: "/brand/food/cafe-guayoyo.jpg" },
   ] },
 ];
 const REINA_MENU: MenuSection[] = [
   { id: "panes", title: "Panes", items: [
-    { id: "pan-jamon", name: "Pan de jamón", desc: "Relleno de jamón, tocineta, aceitunas y pasas. Porción de 1/4.", priceCents: 450, icon: "pan-de-jamon" },
-    { id: "pan-jamon-entero", name: "Pan de jamón entero", desc: "Para compartir, recién horneado.", priceCents: 1600, icon: "pan-de-jamon", low: 3 },
-    { id: "pan-canilla", name: "Pan canilla (4 unidades)", desc: "Corteza crujiente, miga suave.", priceCents: 200, icon: "pan-de-jamon" },
-    { id: "pan-dulce", name: "Pan dulce", desc: "Con papelón y anís. Se acaba temprano.", priceCents: 280, icon: "pan-de-jamon", soldOut: true },
+    { id: "pan-jamon", name: "Pan de jamón", desc: "Relleno de jamón, tocineta, aceitunas y pasas. Porción de 1/4.", priceCents: 450, icon: "pan-de-jamon", image: "/brand/food/pan-de-jamon.jpg" },
+    { id: "pan-jamon-entero", name: "Pan de jamón entero", desc: "Para compartir, recién horneado.", priceCents: 1600, icon: "pan-de-jamon", low: 3, image: "/brand/food/pan-de-jamon.jpg" },
+    { id: "pan-canilla", name: "Pan canilla (4 unidades)", desc: "Corteza crujiente, miga suave.", priceCents: 200, icon: "pan-de-jamon", image: "/brand/food/pan-campesino.jpg" },
+    { id: "pan-dulce", name: "Pan dulce", desc: "Con papelón y anís. Se acaba temprano.", priceCents: 280, icon: "pan-de-jamon", soldOut: true, image: "/brand/food/pan-sobao.jpg" },
   ] },
   { id: "dulces", title: "Dulces", items: [
-    { id: "golfeado", name: "Golfeado", desc: "Pan dulce con papelón y queso de mano rallado.", priceCents: 250, icon: "golfeado" },
-    { id: "catalina", name: "Catalina", desc: "Galleta de harina con cobertura de papelón.", priceCents: 180, icon: "catalina" },
-    { id: "cuatro-leches", name: "Torta de cuatro leches", desc: "Porción individual.", priceCents: 380, icon: "cuatro", low: 4 },
+    { id: "golfeado", name: "Golfeado", desc: "Pan dulce con papelón y queso de mano rallado.", priceCents: 250, icon: "golfeado", image: "/brand/food/golfeado.jpg" },
+    { id: "catalina", name: "Catalina", desc: "Galleta de harina con cobertura de papelón.", priceCents: 180, icon: "catalina", image: "/brand/food/catalinas.jpg" },
+    { id: "cuatro-leches", name: "Torta de cuatro leches", desc: "Porción individual.", priceCents: 380, icon: "cuatro", low: 4, image: "/brand/food/tres-leches.jpg" },
   ] },
   { id: "bebidas", title: "Bebidas", items: [
-    { id: "cafe-con-leche", name: "Café con leche", desc: "Café recién colado con leche caliente.", priceCents: 140, icon: "cafe" },
-    { id: "guayoyo", name: "Guayoyo", desc: "Café negro colado, suave y largo.", priceCents: 100, icon: "cafe" },
-    { id: "chicha", name: "Chicha", desc: "De arroz, con canela por encima.", priceCents: 180, icon: "chicha" },
+    { id: "cafe-con-leche", name: "Café con leche", desc: "Café recién colado con leche caliente.", priceCents: 140, icon: "cafe", image: "/brand/food/cafe-con-leche.jpg" },
+    { id: "guayoyo", name: "Guayoyo", desc: "Café negro colado, suave y largo.", priceCents: 100, icon: "cafe", image: "/brand/food/cafe-guayoyo.jpg" },
+    { id: "chicha", name: "Chicha", desc: "De arroz, con canela por encima.", priceCents: 180, icon: "chicha", image: "/brand/food/chicha-vaso.jpg" },
   ] },
 ];
 const TIO_MENU: MenuSection[] = [
   { id: "cachapas", title: "Cachapas", items: [
-    { id: "cachapa-queso", name: "Cachapa con queso de mano", desc: "Maíz tierno a la plancha con queso de mano fundido.", priceCents: 550, icon: "cachapa" },
-    { id: "cachapa-cochino", name: "Cachapa con cochino frito", desc: "Con chicharrón y queso de mano.", priceCents: 750, icon: "cachapa", low: 4 },
-    { id: "cachapa-jamon", name: "Cachapa con jamón y queso", desc: "Jamón ahumado y queso amarillo.", priceCents: 600, icon: "cachapa" },
-    { id: "cachapa-sola", name: "Cachapa sola", desc: "Con mantequilla, para acompañar.", priceCents: 350, icon: "cachapa" },
-    { id: "cachapa-pollo", name: "Cachapa con pollo", desc: "Pollo desmechado y queso blanco.", priceCents: 650, icon: "cachapa", soldOut: true },
+    { id: "cachapa-queso", name: "Cachapa con queso de mano", desc: "Maíz tierno a la plancha con queso de mano fundido.", priceCents: 550, icon: "cachapa", image: "/brand/food/cachapa-queso.jpg" },
+    { id: "cachapa-cochino", name: "Cachapa con cochino frito", desc: "Con chicharrón y queso de mano.", priceCents: 750, icon: "cachapa", low: 4, image: "/brand/food/cachapa-cochino.jpg" },
+    { id: "cachapa-jamon", name: "Cachapa con jamón y queso", desc: "Jamón ahumado y queso amarillo.", priceCents: 600, icon: "cachapa", image: "/brand/food/cachapa-jamon.jpg" },
+    { id: "cachapa-sola", name: "Cachapa sola", desc: "Con mantequilla, para acompañar.", priceCents: 350, icon: "cachapa", image: "/brand/food/cachapa-sola.jpg" },
+    { id: "cachapa-pollo", name: "Cachapa con pollo", desc: "Pollo desmechado y queso blanco.", priceCents: 650, icon: "cachapa", soldOut: true, image: "/brand/food/cachapa-pollo.jpg" },
   ] },
   { id: "arepas", title: "Arepas", items: [
-    { id: "arepa-queso", name: "Arepa con queso de mano", desc: "Asada y rellena de queso de mano.", priceCents: 300, icon: "arepa" },
-    { id: "arepa-reina", name: "Reina pepiada", desc: "Pollo desmechado con aguacate y mayonesa.", priceCents: 360, icon: "arepa" },
+    { id: "arepa-queso", name: "Arepa con queso de mano", desc: "Asada y rellena de queso de mano.", priceCents: 300, icon: "arepa", image: "/brand/food/arepa-queso.jpg" },
+    { id: "arepa-reina", name: "Reina pepiada", desc: "Pollo desmechado con aguacate y mayonesa.", priceCents: 360, icon: "arepa", image: "/brand/food/reina-pepiada.jpg" },
   ] },
   { id: "bebidas", title: "Bebidas", items: [
-    { id: "papelon", name: "Papelón con limón", desc: "Bien frío, 16 oz.", priceCents: 150, icon: "papelon" },
-    { id: "chicha", name: "Chicha", desc: "De arroz, con canela por encima.", priceCents: 180, icon: "chicha" },
-    { id: "malta", name: "Malta", desc: "Botella de 355 ml, bien fría.", priceCents: 120, icon: "malta" },
+    { id: "papelon", name: "Papelón con limón", desc: "Bien frío, 16 oz.", priceCents: 150, icon: "papelon", image: "/brand/food/papelon-vaso.jpg" },
+    { id: "chicha", name: "Chicha", desc: "De arroz, con canela por encima.", priceCents: 180, icon: "chicha", image: "/brand/food/chicha-vaso.jpg" },
+    { id: "malta", name: "Malta", desc: "Botella de 355 ml, bien fría.", priceCents: 120, icon: "malta", image: "/brand/products/malta-6.jpg" },
   ] },
 ];
 export const STORES: Record<string, StoreDetail> = {
@@ -202,7 +203,7 @@ export function getStore(slug: string): StoreDetail | undefined {
 for (const st of MORE_STORES) STORES[st.slug] = st;
 
 /** Sugerencias del carrito ("¿Te provoca algo más?"): bebidas y fritos del propio menú de cada tienda. */
-export type CartExtra = { id: string; name: string; priceCents: number; icon: IconName };
+export type CartExtra = { id: string; name: string; priceCents: number; icon: IconName; image?: string };
 export const EXTRAS_BY_STORE: Record<string, CartExtra[]> = Object.fromEntries(
   Object.values(STORES).map((st) => [
     st.slug,
@@ -211,16 +212,16 @@ export const EXTRAS_BY_STORE: Record<string, CartExtra[]> = Object.fromEntries(
       .flatMap((sec) => sec.items)
       .filter((it) => !it.soldOut)
       .slice(0, 3)
-      .map((it) => ({ id: it.id, name: it.name, priceCents: it.priceCents, icon: it.icon })),
+      .map((it) => ({ id: it.id, name: it.name, priceCents: it.priceCents, icon: it.icon, image: it.image })),
   ]),
 );
 /* ---------- Carrito de ejemplo ---------- */
 
-export type CartLine = { id: string; name: string; qty: number; unitCents: number; icon: IconName; note?: string };
+export type CartLine = { id: string; name: string; qty: number; unitCents: number; icon: IconName; note?: string; image?: string };
 export const DEMO_CART_STORE = "arepera-dona-chela";
 export const DEMO_CART: CartLine[] = [
-  { id: "reina", name: "Arepa reina pepiada", qty: 2, unitCents: 350, icon: "arepa", note: "Masa blanca · Asada en budare" },
-  { id: "guayoyo", name: "Guayoyo", qty: 1, unitCents: 100, icon: "cafe", note: "Taza grande" },
+  { id: "reina", name: "Arepa reina pepiada", qty: 2, unitCents: 350, icon: "arepa", note: "Masa blanca · Asada en budare", image: "/brand/food/reina-pepiada.jpg" },
+  { id: "guayoyo", name: "Guayoyo", qty: 1, unitCents: 100, icon: "cafe", note: "Taza grande", image: "/brand/food/cafe-guayoyo.jpg" },
 ];
 export const DEMO_ADDRESS = {
   line: "Av. Luis Roche, Edif. Los Samanes, apto. 4B, Altamira",

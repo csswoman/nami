@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { Badge, Icon, SearchBar } from "@/components/nami";
 import { AppShell } from "@/components/shell/AppShell";
@@ -10,18 +11,19 @@ import { AddButton } from "@/components/cart/AddButton";
 import { StoreCart } from "@/components/cart/StoreCart";
 import { cartStoreOf } from "@/lib/cart/meta";
 import type { CartStore } from "@/lib/cart/store";
-import { optionGroupsFor } from "@/lib/demo/producto";
-import { getStore, type MenuItem, type StoreDetail } from "@/lib/demo/catalog";
+import { caracasMinutes, hoursText, isOpenAt, opensText, soldOutLabel, type CatalogProduct } from "@/lib/catalog";
 import { DEMO_RATE } from "@/lib/demo/home";
-import { formatUsd, formatVes } from "@/lib/money";
+import { formatMoney, formatUsd, formatVes, type Currency } from "@/lib/money";
+import { getStore } from "@/server/catalog";
+import { getMoneyPrefs } from "@/server/prefs";
 
 export async function generateMetadata({ params }: PageProps<"/tienda/[slug]">): Promise<Metadata> {
   const { slug } = await params;
-  const store = getStore(slug);
-  if (!store) return { title: "Tienda · Ñami" };
+  const store = await getStore(slug);
+  if (!store || store.kind !== "restaurante") return { title: "Tienda · Ñami" };
 
   const title = `${store.name} · Ñami`;
-  const description = `${store.kind} · Entrega en ${store.time} · Calificación ${store.rating}. Pide en Ñami.`;
+  const description = `${store.description} · Entrega en ${store.time} · Calificación ${store.rating ?? "nueva"}. Pide en Ñami.`;
   return {
     title,
     description,
@@ -40,15 +42,18 @@ export default function TiendaPage({ params, searchParams }: PageProps<"/tienda/
 }
 
 async function Content({ params, searchParams }: Pick<PageProps<"/tienda/[slug]">, "params" | "searchParams">) {
+  await connection();
   const { slug } = await params;
   const sp = await searchParams;
-  const base = getStore(slug);
-  if (!base) notFound();
-  // Demo: ?estado=cerrada muestra la tienda cerrada. La lógica real decidirá esto por horario.
-  const store: StoreDetail = { ...base, open: sp.estado === "cerrada" ? false : base.open };
-
-  const cartStore = cartStoreOf(store);
-  const scheduleText = store.opensAt.replace("Abre mañana a las", "mañana a las").replace("Abre a las", "hoy a las");
+  const money = await getMoneyPrefs();
+  const base = await getStore(slug);
+  if (!base || base.kind !== "restaurante") notFound();
+  // Abierta = interruptor manual encendido y dentro del horario semanal. Demo: ?estado=cerrada fuerza cerrada.
+  const minutes = caracasMinutes();
+  const open = sp.estado === "cerrada" ? false : base.isOpen && isOpenAt(base, minutes);
+  const store = { ...base, open, menu: base.sections, openUntil: hoursText(base, minutes), opensAt: opensText(base, minutes), rating: base.rating ?? "Nuevo", reviews: base.reviews ?? "0" };
+  const cartStore = cartStoreOf({ ...store, opensAt: store.opensAt });
+  const scheduleText = store.opensAt.replace("Abre mañana a las", "mañana a las").replace("Abre a las", "hoy a las").replace("Abre el", "el");
 
   return (
     <AppShell mobileHeader={false} bottomNav={false}>
@@ -57,7 +62,7 @@ async function Content({ params, searchParams }: Pick<PageProps<"/tienda/[slug]"
         <div className="relative desktop:overflow-hidden desktop:rounded-xl desktop:p-6">
           <div className="relative h-52 overflow-hidden bg-surface-tile desktop:static desktop:h-auto desktop:overflow-visible desktop:bg-transparent">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={`/brand/food/${store.heroImage}.svg`} alt="" className={`size-full object-cover desktop:absolute desktop:inset-0 ${store.open ? "" : "grayscale"}`} />
+            <img src={store.imageUrl ?? ""} alt="" className={`size-full object-cover desktop:absolute desktop:inset-0 ${store.open ? "" : "grayscale"}`} />
             <div className="absolute inset-x-4 top-4 flex gap-2 desktop:relative desktop:inset-auto">
               <span className="desktop:hidden"><RoundLink href="/listado" label="Volver" onTile><BackIcon /></RoundLink></span>
               <Link href="/listado" className="hidden min-h-11 items-center gap-1 rounded-pill bg-surface-raised pr-4 pl-2.5 text-button text-ink shadow-card desktop:flex [&_.nm-icon]:size-5">
@@ -73,13 +78,13 @@ async function Content({ params, searchParams }: Pick<PageProps<"/tienda/[slug]"
           <div className="relative -mt-10 rounded-t-xl bg-surface px-4 desktop:mt-14 desktop:rounded-lg desktop:bg-surface-raised desktop:p-5 desktop:shadow-card">
             <div className="flex items-end gap-4 desktop:items-center desktop:gap-5">
               <span className="grid size-22 shrink-0 place-items-center rounded-xl border border-border bg-surface shadow-card desktop:size-auto desktop:border-0 desktop:bg-transparent desktop:shadow-none">
-                <StoreMark initials={store.initials} color={store.color} size={68} />
+                <StoreMark initials={store.initials} color={store.color} slug={store.slug} size={68} />
               </span>
               <div className="flex min-w-0 grow flex-col gap-1.5 pb-1 desktop:gap-1 desktop:pb-0">
                 <h1 className="font-display text-[26px] leading-8 font-extrabold desktop:text-[32px] desktop:leading-9.5">{store.name}</h1>
-                <p className="text-caption text-ink-muted desktop:hidden">{store.kind}</p>
+                <p className="text-caption text-ink-muted desktop:hidden">{store.description}</p>
                 <div className="hidden flex-wrap gap-x-4 gap-y-1.5 text-caption text-ink-muted desktop:flex [&_.nm-icon]:size-4">
-                  <span>{store.kind}</span>
+                  <span>{store.description}</span>
                   <span className="flex items-center gap-1 font-bold text-ink"><Icon name="star" />{store.rating} <span className="font-medium text-ink-muted">({store.reviews})</span></span>
                   <span className="flex items-center gap-1"><Icon name="clock" />{store.time}</span>
                   <span className="flex items-center gap-1"><Icon name="moto" />{formatUsd(store.feeCents)} · {formatVes(store.feeCents, DEMO_RATE)}</span>
@@ -144,7 +149,7 @@ async function Content({ params, searchParams }: Pick<PageProps<"/tienda/[slug]"
               <section key={s.id} id={s.id} className="flex scroll-mt-16 flex-col gap-1 desktop:gap-4">
                 <h2 className="py-3 font-display text-title-lg desktop:py-0 desktop:text-[24px] desktop:leading-7.5">{s.title}</h2>
                 <div className="flex flex-col desktop:grid desktop:grid-cols-2 desktop:gap-4">
-                  {s.items.map((it) => <MenuCard key={it.id} item={it} store={cartStore} hasOptions={optionGroupsFor(s.id).length > 0} slug={store.slug} />)}
+                  {s.products.map((it) => <MenuCard key={it.id} item={it} store={cartStore} hasOptions={it.hasOptions} slug={store.slug} money={money} />)}
                 </div>
               </section>
             ))}
@@ -171,7 +176,8 @@ function IconCircle({ label, icon }: { label: string; icon: "star" }) {
   );
 }
 
-function MenuCard({ item, slug, store, hasOptions }: { item: MenuItem; slug: string; store: CartStore; hasOptions: boolean }) {
+function MenuCard({ item, slug, store, hasOptions, money }: { item: CatalogProduct; slug: string; store: CartStore; hasOptions: boolean; money: { currency: Currency; rate: number } }) {
+  const other: Currency = money.currency === "USD" ? "VES" : "USD";
   const out = item.soldOut;
   return (
     <article className={`relative flex min-h-26 gap-4 border-b border-border py-4 desktop:rounded-lg desktop:border desktop:p-4 ${out ? "opacity-50" : ""}`}>
@@ -179,18 +185,23 @@ function MenuCard({ item, slug, store, hasOptions }: { item: MenuItem; slug: str
         <h3 className="text-body-strong font-semibold">
           {out ? item.name : <Link href={`/tienda/${slug}/${item.id}`} className="after:absolute after:inset-0">{item.name}</Link>}
         </h3>
-        <p className="text-caption font-normal text-ink-muted">{item.desc}</p>
+        <p className="text-caption font-normal text-ink-muted">{item.description}</p>
         <div className="mt-auto flex items-baseline gap-2 pt-1.5 whitespace-nowrap">
-          <span className="text-price">{formatUsd(item.priceCents)}</span>
-          <span className="text-caption text-ink-muted">{formatVes(item.priceCents, DEMO_RATE)}</span>
+          <span className="text-price">{formatMoney(item.priceCents, money.currency, money.rate)}</span>
+          <span className="text-caption text-ink-muted">{formatMoney(item.priceCents, other, money.rate)}</span>
         </div>
-        {item.low ? <span className="text-badge text-primary-text">Quedan {item.low}</span> : null}
-        {out ? <span className="self-start rounded-pill bg-surface-tile px-2.5 py-1 text-badge">Agotado · Vuelve mañana a las 7:00 a. m.</span> : null}
+        {item.stock ? <span className="text-badge text-primary-text">Quedan {item.stock}</span> : null}
+        {out ? <span className="self-start rounded-pill bg-surface-tile px-2.5 py-1 text-badge">{soldOutLabel(item.soldOutUntil)}</span> : null}
       </div>
-      <div className="relative size-26 shrink-0">
-        <span className="grid size-full place-items-center rounded-md bg-surface-tile text-ink [&_.nm-icon]:size-10"><Icon name={item.icon} /></span>
+      <div className="relative size-26 shrink-0 overflow-hidden rounded-md bg-surface-tile">
+        {item.image ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={item.image} alt="" className="size-full object-cover" />
+        ) : (
+          <span className="grid size-full place-items-center text-ink [&_.nm-icon]:size-10"><Icon name={item.icon ?? "utensils"} /></span>
+        )}
         {!out ? (
-          <AddButton className="absolute -right-1.5 -bottom-1.5 z-[1]" store={store} hasOptions={hasOptions} href={`/tienda/${slug}/${item.id}`} item={{ id: item.id, name: item.name, priceCents: item.priceCents, icon: item.icon }} />
+          <AddButton className="absolute -right-1.5 -bottom-1.5 z-[1]" store={store} hasOptions={hasOptions} href={`/tienda/${slug}/${item.id}`} item={{ id: item.id, name: item.name, priceCents: item.priceCents, icon: item.icon ?? "utensils", image: item.image ?? undefined }} />
         ) : null}
       </div>
     </article>

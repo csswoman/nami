@@ -49,15 +49,15 @@ export default function SistemaPage() {
         <section className="flex flex-col gap-4">
           <SectionHeader title="Mercados de confianza" action="Ver todo" />
           <div className="flex flex-wrap gap-3">
-            <StoreLogo name="Ñami Market" initials="Ñ" color="var(--color-primary)" featured />
-            <StoreLogo name="Abasto El Samán" initials="AS" color="var(--color-leaf)" />
-            <StoreLogo name="Bodegón La Candelaria" initials="BC" color="var(--color-ink)" />
+            <StoreLogo name="Ñami Market" logo="/brand/stores/nami-market.jpg" initials="Ñ" color="var(--color-primary)" featured />
+            <StoreLogo name="Abasto El Samán" logo="/brand/stores/abasto-el-saman.jpg" initials="AS" color="var(--color-leaf)" />
+            <StoreLogo name="Bodegón La Candelaria" logo="/brand/stores/bodegon-la-candelaria.jpg" initials="BC" color="var(--color-ink)" />
           </div>
         </section>
 
         <section className="flex flex-col gap-4">
           <SectionHeader title="Promociones del día" />
-          <Tabs items={[{ label: "Ñami Market", initials: "Ñ" }, { label: "Abasto El Samán", initials: "AS" }]} />
+          <Tabs items={[{ label: "Ñami Market", logo: "/brand/stores/nami-market.jpg", initials: "Ñ" }, { label: "Abasto El Samán", logo: "/brand/stores/abasto-el-saman.jpg", initials: "AS" }]} />
           <div className="grid grid-cols-2 gap-4 desktop:grid-cols-5">
             <ProductCard name="Harina de maíz precocida 1 kg" price="$ 1,15" oldPrice="$ 1,35" unit="1 kg · Bs. 42,09" badges={<Badge>DSCTO</Badge>} />
             <ProductCard name="Queso blanco llanero 500 g" price="$ 3,90" unit="500 g · Bs. 142,74" />

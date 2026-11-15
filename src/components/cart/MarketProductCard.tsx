@@ -1,14 +1,15 @@
 "use client";
 
-import { ProductCard } from "@/components/nami";
+import { Badge, ProductCard } from "@/components/nami";
 import { useCart } from "@/lib/cart/hooks";
 import { groupOf, useCartStore, type CartStore } from "@/lib/cart/store";
 import { DEMO_RATE } from "@/lib/demo/home";
 import type { MarketProduct } from "@/lib/demo/mercado";
-import { formatUsd, formatVes } from "@/lib/money";
+import { formatMoney, type Currency } from "@/lib/money";
 
 /** Producto de súper o farmacia: el "+" lo agrega al carrito y muestra cuántos llevas. */
-export function MarketProductCard({ store, p }: { store: CartStore; p: MarketProduct }) {
+export function MarketProductCard({ store, p, money = { currency: "USD", rate: DEMO_RATE } }: { store: CartStore; p: MarketProduct; money?: { currency: Currency; rate: number } }) {
+  const other: Currency = money.currency === "USD" ? "VES" : "USD";
   const { groups } = useCart();
   const add = useCartStore((s) => s.add);
   const setQty = useCartStore((s) => s.setQty);
@@ -21,11 +22,12 @@ export function MarketProductCard({ store, p }: { store: CartStore; p: MarketPro
       <ProductCard
         className="w-full"
         name={p.name}
-        price={formatUsd(p.priceCents)}
-        oldPrice={p.oldPriceCents ? formatUsd(p.oldPriceCents) : undefined}
-        unit={`${p.unit} · ${formatVes(p.priceCents, DEMO_RATE)}`}
+        price={formatMoney(p.priceCents, money.currency, money.rate)}
+        oldPrice={p.oldPriceCents ? formatMoney(p.oldPriceCents, money.currency, money.rate) : undefined}
+        badges={p.oldPriceCents ? <Badge tone="brand" className="animate-pulse">Oferta</Badge> : undefined}
+        unit={`${p.unit} · ${formatMoney(p.priceCents, other, money.rate)}`}
         image={p.image}
-        onAdd={out ? undefined : () => add(store, { productId: p.id, name: p.name, unitCents: p.priceCents, icon: "basket" })}
+        onAdd={out ? undefined : () => add(store, { productId: p.id, name: p.name, unitCents: p.priceCents, icon: "basket", image: p.image })}
       />
       {p.stock ? <span className="text-badge text-primary-text">Quedan {p.stock}</span> : null}
       {qty && last ? (
