@@ -63,3 +63,6 @@ Thumbs.db
 /playwright-report/
 /test-results/
 /coverage/
+.codex/
+.cursor/
+.gemini/
