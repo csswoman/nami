@@ -8,8 +8,8 @@ import { cartStoreOf } from "@/lib/cart/meta";
 import type { CartStore } from "@/lib/cart/store";
 import { marketCard } from "@/lib/catalog";
 import type { MarketProduct } from "@/lib/demo/mercado";
-import { getPromos, getStores } from "@/server/catalog";
-import { getMoneyPrefs } from "@/server/prefs";
+import { getCouponOffers, getPromos, getStores } from "@/server/catalog";
+import { getDeliveryContext, getMoneyPrefs } from "@/server/prefs";
 import type { Currency } from "@/lib/money";
 import { StoreMark } from "@/components/shell/StoreMark";
 import type { BrandColor } from "@/lib/demo/home";
@@ -33,7 +33,7 @@ const COMBOS: Combo[] = [
 ];
 /** Un par de ofertas por tienda, cada una con su propio carrito. */
 async function dealsOf(slugs: string[], per = 2): Promise<Deal[]> {
-  const all = await getStores();
+  const all = await getStores({ delivery: await getDeliveryContext() });
   const groups = await Promise.all(slugs.map(async (slug) => ({ store: all.find((s) => s.slug === slug), promos: await getPromos(slug, per) })));
   return groups.flatMap(({ store, promos }) => (store ? promos.map((p) => ({ p: marketCard(p), store: cartStoreOf(store, "mercado"), storeName: store.name })) : []));
 }
@@ -95,6 +95,7 @@ function DealGrid({ items, money }: { items: Deal[]; money: { currency: Currency
 async function Content({ searchParams }: { searchParams: PageProps<"/ofertas">["searchParams"] }) {
   const sp = await searchParams;
   const money = await getMoneyPrefs();
+  const offers = await getCouponOffers();
   const [SUPER, FARMACIA, TIENDAS] = await Promise.all([
     dealsOf(["nami-market", "abasto-el-saman", "automercado-avila", "bodegon-la-candelaria", "bodegon-los-chaguaramos"]),
     dealsOf(["farmacia-san-onofre", "farmacia-los-proceres", "farmacia-el-avila"]),
@@ -118,6 +119,20 @@ async function Content({ searchParams }: { searchParams: PageProps<"/ofertas">["
           </nav>
         </header>
 
+        {offers.length ? (
+          <section aria-label="Cupones" className="flex flex-col gap-3">
+            <h2 className="font-display text-title-lg desktop:text-[28px]">Cupones</h2>
+            <p className="text-caption text-ink-muted desktop:text-body">Escribe el código en el checkout, o tócalo ahí para aplicarlo.</p>
+            <ul className="grid gap-3 desktop:grid-cols-4">
+              {offers.map((o) => (
+                <li key={o.code} className="flex flex-col gap-1 rounded-lg border border-dashed border-border p-4">
+                  <b className="font-display text-title-md">{o.code}</b>
+                  <span className="text-caption text-ink-muted">{o.description}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
         <div className="grid gap-6 desktop:grid-cols-[2fr_1fr]">
           <PromoBanner className="nm-banner--hero" slides={HERO_SLIDES} />
           <aside className="relative hidden flex-col justify-between overflow-hidden rounded-xl bg-promo p-8 text-ink desktop:flex">

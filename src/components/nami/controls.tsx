@@ -28,7 +28,7 @@ export function Button({ variant = "primary", size, block, icon, type = "button"
 }
 
 type BadgeProps = {
-  tone?: "promo" | "plus" | "success" | "danger" | "neutral" | (string & {});
+  tone?: "promo" | "plus" | "success" | "primary" | "brand" | "surface" | "neutral" | "danger" | (string & {});
   icon?: IconName;
   className?: string;
   children?: ReactNode;

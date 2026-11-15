@@ -6,13 +6,17 @@ import { Suspense } from "react";
 import { CuisineChip, Icon, RestaurantCard } from "@/components/nami";
 import { AppShell } from "@/components/shell/AppShell";
 import { ScreenBar, SearchLink } from "@/components/shell/ScreenBar";
+import { DeliveryBar } from "@/components/shell/DeliveryBar";
 import { StoreMark } from "@/components/shell/StoreMark";
 import { hoursText, isOpenAt, LISTING_TABS, opensText, type StoreSummary } from "@/lib/catalog";
+import { ListingFilterChips } from "@/components/shell/ListingFilterChips";
+import { applyListing, filterParams, parseFilters, type ListingFilters } from "@/lib/listing";
 import { LISTING_CHIPS } from "@/lib/demo/catalog";
 import { caracasNow, FRANJA_COOKIE, horaToMinutes, resolveFranja } from "@/lib/demo/franja";
 import { FRANJA_CONTENT } from "@/lib/demo/home";
 import { formatUsd } from "@/lib/money";
 import { getStores } from "@/server/catalog";
+import { getDeliveryContext } from "@/server/prefs";
 
 export const metadata: Metadata = {
   title: "Restaurantes y tiendas · Ñami",
@@ -23,7 +27,7 @@ export const metadata: Metadata = {
 /** El orden es el de `?v=`: 0 restaurantes, 1 súper, 2 farmacias, 3 bodegones, 4 panaderías, 5 tiendas. */
 const VERTICALS = LISTING_TABS;
 
-type Query = { franja?: string; v?: string; chip?: string; open?: string; free?: string };
+type Query = { franja?: string; v?: string; chip?: string };
 
 const rowOf = (s: StoreSummary) => ({
   slug: s.slug, name: s.name, initials: s.initials, color: s.color,
@@ -31,9 +35,9 @@ const rowOf = (s: StoreSummary) => ({
   hours: hoursText(s), href: s.kind === "mercado" ? `/mercado/${s.slug}` : `/tienda/${s.slug}`,
 });
 
-function href(q: Query): string {
+function href(q: Query, f?: ListingFilters): string {
   const p = new URLSearchParams();
-  for (const [k, v] of Object.entries(q)) if (v) p.set(k, v);
+  for (const [k, v] of Object.entries({ ...q, ...(f ? filterParams(f) : {}) })) if (v) p.set(k, v);
   const s = p.toString();
   return s ? `/listado?${s}` : "/listado";
 }
@@ -52,7 +56,8 @@ async function Content({ searchParams }: { searchParams: PageProps<"/listado">["
   await connection();
   const sp = await searchParams;
   const get = (k: string) => (typeof sp[k] === "string" ? (sp[k] as string) : undefined);
-  const q: Query = { franja: get("franja"), v: get("v"), chip: get("chip"), open: get("open"), free: get("free") };
+  const q: Query = { franja: get("franja"), v: get("v"), chip: get("chip") };
+  const filters = parseFilters(get);
   const n = Number(q.v);
   const vi = Number.isInteger(n) && n >= 1 && n < VERTICALS.length ? n : 0;
   const title = VERTICALS[vi];
@@ -62,26 +67,25 @@ async function Content({ searchParams }: { searchParams: PageProps<"/listado">["
   const label = FRANJA_CONTENT[franja ?? real.franja].label;
   const hora = franja ? FRANJA_CONTENT[franja].hora : real.hora;
   const minutes = horaToMinutes(hora);
-  const listed = await getStores({ vertical: vi });
-  const restaurants = vi === 0 ? listed : [];
+  const delivery = await getDeliveryContext();
+  const all = await getStores({ vertical: vi, delivery });
+  const listed = all.filter((s) => s.delivery?.covered !== false);
+  const hidden = all.length - listed.length;
+  // Los filtros se aplican a las abiertas y a las cerradas; "abiertos ahora" oculta la sección de cerradas.
+  const restaurants = vi === 0 ? applyListing(listed, { ...filters, open: false }, minutes).filter((r) => !q.chip || r.tags.includes(q.chip)) : [];
   const openNow = restaurants.filter((r) => isOpenAt(r, minutes));
   const closedNow = restaurants.filter((r) => !isOpenAt(r, minutes));
-  const open = openNow.filter((r) => (!q.chip || r.tags.includes(q.chip)) && (q.free !== "1" || r.plusFree));
-  const showClosed = vi === 0 && q.open !== "1";
+  const open = openNow;
+  const showClosed = vi === 0 && !filters.open;
   const rows = vi === 0 ? [] : listed.map(rowOf);
   const count = vi === 0 ? `${openNow.length} abiertas · ${closedNow.length} cerradas` : `${rows.length} abiertas`;
-
-  const filters = [
-    { label: "Abiertos ahora", on: q.open === "1", to: href({ ...q, open: q.open === "1" ? undefined : "1" }) },
-    { label: "Envío gratis con Ñami+", on: q.free === "1", to: href({ ...q, free: q.free === "1" ? undefined : "1" }) },
-    { label: "Mejor calificados", on: false, to: href(q) },
-  ];
 
   return (
     <>
       <ScreenBar title={title} action={<SearchLink />} />
 
       <div className="page-x flex flex-col gap-4 pb-8 desktop:gap-6 desktop:pt-6">
+        <DeliveryBar zone={delivery.zone} hidden={hidden} />
         <nav aria-label="Ruta" className="hidden gap-2 text-caption text-ink-muted desktop:flex">
           <Link href="/" className="font-semibold">Inicio</Link>
           <span aria-hidden="true">/</span>
@@ -92,7 +96,7 @@ async function Content({ searchParams }: { searchParams: PageProps<"/listado">["
           <h1 className="hidden font-display text-[40px] leading-11 font-extrabold desktop:block">{title}</h1>
           <div role="tablist" className="nm-tabs scroll-x grow">
             {VERTICALS.map((label, i) => (
-              <Link key={label} href={href({ v: i ? String(i) : undefined })} role="tab" aria-selected={i === vi} className="nm-tab">{label}</Link>
+              <Link key={label} href={href({ v: i ? String(i) : undefined }, filters)} role="tab" aria-selected={i === vi} className="nm-tab">{label}</Link>
             ))}
           </div>
           <span className="flex items-center gap-1.5 text-caption text-ink-muted desktop:pb-3 desktop:whitespace-nowrap [&_.nm-icon]:size-4">
@@ -104,19 +108,7 @@ async function Content({ searchParams }: { searchParams: PageProps<"/listado">["
         <div className={`grid grid-cols-1 gap-4 desktop:items-start desktop:gap-10 ${vi === 0 ? "desktop:grid-cols-[240px_minmax(0,1fr)]" : ""}`}>
           {vi === 0 ? <aside aria-label="Filtros" className="flex flex-col gap-3 desktop:sticky desktop:top-6 desktop:order-first">
             <h2 className="hidden font-display text-title-md desktop:block">Filtros</h2>
-            <div className="scroll-x -mx-4 order-2 flex gap-2 px-4 desktop:order-none desktop:mx-0 desktop:flex-col desktop:overflow-visible desktop:px-0">
-              {filters.map((f) => (
-                <Link
-                  key={f.label}
-                  href={f.to}
-                  scroll={false}
-                  aria-pressed={f.on}
-                  className={`flex min-h-10 shrink-0 items-center rounded-pill px-3.5 text-caption font-bold whitespace-nowrap ${f.on ? "bg-ink text-surface" : "border border-border bg-surface text-ink"}`}
-                >
-                  {f.label}
-                </Link>
-              ))}
-            </div>
+            <div className="order-2 desktop:order-none"><ListingFilterChips filters={filters} to={(patch) => href(q, { ...filters, ...patch })} /></div>
             <p className="hidden text-caption text-ink-muted desktop:block">¿Todo cerrado? Cambia de franja con el modo demo del inicio.</p>
           </aside> : null}
 
@@ -127,7 +119,7 @@ async function Content({ searchParams }: { searchParams: PageProps<"/listado">["
                   {LISTING_CHIPS.map((c) => {
                     const on = q.chip === c.tag;
                     return (
-                      <Link key={c.tag} href={href({ ...q, chip: on ? undefined : c.tag })} scroll={false} className="shrink-0">
+                      <Link key={c.tag} href={href({ ...q, chip: on ? undefined : c.tag }, filters)} scroll={false} className="shrink-0">
                         <CuisineChip icon={c.icon} label={c.label} selected={on} />
                       </Link>
                     );

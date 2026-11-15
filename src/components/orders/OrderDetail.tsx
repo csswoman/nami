@@ -265,6 +265,17 @@ export function OrderDetail({ o, money }: { o: OrderView; money?: { currency: Cu
                 <span>{o.shippingLabel}</span>
                 <span className="tabular-nums font-medium text-ink">{formatUsd(o.shippingCents)}</span>
               </div>
+              {o.changes?.length ? (
+                <ul aria-label="Cambios de la tienda" className="flex flex-col gap-1 rounded-md bg-surface-warm p-3 text-caption text-ink">
+                  {o.changes.map((c) => <li key={c}>{c}</li>)}
+                </ul>
+              ) : null}
+              {o.discountCents ? (
+                <div className="flex justify-between text-success">
+                  <span>Cupón {o.couponCode}</span>
+                  <span className="tabular-nums font-medium">−{formatUsd(o.discountCents)}</span>
+                </div>
+              ) : null}
               {o.tipCents > 0 && (
                 <div className="flex justify-between">
                   <span>Propina al repartidor</span>

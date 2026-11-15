@@ -8,8 +8,9 @@ import { EmptyState } from "@/components/shell/EmptyState";
 import { BackIcon, RoundLink } from "@/components/shell/ScreenBar";
 import { ROUTE_POINTS, STORE_SPOTS, TrackingMap, type Rider } from "@/components/tracking/TrackingMap";
 import { useNow, useOrders } from "@/lib/cart/hooks";
-import { useOrderActions } from "@/lib/orders/remote";
-import { STAGE_COUNT, couriersOf, formatClock, stageHeadline, stageLabels } from "@/lib/orders/progress";
+import { CancelOrder } from "@/components/tracking/CancelOrder";
+import { isRemoteId, useOrderActions } from "@/lib/orders/remote";
+import { STAGE_COUNT, couriersOf, formatClock, formatSchedule, stageHeadline, stageLabels } from "@/lib/orders/progress";
 
 const pts = (a: [number, number][]) => a.map((q) => `${q[0].toFixed(1)},${q[1].toFixed(1)}`).join(" ");
 
@@ -43,7 +44,7 @@ export function TrackingView({ id }: { id?: string }) {
   const router = useRouter();
   const now = useNow(250); // fino para que el motorizado avance suave
   const { ready, active, byId } = useOrders(now);
-  const { advance, restart, confirm } = useOrderActions();
+  const { advance, restart, confirm, cancel } = useOrderActions();
 
   if (!ready) return <div className="min-h-dvh" aria-busy="true" />;
   const t = id ? byId(id) : active[0];
@@ -60,6 +61,7 @@ export function TrackingView({ id }: { id?: string }) {
   const { order: o, progress: p } = t;
   const st = p.stage;
   const done = p.finished;
+  const cancelled = o.status === "cancelled";
   // El motorizado solo se mueve en "En camino": avanza según el tiempo entre esa etapa y la llegada.
   const ride = st < 3 ? 0 : st >= 4 ? 1 : Math.min(0.95, Math.max(0.05, (now - p.times[3]) / Math.max(1, p.times[4] - p.times[3])));
   const couriers = couriersOf(o);
@@ -70,7 +72,9 @@ export function TrackingView({ id }: { id?: string }) {
     return { route: pts(route), traveled: pts(path), moto: path[path.length - 1] };
   });
   const labels = stageLabels(o.stops);
-  const [title, text] = done ? ["Pedido entregado", `Lo recibiste a las ${formatClock(p.etaAt)}.`] : stageHeadline(st, o.stops, o.courier);
+  const [title, text] = cancelled
+    ? ["Pedido cancelado", o.cancelReason ? `Motivo: ${o.cancelReason}` : "Este pedido se canceló."]
+    : done ? ["Pedido entregado", `Lo recibiste a las ${formatClock(p.etaAt)}.`] : stageHeadline(st, o.stops, o.courier);
   const first = o.courier.name.split(" ")[0];
   const range = `entre ${formatClock(p.etaAt - 60_000)} y ${formatClock(p.etaAt + 60_000)}`;
 
@@ -96,10 +100,13 @@ export function TrackingView({ id }: { id?: string }) {
         <span className="mx-auto h-1 w-10 rounded-pill bg-border desktop:hidden" aria-hidden="true" />
         <div className="flex flex-col gap-1.5" aria-live="polite">
           <span className="text-caption font-bold text-ink-muted">
-            {done ? `Entregado a las ${formatClock(p.etaAt)}` : p.arrived ? `Llegó a las ${formatClock(p.etaAt)}` : `Llega en ${p.minsLeft} min · ${range}`}
+            {cancelled ? "Cancelado" : done ? `Entregado a las ${formatClock(p.etaAt)}` : p.arrived ? `Llegó a las ${formatClock(p.etaAt)}` : `Llega en ${p.minsLeft} min · ${range}`}
           </span>
           <h1 className="font-display text-[28px] leading-8 font-extrabold desktop:text-[36px] desktop:leading-10">{title}</h1>
           <p className="text-body text-ink-muted">{text}</p>
+          {o.scheduledFor && o.scheduledFor > now && !done ? (
+            <p className="flex items-center gap-2 rounded-md bg-surface-warm px-3 py-2 text-caption font-bold [&_.nm-icon]:size-4"><Icon name="clock" />Pedido programado: empezamos a prepararlo {formatSchedule(o.scheduledFor, now)}.</p>
+          ) : null}
           <div className="mt-2 grid grid-cols-5 gap-1.5" aria-hidden="true">
             {labels.map((_, i) => (
               <span key={i} className={`h-1.5 rounded-pill ${i < st || p.arrived ? "bg-primary" : i === st ? "bg-promo" : "bg-border"}`} />
@@ -149,6 +156,7 @@ export function TrackingView({ id }: { id?: string }) {
           </div>
         </div>
         {p.arrived && !done ? <button type="button" onClick={() => void received()} className="nm-btn nm-btn--primary nm-btn--block">Confirmar que lo recibí</button> : null}
+        {!done && st < 3 && isRemoteId(o.id) ? <CancelOrder onCancel={(reason) => cancel(o.id, reason)} /> : null}
         {done ? <Link href={`/pedidos/${encodeURIComponent(o.id)}`} className="nm-btn nm-btn--primary nm-btn--block">Ver detalle del pedido</Link> : null}
         <OrderSummary order={o} />
         {done ? null : (

@@ -55,7 +55,7 @@ export function CarritoView({ extras }: { extras: Record<string, Extra[]> }) {
             const offer = store.kind === "restaurante" ? (extras[store.slug] ?? []).filter((x) => !g.lines.some((l) => l.productId === x.id)) : [];
             return (
               <section key={store.slug} aria-label={store.name} className="flex flex-col gap-4">
-                <div className="flex items-center gap-3 rounded-lg bg-surface-tile p-3.5">
+                <div className="flex items-center gap-3 rounded-xl border border-border/70 bg-surface-raised p-3.5 shadow-xs">
                   <StoreMark initials={store.initials} color={store.color} slug={store.slug} size={48} />
                   <span className="flex min-w-0 grow flex-col">
                     <span className="text-body-strong font-bold">{store.name}</span>
@@ -69,7 +69,7 @@ export function CarritoView({ extras }: { extras: Record<string, Extra[]> }) {
                     const imgSrc = getLineImage(l, store.slug);
                     return (
                       <li key={l.key} className="flex items-center gap-4 border-b border-border py-4">
-                        <span className="relative grid size-16 shrink-0 place-items-center overflow-hidden rounded-md border border-border/50 bg-surface-tile">
+                        <span className="relative grid size-16 shrink-0 place-items-center overflow-hidden rounded-md border border-border/40 bg-surface-product">
                           {imgSrc ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img src={imgSrc} alt="" className="size-full object-cover" />
@@ -113,7 +113,7 @@ export function CarritoView({ extras }: { extras: Record<string, Extra[]> }) {
               <DeliveryChoice />
             </section>
           ) : null}
-          <div className="flex flex-col gap-1.5 rounded-lg bg-surface-tile p-5 text-body">
+          <div className="flex flex-col gap-1.5 rounded-xl border border-border/70 bg-surface-raised p-5 text-body shadow-xs">
             <div className="flex justify-between"><span>Subtotal</span><span>{formatUsd(subtotal)}</span></div>
             <div className="flex justify-between border-b border-dashed border-border pb-2"><span>{multi ? (delivery === "combined" ? "Envío (un motorizado, " + groups.length + " paradas)" : `Envíos (${groups.length})`) : "Envío"}</span><span>{formatUsd(shippingCents)}</span></div>
             <div className="flex items-baseline justify-between pt-1.5">

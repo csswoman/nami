@@ -1,8 +1,10 @@
 /* eslint-disable @next/next/no-img-element */
 import type { Metadata } from "next";
+import Link from "next/link";
 import { AppShell } from "@/components/shell/AppShell";
 import { ScreenBar } from "@/components/shell/ScreenBar";
 import { Icon } from "@/components/nami";
+import { PORTFOLIO_URL, REPO_URL } from "@/lib/links";
 
 export const metadata: Metadata = {
   title: "Acerca del proyecto · Ñami",
@@ -12,11 +14,52 @@ export const metadata: Metadata = {
 };
 
 const STACK = ["Next.js", "React", "TypeScript", "PostgreSQL", "Drizzle", "Tailwind CSS", "Sistema de diseño Ñami", "Nunito + Figtree"];
-const LINKS = [
-  { title: "Código del proyecto", sub: "[ENLACE A GITHUB]" },
-  { title: "Portafolio de Karla", sub: "[ENLACE]" },
-  { title: "Sistema de diseño de Ñami", sub: "Tokens, componentes y mascota" },
+type Item = { title: string; sub: string; href?: string; external?: boolean };
+const LINKS: Item[] = [
+  { title: "Panel de tienda", sub: "Atiende pedidos, agota productos y cambia horarios. Sin login.", href: "/tienda-admin" },
+  { title: "Pantalla dividida", sub: "Cliente y tienda lado a lado (escritorio)", href: "/demo" },
+  { title: "Mi perfil", sub: "Direcciones guardadas, favoritos, moneda y tema", href: "/perfil" },
+  { title: "Código del proyecto", sub: "Repositorio en GitHub", href: REPO_URL, external: true },
+  { title: "Portafolio de Karla", sub: PORTFOLIO_URL ? "Más proyectos y contacto" : "Próximamente", href: PORTFOLIO_URL ?? undefined, external: true },
+  { title: "Sistema de diseño de Ñami", sub: "Tokens, componentes y mascota", href: "/sistema" },
 ];
+/** Recorridos guiados: cada uno se prueba en un par de minutos y muestra una parte distinta del proyecto. */
+const TOURS: { title: string; steps: string[]; href: string; cta: string }[] = [
+  {
+    title: "Pide y sigue tu pedido",
+    steps: ["Elige un restaurante y agrega algo al carrito.", "En el checkout elige dirección, franja y cupón (prueba NAMI10).", "Mira el seguimiento: el repartidor se mueve por la ruta guardada."],
+    href: "/listado", cta: "Ver restaurantes",
+  },
+  {
+    title: "Atiende el pedido como tienda",
+    steps: ["Abre la pantalla dividida: cliente a la izquierda, tienda a la derecha.", "Haz un pedido y acéptalo desde el panel.", "Avanza los estados y mira cómo cambia el seguimiento del cliente."],
+    href: "/demo", cta: "Abrir pantalla dividida",
+  },
+  {
+    title: "Busca con errores de tipeo",
+    steps: ["Escribe «teqeños» (sin la u).", "La búsqueda sigue encontrando «tequeños» (pg_trgm).", "Prueba los filtros: abierto ahora, envío gratis, hasta 30 min y precio."],
+    href: "/busqueda?q=teqe%C3%B1os", cta: "Probar la búsqueda",
+  },
+  {
+    title: "Cambia de zona",
+    steps: ["Mueve el pin del mapa o elige Caricuao.", "Mira qué tiendas llegan y cuánto cuesta el envío.", "Marca «Guardar esta dirección» y úsala luego desde tu perfil."],
+    href: "/direccion", cta: "Elegir dirección",
+  },
+];
+function Row({ l }: { l: Item }) {
+  const body = (
+    <>
+      <span className="flex grow flex-col"><b className="text-body-strong">{l.title}</b><span className="text-caption text-ink-muted">{l.sub}</span></span>
+      <Icon name="chevronRight" className="size-5 text-ink-muted" />
+    </>
+  );
+  if (!l.href) return <div className="flex items-center gap-3 py-3.5">{body}</div>;
+  return l.external ? (
+    <a href={l.href} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 py-3.5">{body}</a>
+  ) : (
+    <Link href={l.href} className="flex items-center gap-3 py-3.5">{body}</Link>
+  );
+}
 
 export default function AcercaPage() {
   return (
@@ -32,6 +75,18 @@ export default function AcercaPage() {
           <img src="/brand/guacamaya-moto.png" alt="" className="absolute -right-4 bottom-0 h-[85%] w-auto desktop:right-24 desktop:h-[100%]" />
         </section>
 
+        <section aria-labelledby="dos-minutos" className="flex flex-col gap-4">
+          <h2 id="dos-minutos" className="font-display text-title-lg desktop:text-[32px]">Prueba esto en 2 minutos</h2>
+          <div className="grid gap-4 desktop:grid-cols-2">
+            {TOURS.map((t, i) => (
+              <article key={t.title} className="flex flex-col gap-3 rounded-xl border border-border p-5">
+                <h3 className="font-display text-title-md"><span className="text-primary-text">{i + 1}.</span> {t.title}</h3>
+                <ol className="flex list-decimal flex-col gap-1 pl-5 text-body text-ink-muted">{t.steps.map((st) => <li key={st}>{st}</li>)}</ol>
+                <Link href={t.href} className="nm-btn nm-btn--secondary nm-btn--sm mt-auto self-start">{t.cta}</Link>
+              </article>
+            ))}
+          </div>
+        </section>
         <div className="grid grid-cols-1 gap-8 desktop:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)] desktop:gap-24">
           <div className="flex flex-col gap-8">
             <section className="flex flex-col gap-3">
@@ -62,12 +117,7 @@ export default function AcercaPage() {
             <section className="flex flex-col gap-1">
               <h2 className="pb-2 font-display text-title-lg desktop:text-[32px]">Enlaces</h2>
               <ul>
-                {LINKS.map((l) => (
-                  <li key={l.title} className="flex items-center gap-3 border-b border-border py-3.5">
-                    <span className="flex grow flex-col"><b className="text-body-strong">{l.title}</b><span className="text-caption text-ink-muted">{l.sub}</span></span>
-                    <Icon name="chevronRight" className="size-5 text-ink-muted" />
-                  </li>
-                ))}
+                {LINKS.map((l) => <li key={l.title} className="border-b border-border"><Row l={l} /></li>)}
               </ul>
             </section>
           </div>

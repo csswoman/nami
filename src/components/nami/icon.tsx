@@ -27,6 +27,7 @@ const PATHS = {
   starOutline: ["M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9L12 3Z"],
   close: ["M18 6L6 18", "M6 6l12 12"],
   trash: ["M3 6h18", "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6", "M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"],
+  menu: ["M4 6h16", "M4 12h16", "M4 18h16"],
 } satisfies Record<string, IconDef>;
 
 const FOOD_PATHS = {

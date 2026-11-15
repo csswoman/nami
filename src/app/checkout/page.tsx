@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { AppShell } from "@/components/shell/AppShell";
 import { CheckoutView } from "@/components/shell/CheckoutView";
-import { getCartExtras } from "@/server/catalog";
+import { getCartExtras, getCouponOffers } from "@/server/catalog";
 import { currentRate } from "@/server/orders";
 export const metadata = { title: "Confirmar pedido · Ñami" };
 export default function CheckoutPage() {
@@ -14,5 +14,6 @@ export default function CheckoutPage() {
   );
 }
 async function Content() {
-  return <CheckoutView extras={await getCartExtras()} rate={await currentRate()} />;
+  const [extras, rate, offers] = await Promise.all([getCartExtras(), currentRate(), getCouponOffers()]);
+  return <CheckoutView extras={extras} rate={rate} offers={offers} />;
 }

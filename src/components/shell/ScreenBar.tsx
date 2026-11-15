@@ -5,7 +5,7 @@ import { Icon } from "@/components/nami";
 /** Botón redondo de la barra móvil (atrás, buscar…). */
 export function RoundLink({ href, label, children, onTile = false }: { href: string; label: string; children: ReactNode; onTile?: boolean }) {
   return (
-    <Link href={href} aria-label={label} className={`grid size-11 place-items-center rounded-pill text-ink ${onTile ? "bg-surface-raised shadow-card" : "bg-surface-tile"} [&_.nm-icon]:size-5`}>
+    <Link href={href} aria-label={label} className={`grid size-11 place-items-center rounded-pill text-ink ${onTile ? "bg-surface-raised shadow-card" : "border border-border/70 bg-surface-raised shadow-xs"} [&_.nm-icon]:size-5`}>
       {children}
     </Link>
   );

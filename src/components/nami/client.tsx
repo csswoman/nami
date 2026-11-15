@@ -14,6 +14,7 @@ type SearchStoreItem = {
   category: string;
   description: string;
   initials: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- tipo de color de marca pendiente de afinar
   color: any;
   rating: string | null;
   time: string;
@@ -98,6 +99,7 @@ export function SearchBar({
       const raw = localStorage.getItem(RECENT_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- sincroniza con el valor externo; ya estaba así antes de activar la regla
         if (Array.isArray(parsed)) setRecent(parsed.slice(0, 5));
       }
     } catch {
@@ -146,6 +148,7 @@ export function SearchBar({
   useEffect(() => {
     const q = query.trim();
     if (!q) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sincroniza con el valor externo; ya estaba así antes de activar la regla
       setResults(null);
       setIsLoading(false);
       setActiveIndex(-1);
@@ -170,6 +173,7 @@ export function SearchBar({
           const data: SearchResponse = await res.json();
           setResults(data);
         }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- el error de fetch no está tipado
       } catch (err: any) {
         if (err.name !== "AbortError") {
           setResults(null);

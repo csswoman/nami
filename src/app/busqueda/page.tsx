@@ -6,10 +6,12 @@ import { AppShell } from "@/components/shell/AppShell";
 import { BackIcon, RoundLink } from "@/components/shell/ScreenBar";
 import { StoreMark } from "@/components/shell/StoreMark";
 import { caracasMinutes, hoursText, isOpenAt, opensText, soldOutLabel, type SearchResults, type StoreSummary } from "@/lib/catalog";
+import { ListingFilterChips } from "@/components/shell/ListingFilterChips";
+import { applyListing, filterParams, parseFilters, type ListingFilters } from "@/lib/listing";
 import { RECENT_SEARCHES, SUGGESTIONS } from "@/lib/demo/busqueda";
 import { formatMoney, type Currency } from "@/lib/money";
 import { searchCatalog } from "@/server/catalog";
-import { getMoneyPrefs } from "@/server/prefs";
+import { getDeliveryContext, getMoneyPrefs } from "@/server/prefs";
 
 type SearchProduct = SearchResults["products"][number];
 
@@ -26,7 +28,11 @@ export default function BusquedaPage({ searchParams }: PageProps<"/busqueda">) {
 const chip = "flex min-h-11 items-center rounded-pill border border-border px-4 text-button text-ink";
 const storeHref = (s: { slug: string; kind: StoreSummary["kind"] }) => (s.kind === "mercado" ? `/mercado/${s.slug}` : `/tienda/${s.slug}`);
 const productHref = (p: SearchProduct) => (p.store.kind === "mercado" ? storeHref(p.store) : `/tienda/${p.store.slug}/${p.id}`);
-const href = (q: string) => `/busqueda?q=${encodeURIComponent(q)}`;
+const href = (q: string, f?: ListingFilters, tab?: string) => {
+  const p = new URLSearchParams({ q });
+  for (const [k, v] of Object.entries({ ...(f ? filterParams(f) : {}), tab })) if (v) p.set(k, v);
+  return `/busqueda?${p.toString()}`;
+};
 
 function StoreRow({ s, minutes }: { s: StoreSummary; minutes: number }) {
   const open = isOpenAt(s, minutes);
@@ -70,9 +76,14 @@ async function Content({ searchParams }: { searchParams: PageProps<"/busqueda">[
   const sp = await searchParams;
   const q = (typeof sp.q === "string" ? sp.q : "").slice(0, 60);
   const tab = sp.tab === "productos" ? "productos" : "tiendas";
-  const [{ stores, products }, money] = await Promise.all([searchCatalog(q), getMoneyPrefs()]);
+  const filters = parseFilters((k) => (typeof sp[k] === "string" ? (sp[k] as string) : undefined));
+  const delivery = await getDeliveryContext();
+  const [found, money] = await Promise.all([searchCatalog(q, undefined, delivery), getMoneyPrefs()]);
+  const { products } = found;
   const minutes = caracasMinutes();
-  const none = q.trim() !== "" && stores.length === 0 && products.length === 0;
+  const stores = applyListing(found.stores.filter((s) => s.delivery?.covered !== false), filters, minutes);
+  const filtered = filters.open || filters.free || filters.fast || filters.price !== null;
+  const none = q.trim() !== "" && stores.length === 0 && products.length === 0 && !filtered;
 
   const form = (
     <form action="/busqueda" role="search" className="nm-search grow">
@@ -112,9 +123,13 @@ async function Content({ searchParams }: { searchParams: PageProps<"/busqueda">[
           <p className="py-6 text-body text-ink-muted">Escribe el nombre de una tienda o de un plato.</p>
         ) : (
           <>
+            <div className="flex flex-col gap-1.5">
+              <ListingFilterChips row filters={filters} to={(patch) => href(q, { ...filters, ...patch }, tab)} />
+              <p className="text-caption text-ink-muted">Los filtros y el orden aplican a las tiendas.</p>
+            </div>
             <div role="tablist" aria-label="Resultados" className="flex gap-8 border-b border-border desktop:hidden">
               {([["tiendas", `Tiendas (${stores.length})`], ["productos", `Productos (${products.length})`]] as const).map(([id, label]) => (
-                <Link key={id} role="tab" aria-selected={tab === id} replace scroll={false} href={`/busqueda?q=${encodeURIComponent(q)}&tab=${id}`} className={`-mb-px min-h-11 border-b-2 text-body-strong ${tab === id ? "border-primary font-bold" : "border-transparent font-medium text-ink-muted"}`}>{label}</Link>
+                <Link key={id} role="tab" aria-selected={tab === id} replace scroll={false} href={href(q, filters, id)} className={`-mb-px min-h-11 border-b-2 text-body-strong ${tab === id ? "border-primary font-bold" : "border-transparent font-medium text-ink-muted"}`}>{label}</Link>
               ))}
             </div>
             <div className="grid grid-cols-1 gap-x-10 desktop:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">

@@ -12,6 +12,7 @@ export type PromoGroup = { label: string; initials: string; color?: string; logo
 export function PromoTabs({ groups, money }: { groups: PromoGroup[]; money?: { currency: Currency; rate: number } }) {
   const [i, setI] = useState(0);
   const g = groups[i];
+  if (!g) return <p className="rounded-lg bg-surface-tile p-6 text-center text-body text-ink-muted">Ningún mercado con promociones llega hasta tu dirección.</p>;
   return (
     <>
       <Tabs className="scroll-x" items={groups.map(({ label, initials, color, logo }) => ({ label, initials, color, logo }))} onChange={setI} />

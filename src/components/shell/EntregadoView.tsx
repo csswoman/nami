@@ -1,15 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
+import { submitReviewAction } from "@/app/entregado/actions";
 import { CloseIcon } from "@/components/shell/glyphs";
 import { useNow, useOrders } from "@/lib/cart/hooks";
 import { orderStoreName, useCartStore } from "@/lib/cart/store";
 import { formatClock } from "@/lib/orders/progress";
+import { isRemoteId } from "@/lib/orders/remote";
+import { REVIEW_TAGS } from "@/lib/reviews";
 
 const LABELS = ["Toca una estrella", "No me gustó", "Podría mejorar", "Estuvo bien", "Muy buena", "¡Espectacular!"];
-const TAGS = ["Llegó rápido", "Muy amable", "Bien empacado", "Llegó caliente"];
+const TAGS = REVIEW_TAGS;
 
 /** Confeti de la ilustración: posiciones del diseño (viewBox 390×340). */
 function Confetti() {
@@ -32,8 +35,10 @@ function Confetti() {
 type Props = { id?: string; storeName: string; deliveredAt: string; earlyMin: number; courier: string };
 
 /** Pedido entregado: calificación local (estrellas, etiquetas y comentario); el envío real lo conecta la lógica. */
-export function EntregadoView({ id, storeName: demoStore, deliveredAt: demoAt, earlyMin: demoEarly, courier: demoCourier }: Props) {
+export function EntregadoView({ id: idProp, storeName: demoStore, deliveredAt: demoAt, earlyMin: demoEarly, courier: demoCourier }: Props) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const id = idProp ?? (searchParams.get("id") ?? undefined);
   const add = useCartStore((st) => st.add);
   const { ready, byId, past } = useOrders(useNow(60_000));
   const order = ready ? ((id ? byId(id)?.order : past.find((t) => t.order.status === "delivered")?.order) ?? null) : null;
@@ -50,6 +55,19 @@ export function EntregadoView({ id, storeName: demoStore, deliveredAt: demoAt, e
   const [food, setFood] = useState(5);
   const [tags, setTags] = useState<number[]>([0, 2]);
   const [sent, setSent] = useState(false);
+  const [comment, setComment] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  /** Pedidos del servidor: se guarda la reseña (cuenta para la calificación de la tienda). Los locales solo agradecen. */
+  async function send() {
+    setError(null);
+    if (!order || !isRemoteId(order.id)) return setSent(true);
+    setBusy(true);
+    const r = await submitReviewAction(order.id, { rating: food, tags: tags.map((i) => TAGS[i]), comment: comment.trim() || undefined });
+    setBusy(false);
+    if (r.ok) setSent(true);
+    else setError(r.message);
+  }
 
   const toggle = (i: number) => setTags((t) => (t.includes(i) ? t.filter((x) => x !== i) : [...t, i]));
   const short = storeName.split(" ").slice(-2).join(" ");
@@ -97,12 +115,13 @@ export function EntregadoView({ id, storeName: demoStore, deliveredAt: demoAt, e
             })}
           </div>
           <label htmlFor="coment" className="mt-1.5 text-body-strong font-semibold">Comentario (opcional)</label>
-          <textarea id="coment" rows={2} placeholder={`Cuéntale a ${short.replace("Arepera ", "")} qué te pareció`} className="resize-none rounded-md border border-border bg-surface px-4 py-3 text-body text-ink" />
+          <textarea id="coment" rows={2} maxLength={300} value={comment} onChange={(e) => setComment(e.target.value)} placeholder={`Cuéntale a ${short.replace("Arepera ", "")} qué te pareció`} className="resize-none rounded-md border border-border bg-surface px-4 py-3 text-body text-ink" />
         </section>
 
         {sent ? <p role="status" className="rounded-md bg-success-tint px-4 py-3 text-center text-caption font-bold">¡Gracias por calificar!</p> : null}
+        {error ? <p role="alert" className="rounded-md bg-surface-warm px-4 py-3 text-center text-caption font-bold text-danger">{error}</p> : null}
         <div className="mt-auto flex flex-col gap-2 desktop:mt-0 desktop:flex-row">
-          <button type="button" onClick={() => setSent(true)} className="nm-btn nm-btn--primary desktop:grow">Enviar calificación</button>
+          <button type="button" onClick={() => void send()} disabled={busy} className="nm-btn nm-btn--primary desktop:grow">{sent ? "Actualizar calificación" : "Enviar calificación"}</button>
           <button type="button" onClick={repeat} className="nm-btn nm-btn--secondary">Repetir pedido</button>
         </div>
       </div>

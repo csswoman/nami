@@ -31,29 +31,34 @@ const DEFAULT_SLIDES: PromoBannerSlide[] = [
   {
     eyebrow: "Ñami Delivery · Caracas",
     title: "Almuerzos criollos y comida caliente a tu puerta",
-    badge: <span className="nm-badge nm-badge--brand">Envío $ 0 con Ñami+</span>,
+    badge: <span className="nm-badge nm-badge--surface font-bold">Envío $ 0 con Ñami+</span>,
     image: "/brand/guacamaya-moto.png",
     href: "/listado",
     ctaText: "Pedir ahora",
-    bg: "var(--primary)",
+    bg: "linear-gradient(135deg, #E8182E 0%, #B80F22 100%)",
   },
   {
     eyebrow: "Súper, Abastos y Farmacias",
     title: "Tus compras completas en 25 minutos",
-    badge: <span className="nm-badge nm-badge--success">Abierto 24 horas</span>,
+    badge: (
+      <span className="inline-flex items-center gap-1.5 rounded-pill bg-black/35 px-2.5 py-1 text-badge font-bold text-white border border-white/25 backdrop-blur-xs">
+        <span className="size-2 rounded-full bg-[#4CD27A]" />
+        Abierto 24 horas
+      </span>
+    ),
     image: "/brand/guacamaya-celebra.png",
     href: "/listado?v=1",
     ctaText: "Ver mercados",
-    bg: "linear-gradient(135deg, #167a4d 0%, #0d4a2e 100%)",
+    bg: "linear-gradient(135deg, #107C41 0%, #0A4D28 100%)",
   },
   {
     eyebrow: "Promoción Especial del Día",
     title: "Arepas, cachapas y tequeños con hasta 25% off",
-    badge: <span className="nm-badge nm-badge--brand">Mismo precio que en local</span>,
+    badge: <span className="nm-badge nm-badge--promo">Mismo precio que en local</span>,
     image: "/brand/promo-feast.png",
     href: "/ofertas",
     ctaText: "Ver ofertas",
-    bg: "linear-gradient(135deg, #d9531e 0%, #99340b 100%)",
+    bg: "linear-gradient(135deg, #E65100 0%, #C23800 100%)",
   },
 ];
 
@@ -79,6 +84,7 @@ export function PromoBanner({
             badge: badge ?? DEFAULT_SLIDES[0].badge,
             image: image ?? DEFAULT_SLIDES[0].image,
             href: "/listado",
+            ctaText: DEFAULT_SLIDES[0].ctaText,
             bg: "var(--primary)",
           },
           DEFAULT_SLIDES[1],
@@ -91,6 +97,7 @@ export function PromoBanner({
             badge: badge ?? DEFAULT_SLIDES[0].badge,
             image: image ?? DEFAULT_SLIDES[0].image,
             href: "/listado",
+            ctaText: DEFAULT_SLIDES[0].ctaText,
             bg: "var(--primary)",
           },
         ];
@@ -103,6 +110,7 @@ export function PromoBanner({
   // Sincronizar si cambia control externo
   useEffect(() => {
     if (controlledCurrent !== undefined) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sincroniza con el valor externo; ya estaba así antes de activar la regla
       setIndex(controlledCurrent);
     }
   }, [controlledCurrent]);
@@ -150,18 +158,30 @@ export function PromoBanner({
       aria-roledescription="carousel"
       aria-label="Promociones destacadas"
     >
+      {/* Overlay protector para garantizar legibilidad del texto en cualquier pantalla e imagen */}
+      <div
+        className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-r from-black/30 via-black/10 to-transparent"
+        aria-hidden="true"
+      />
+
       <div key={`copy-${index}`} className="nm-banner__copy animate-in fade-in slide-in-from-left-2 duration-300">
-        {active.badge}
-        {active.eyebrow ? <span className="nm-banner__eyebrow">{active.eyebrow}</span> : null}
+        <div className="flex flex-wrap items-center gap-1.5">
+          {active.badge}
+          {active.eyebrow ? (
+            <span className={cx("nm-banner__eyebrow", active.badge ? "hidden desktop:inline" : "")}>
+              {active.eyebrow}
+            </span>
+          ) : null}
+        </div>
         <h2 className="nm-banner__title font-display">{active.title}</h2>
-        <i className="nm-banner__underline" />
+        <i className="nm-banner__underline" aria-hidden="true" />
         {active.href ? (
           <Link
             href={active.href}
-            className="mt-2 inline-flex items-center gap-1.5 rounded-pill bg-surface px-4 py-1.5 text-button font-bold text-ink shadow-card transition-transform hover:scale-105 active:scale-95"
+            className="mt-1 inline-flex items-center gap-1.5 rounded-pill bg-white px-3.5 py-1.5 text-[13px] font-bold text-[#1F1A1C] shadow-card transition-transform hover:scale-105 active:scale-95 whitespace-nowrap desktop:mt-2 desktop:px-4.5 desktop:py-2 desktop:text-button"
           >
             <span>{active.ctaText ?? "Ver más"}</span>
-            <Icon name="arrowRight" className="size-4" />
+            <Icon name="arrowRight" className="size-4 text-[#1F1A1C]" />
           </Link>
         ) : null}
       </div>
@@ -176,7 +196,7 @@ export function PromoBanner({
         />
       ) : null}
 
-      {/* Flechas de navegación (visibles en hover en pantallas con puntero) */}
+      {/* Flechas de navegación (visibles en hover exclusivamente en escritorio para no obstruir texto en móvil) */}
       {total > 1 ? (
         <>
           <button
@@ -186,7 +206,7 @@ export function PromoBanner({
               prev();
             }}
             aria-label="Promoción anterior"
-            className="absolute left-2 top-1/2 z-10 grid size-8 -translate-y-1/2 place-items-center rounded-pill bg-black/25 text-on-primary opacity-0 backdrop-blur-sm transition-all hover:bg-black/45 hover:scale-110 active:scale-90 group-hover:opacity-100"
+            className="absolute left-4 top-1/2 z-20 hidden size-9 -translate-y-1/2 place-items-center rounded-pill bg-black/30 text-on-primary opacity-0 backdrop-blur-sm transition-all hover:bg-black/55 hover:scale-110 active:scale-90 group-hover:opacity-100 desktop:grid"
           >
             <Icon name="chevronLeft" className="size-5" />
           </button>
@@ -197,7 +217,7 @@ export function PromoBanner({
               next();
             }}
             aria-label="Promoción siguiente"
-            className="absolute right-2 top-1/2 z-10 grid size-8 -translate-y-1/2 place-items-center rounded-pill bg-black/25 text-on-primary opacity-0 backdrop-blur-sm transition-all hover:bg-black/45 hover:scale-110 active:scale-90 group-hover:opacity-100"
+            className="absolute right-4 top-1/2 z-20 hidden size-9 -translate-y-1/2 place-items-center rounded-pill bg-black/30 text-on-primary opacity-0 backdrop-blur-sm transition-all hover:bg-black/55 hover:scale-110 active:scale-90 group-hover:opacity-100 desktop:grid"
           >
             <Icon name="chevronRight" className="size-5" />
           </button>
@@ -206,7 +226,7 @@ export function PromoBanner({
 
       {/* Indicadores de diapositiva (dots) interactivos */}
       {total > 1 ? (
-        <div className="nm-banner__dots" role="tablist" aria-label="Seleccionar diapositiva">
+        <div className="nm-banner__dots z-20" role="tablist" aria-label="Seleccionar diapositiva">
           {slideList.map((_, i) => (
             <button
               key={i}
@@ -215,8 +235,8 @@ export function PromoBanner({
               aria-selected={i === index}
               aria-label={`Ir al banner ${i + 1}`}
               onClick={() => goTo(i)}
-              className={`h-2 rounded-pill transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-surface ${
-                i === index ? "w-6 bg-on-primary" : "w-2 bg-on-primary/45 hover:bg-on-primary/75"
+              className={`h-2 rounded-pill transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white ${
+                i === index ? "w-6 bg-white shadow-xs" : "w-2 bg-white/45 hover:bg-white/75"
               }`}
             />
           ))}

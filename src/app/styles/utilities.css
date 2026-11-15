@@ -11,15 +11,48 @@
   }
 }
 
-/* Banner principal del Inicio en escritorio: más alto y con título grande. */
+/* Banner principal del Inicio en escritorio: altura fija estable, título calibrado y excelente separación texto/imagen. */
 @media (min-width: 64rem) {
   .nm-banner--hero {
-    height: 100%;
-    min-height: 280px;
+    height: 290px;
+    min-height: 290px;
+    max-height: 290px;
+    padding: var(--space-7) var(--space-8);
+    padding-left: 64px;
+    padding-right: var(--space-8);
+  }
+  .nm-banner--hero .nm-banner__copy {
+    max-width: 56%;
+    gap: var(--space-2);
   }
   .nm-banner--hero .nm-banner__title {
-    font-size: 44px;
-    line-height: 48px;
+    font-size: 26px;
+    line-height: 32px;
+    letter-spacing: -0.015em;
+    margin-top: 2px;
+    margin-bottom: 2px;
+  }
+  .nm-banner--hero .nm-banner__eyebrow {
+    font-size: 13px;
+    line-height: 18px;
+  }
+  .nm-banner--hero .nm-banner__underline {
+    width: 52px;
+    height: 4px;
+    margin-top: 2px;
+    margin-bottom: 6px;
+  }
+  .nm-banner--hero .nm-banner__art {
+    width: 42%;
+    max-width: 42%;
+    height: 100%;
+    right: var(--space-4);
+    bottom: 0;
+  }
+  .nm-banner--hero .nm-banner__dots {
+    left: 64px;
+    transform: none;
+    bottom: var(--space-4);
   }
 }
 

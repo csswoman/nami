@@ -6,6 +6,8 @@ import { Suspense } from "react";
 import { Badge, Icon, SearchBar } from "@/components/nami";
 import { AppShell } from "@/components/shell/AppShell";
 import { BackIcon, RoundLink, SearchLink } from "@/components/shell/ScreenBar";
+import { NotCoveredNotice } from "@/components/shell/NotCoveredNotice";
+import { FavoriteButton } from "@/components/shell/FavoriteButton";
 import { StoreMark } from "@/components/shell/StoreMark";
 import { AddButton } from "@/components/cart/AddButton";
 import { StoreCart } from "@/components/cart/StoreCart";
@@ -13,9 +15,11 @@ import { cartStoreOf } from "@/lib/cart/meta";
 import type { CartStore } from "@/lib/cart/store";
 import { caracasMinutes, hoursText, isOpenAt, opensText, soldOutLabel, type CatalogProduct } from "@/lib/catalog";
 import { DEMO_RATE } from "@/lib/demo/home";
+import { formatDistance } from "@/lib/geo";
 import { formatMoney, formatUsd, formatVes, type Currency } from "@/lib/money";
 import { getStore } from "@/server/catalog";
-import { getMoneyPrefs } from "@/server/prefs";
+import { listReviews } from "@/server/reviews";
+import { getDeliveryContext, getMoneyPrefs } from "@/server/prefs";
 
 export async function generateMetadata({ params }: PageProps<"/tienda/[slug]">): Promise<Metadata> {
   const { slug } = await params;
@@ -46,12 +50,14 @@ async function Content({ params, searchParams }: Pick<PageProps<"/tienda/[slug]"
   const { slug } = await params;
   const sp = await searchParams;
   const money = await getMoneyPrefs();
-  const base = await getStore(slug);
+  const delivery = await getDeliveryContext();
+  const base = await getStore(slug, delivery);
   if (!base || base.kind !== "restaurante") notFound();
   // Abierta = interruptor manual encendido y dentro del horario semanal. Demo: ?estado=cerrada fuerza cerrada.
   const minutes = caracasMinutes();
   const open = sp.estado === "cerrada" ? false : base.isOpen && isOpenAt(base, minutes);
   const store = { ...base, open, menu: base.sections, openUntil: hoursText(base, minutes), opensAt: opensText(base, minutes), rating: base.rating ?? "Nuevo", reviews: base.reviews ?? "0" };
+  const recentReviews = await listReviews(base.id, 4);
   const cartStore = cartStoreOf({ ...store, opensAt: store.opensAt });
   const scheduleText = store.opensAt.replace("Abre mañana a las", "mañana a las").replace("Abre a las", "hoy a las").replace("Abre el", "el");
 
@@ -70,7 +76,7 @@ async function Content({ params, searchParams }: Pick<PageProps<"/tienda/[slug]"
               </Link>
               <span className="grow" />
               <span className="desktop:hidden"><SearchLink /></span>
-              <span className="desktop:hidden"><IconCircle label="Guardar en favoritos" icon="star" /></span>
+              <FavoriteButton target={{ kind: "store", slug: store.slug }} name={store.name} />
             </div>
           </div>
 
@@ -87,7 +93,7 @@ async function Content({ params, searchParams }: Pick<PageProps<"/tienda/[slug]"
                   <span>{store.description}</span>
                   <span className="flex items-center gap-1 font-bold text-ink"><Icon name="star" />{store.rating} <span className="font-medium text-ink-muted">({store.reviews})</span></span>
                   <span className="flex items-center gap-1"><Icon name="clock" />{store.time}</span>
-                  <span className="flex items-center gap-1"><Icon name="moto" />{formatUsd(store.feeCents)} · {formatVes(store.feeCents, DEMO_RATE)}</span>
+                  <span className="flex items-center gap-1"><Icon name="moto" />{formatUsd(store.feeCents)} · {formatVes(store.feeCents, DEMO_RATE)}{store.delivery?.distanceM ? ` · ${formatDistance(store.delivery.distanceM)}` : ""}</span>
                   <span><b className={store.open ? "text-success" : "text-danger"}>{store.open ? "Abierto" : "Cerrado"}</b> · {store.open ? store.openUntil : store.opensAt}</span>
                 </div>
               </div>
@@ -100,7 +106,7 @@ async function Content({ params, searchParams }: Pick<PageProps<"/tienda/[slug]"
             <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-caption text-ink-muted desktop:hidden [&_.nm-icon]:size-4">
               <span className="flex items-center gap-1 font-bold text-ink"><Icon name="star" />{store.rating} <span className="font-medium text-ink-muted">({store.reviews})</span></span>
               <span className="flex items-center gap-1"><Icon name="clock" />{store.time}</span>
-              <span className="flex items-center gap-1"><Icon name="moto" />{formatUsd(store.feeCents)} · {formatVes(store.feeCents, DEMO_RATE)}</span>
+              <span className="flex items-center gap-1"><Icon name="moto" />{formatUsd(store.feeCents)} · {formatVes(store.feeCents, DEMO_RATE)}{store.delivery?.distanceM ? ` · ${formatDistance(store.delivery.distanceM)}` : ""}</span>
             </div>
 
             <div className="mt-3 flex items-center justify-between gap-3 rounded-md bg-surface-tile px-4 py-3 text-body-strong desktop:hidden">
@@ -115,7 +121,8 @@ async function Content({ params, searchParams }: Pick<PageProps<"/tienda/[slug]"
         </div>
 
         <div className="px-4 desktop:px-0">
-
+          <div className="mt-3 empty:hidden"><NotCoveredNotice store={store} zone={delivery.zone} /></div>
+          <p className="mt-3 text-caption text-ink-muted">¿Eres de {store.name}? <Link href={`/tienda-admin/${store.slug}`} className="font-bold text-primary-text underline">Abre el panel de esta tienda</Link> (demo, sin login).</p>
           {!store.open ? (
             <div className="mt-4 flex flex-col gap-3 rounded-lg bg-surface-warm p-4">
               <div className="flex items-start gap-3">
@@ -130,6 +137,20 @@ async function Content({ params, searchParams }: Pick<PageProps<"/tienda/[slug]"
           ) : null}
         </div>
 
+        {recentReviews.length ? (
+          <section aria-label="Reseñas" className="mx-4 mt-6 flex flex-col gap-3 desktop:mx-0">
+            <h2 className="font-display text-title-lg">Lo que dicen los clientes</h2>
+            <ul className="grid gap-3 desktop:grid-cols-2">
+              {recentReviews.map((r, i) => (
+                <li key={i} className="flex flex-col gap-1 rounded-lg border border-border p-4">
+                  <span className="flex items-center gap-2"><span aria-label={`${r.rating} de 5 estrellas`} className="text-body-strong">{"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}</span><span className="text-caption text-ink-muted">{new Date(r.createdAt).toLocaleDateString("es-VE", { day: "numeric", month: "short" })}</span></span>
+                  {r.tags.length ? <span className="text-caption text-ink-muted">{r.tags.join(" · ")}</span> : null}
+                  {r.comment ? <p className="text-body">{r.comment}</p> : null}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
         {/* Menú */}
 
         {/* Menú */}
@@ -165,14 +186,6 @@ async function Content({ params, searchParams }: Pick<PageProps<"/tienda/[slug]"
         <StoreCart variant="bar" store={cartStore} scheduleText={store.open ? undefined : scheduleText} />
       </div>
     </AppShell>
-  );
-}
-
-function IconCircle({ label, icon }: { label: string; icon: "star" }) {
-  return (
-    <button type="button" aria-label={label} className="grid size-11 place-items-center rounded-pill bg-surface-raised text-ink shadow-card [&_.nm-icon]:size-5">
-      <Icon name={icon} />
-    </button>
   );
 }
 

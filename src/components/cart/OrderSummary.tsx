@@ -30,9 +30,15 @@ export function OrderSummary({ order: o }: { order: Order }) {
             ))}
           </div>
         ))}
+        {o.changes?.length ? (
+          <ul aria-label="Cambios de la tienda" className="flex flex-col gap-1 rounded-md bg-surface-warm p-3 text-caption">
+            {o.changes.map((c) => <li key={c}>{c}</li>)}
+          </ul>
+        ) : null}
         <div className="flex flex-col gap-1 border-t border-dashed border-border pt-2 text-caption text-ink-muted">
           <div className="flex justify-between"><span>Subtotal</span><span className="tabular-nums">{formatUsd(o.subtotalCents)}</span></div>
           <div className="flex justify-between"><span>{shipLabel}</span><span className="tabular-nums">{formatUsd(o.shippingCents)}</span></div>
+          {o.discountCents ? <div className="flex justify-between text-success"><span>Cupón {o.couponCode}</span><span className="tabular-nums">−{formatUsd(o.discountCents)}</span></div> : null}
           {o.tipCents > 0 ? <div className="flex justify-between"><span>Propina para el motorizado</span><span className="tabular-nums">{formatUsd(o.tipCents)}</span></div> : null}
         </div>
       </div>

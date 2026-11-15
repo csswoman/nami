@@ -4,6 +4,7 @@ import { AppShell } from "@/components/shell/AppShell";
 import { ProductoView } from "@/components/shell/ProductoView";
 import { cartStoreOf } from "@/lib/cart/meta";
 import { DEMO_RATE } from "@/lib/demo/home";
+import { getDeliveryContext } from "@/server/prefs";
 import { getProduct } from "@/server/catalog";
 
 export const metadata = { title: "Producto · Ñami" };
@@ -18,7 +19,7 @@ export default function ProductoPage({ params }: PageProps<"/tienda/[slug]/[id]"
 
 async function Content({ params }: { params: PageProps<"/tienda/[slug]/[id]">["params"] }) {
   const { slug, id } = await params;
-  const found = await getProduct(slug, id);
+  const found = await getProduct(slug, id, await getDeliveryContext());
   if (!found || found.store.kind !== "restaurante" || found.product.soldOut) notFound();
   const { store, product: item, groups } = found;
 

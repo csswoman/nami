@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { Badge, CategoryTile, CuisineChip, Icon, PromoBanner, RestaurantCard, SectionHeader, StoreLogo } from "@/components/nami";
 import { AppShell } from "@/components/shell/AppShell";
+import { DeliveryBar } from "@/components/shell/DeliveryBar";
 import { StoreMark } from "@/components/shell/StoreMark";
 import { caracasNow, FRANJA_COOKIE, horaToMinutes, resolveFranja } from "@/lib/demo/franja";
 import { PromoTabs, type PromoGroup } from "@/components/cart/PromoTabs";
@@ -13,7 +14,7 @@ import { chipTag } from "@/lib/demo/catalog";
 import { FRANJA_CONTENT, TRUSTED_MARKETS, VERTICALS } from "@/lib/demo/home";
 import { formatUsd } from "@/lib/money";
 import { getPromos, getStores } from "@/server/catalog";
-import { getMoneyPrefs } from "@/server/prefs";
+import { getDeliveryContext, getMoneyPrefs } from "@/server/prefs";
 
 const PROMO_MARKETS = ["nami-market", "abasto-el-saman", "automercado-avila", "bodegon-la-candelaria", "farmacia-san-onofre", "farmacia-los-proceres"];
 /** Cada tarjeta de categoría abre la pestaña del listado con ese índice (?v=). */
@@ -38,12 +39,18 @@ async function HomeContent({ searchParams }: { searchParams: PageProps<"/">["sea
   const franja = pick ?? real.franja;
   const content = FRANJA_CONTENT[franja];
   const minutes = horaToMinutes(content.hora);
-  const [money, restaurants, markets, promos] = await Promise.all([
+  const delivery = await getDeliveryContext();
+  const [money, allRestaurants, allMarkets, promos] = await Promise.all([
     getMoneyPrefs(),
-    getStores({ vertical: 0 }),
-    getStores(),
+    getStores({ vertical: 0, delivery }),
+    getStores({ delivery }),
     Promise.all(PROMO_MARKETS.map((s) => getPromos(s))),
   ]);
+  // Solo lo que llega hasta la dirección elegida.
+  const reaches = (s: { delivery?: { covered: boolean } }) => s.delivery?.covered !== false;
+  const restaurants = allRestaurants.filter(reaches);
+  const markets = allMarkets.filter(reaches);
+  const hidden = allMarkets.length - markets.length;
   const rate = (r: { rating: string | null }) => Number(r.rating?.replace(",", ".") ?? 0);
   const openStores = restaurants.filter((r) => isOpenAt(r, minutes)).sort((a, b) => rate(b) - rate(a)).slice(0, 3);
   const closedStores = restaurants.filter((r) => !isOpenAt(r, minutes)).slice(0, 2);
@@ -54,6 +61,7 @@ async function HomeContent({ searchParams }: { searchParams: PageProps<"/">["sea
   });
   return (
     <div className="page-x flex flex-col gap-8 pt-4 desktop:gap-12 desktop:pt-7">
+      <DeliveryBar zone={delivery.zone} hidden={hidden} />
       {/* Banner de campaña (en escritorio comparte fila con la tarjeta del demo) */}
       <div className="grid gap-6 desktop:grid-cols-[2fr_1fr]">
         <PromoBanner
@@ -63,13 +71,15 @@ async function HomeContent({ searchParams }: { searchParams: PageProps<"/">["sea
           image="/brand/guacamaya-moto.png"
           slides={3}
         />
-        <aside className="hidden flex-col justify-between gap-4 rounded-lg bg-surface-warm p-7 desktop:flex">
-          <div className="flex flex-col gap-2.5">
-            <Badge>Demo de portafolio</Badge>
-            <h2 className="font-display text-[28px] leading-8 font-extrabold">Pide como si estuvieras en Caracas</h2>
-            <p className="text-body text-ink-muted">Las tiendas siguen la hora de Caracas. Si todo está cerrado, cambia de franja con el modo demo.</p>
+        <aside className="hidden flex-col justify-between gap-5 rounded-lg bg-surface-warm p-7 desktop:flex desktop:h-[290px] border border-border/40 shadow-card transition-all duration-300 hover:shadow-hover">
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <Badge tone="promo">Demo de portafolio</Badge>
+            </div>
+            <h2 className="font-display text-[26px] leading-[1.2] font-extrabold text-ink tracking-tight">Pide como si estuvieras en Caracas</h2>
+            <p className="text-body text-ink-muted leading-relaxed">Las tiendas siguen la hora de Caracas. Si todo está cerrado, cambia de franja con el modo demo.</p>
           </div>
-          <Link href="/acerca" className="nm-btn nm-btn--secondary self-start bg-surface">Cómo funciona</Link>
+          <Link href="/acerca" className="nm-btn nm-btn--secondary self-start bg-surface border border-border/80 shadow-xs transition-transform hover:scale-105 active:scale-95">Cómo funciona</Link>
         </aside>
       </div>
 
@@ -91,7 +101,7 @@ async function HomeContent({ searchParams }: { searchParams: PageProps<"/">["sea
       </section>
       <section className="flex flex-col gap-4 desktop:gap-5">
         <SectionHeader title="¿Qué se te antoja?" />
-        <div className="scroll-x -mx-4 flex gap-4 px-4 desktop:mx-0 desktop:gap-5 desktop:px-0">
+        <div className="scroll-x -mx-4 flex gap-4 px-4 py-2 desktop:mx-0 desktop:gap-5 desktop:px-0">
           {content.chips.map((c) => {
             const tag = chipTag(c.label);
             return <Link key={c.label} href={tag ? `/listado?chip=${tag}` : "/listado"} className="shrink-0"><CuisineChip icon={c.icon} label={c.label} /></Link>;

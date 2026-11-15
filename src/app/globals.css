@@ -67,6 +67,8 @@
   --color-primary-tint: var(--primary-tint);
   --color-surface: var(--surface);
   --color-surface-tile: var(--surface-tile);
+  --color-surface-category: var(--surface-category);
+  --color-surface-product: var(--surface-product);
   --color-surface-raised: var(--surface-raised);
   --color-surface-warm: var(--surface-warm);
   --color-border: var(--border);
@@ -74,6 +76,7 @@
   --color-ink-muted: var(--ink-muted);
   --color-promo: var(--promo);
   --color-on-promo: var(--on-promo);
+  --color-brand-tint: var(--brand-tint);
   --color-plus: var(--plus);
   --color-success: var(--success);
   --color-success-tint: var(--success-tint);

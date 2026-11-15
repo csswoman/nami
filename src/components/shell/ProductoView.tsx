@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Icon, type IconName } from "@/components/nami";
+import { FavoriteButton } from "@/components/shell/FavoriteButton";
 import { CheckIcon, CloseIcon } from "@/components/shell/glyphs";
 import type { OptionGroup } from "@/lib/catalog";
 import { useCartStore, type CartStore } from "@/lib/cart/store";
@@ -85,6 +86,7 @@ export function ProductoView({ store, productId, name, desc, icon, image, priceC
         <span className="text-body text-ink-muted">{formatVes(priceCents, rate)}</span>
       </div>
       <span className="hidden text-caption text-ink-muted desktop:block">{storeName} · {storeArea}</span>
+      <span className="self-start pt-1"><FavoriteButton variant="pill" target={{ kind: "product", product: { store: store.slug, id: productId } }} name={name} /></span>
     </div>
   );
 
