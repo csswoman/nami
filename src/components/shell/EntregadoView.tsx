@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { CloseIcon } from "@/components/shell/glyphs";
 import { useCartReady } from "@/lib/cart/hooks";
-import { useCartStore } from "@/lib/cart/store";
+import { orderStoreName, useCartStore } from "@/lib/cart/store";
+import { formatClock } from "@/lib/orders/progress";
 
 const LABELS = ["Toca una estrella", "No me gustó", "Podría mejorar", "Estuvo bien", "Muy buena", "¡Espectacular!"];
 const TAGS = ["Llegó rápido", "Muy amable", "Bien empacado", "Llegó caliente"];
@@ -28,17 +29,23 @@ function Confetti() {
   );
 }
 
-type Props = { storeName: string; deliveredAt: string; earlyMin: number; courier: string };
+type Props = { id?: string; storeName: string; deliveredAt: string; earlyMin: number; courier: string };
 
 /** Pedido entregado: calificación local (estrellas, etiquetas y comentario); el envío real lo conecta la lógica. */
-export function EntregadoView({ storeName: demoStore, deliveredAt, earlyMin, courier }: Props) {
+export function EntregadoView({ id, storeName: demoStore, deliveredAt: demoAt, earlyMin: demoEarly, courier: demoCourier }: Props) {
   const router = useRouter();
-  const order = useCartStore((st) => st.order);
+  const orders = useCartStore((st) => st.orders);
   const add = useCartStore((st) => st.add);
   const ready = useCartReady();
-  const storeName = ready && order ? order.store.name : demoStore;
+  const order = ready ? (orders.find((o) => o.id === id) ?? (id ? null : orders.find((o) => o.status === "delivered") ?? null)) : null;
+  const storeName = order ? orderStoreName(order) : demoStore;
+  const deliveredAt = order?.deliveredAt ? formatClock(order.deliveredAt) : demoAt;
+  // Minutos de diferencia con la hora que prometimos al hacer el pedido.
+  const earlyMin = order?.deliveredAt ? Math.round((order.createdAt + order.plan[order.plan.length - 1] * 60_000 - order.deliveredAt) / 60_000) : demoEarly;
+  const courier = order ? order.courier.name.split(" ")[0] : demoCourier;
+  const market = Boolean(order?.stops.every((s) => s.store.kind === "mercado"));
   const repeat = () => {
-    if (order) for (const l of order.lines) add(order.store, { productId: l.productId, name: l.name, unitCents: l.unitCents, icon: l.icon, note: l.note, qty: l.qty });
+    if (order) for (const st of order.stops) for (const l of st.lines) add(st.store, { productId: l.productId, name: l.name, unitCents: l.unitCents, icon: l.icon, note: l.note, qty: l.qty });
     router.push("/carrito");
   };
   const [food, setFood] = useState(5);
@@ -63,12 +70,12 @@ export function EntregadoView({ storeName: demoStore, deliveredAt, earlyMin, cou
         <div className="flex flex-col items-center gap-1.5 text-center desktop:items-start desktop:text-left">
           <span className="rounded-pill bg-success-tint px-3 py-1 text-badge font-bold text-ink">Entregado a las {deliveredAt}</span>
           <h1 className="mt-1 font-display text-[30px] leading-8.5 font-extrabold desktop:text-[52px] desktop:leading-14">¡Buen provecho!</h1>
-          <p className="text-body text-ink-muted">Tu pedido de {storeName} llegó {earlyMin} minutos antes de lo estimado.</p>
+          <p className="text-body text-ink-muted">Tu pedido de {storeName} {earlyMin > 1 ? `llegó ${earlyMin} minutos antes de lo estimado.` : earlyMin < -1 ? `llegó ${-earlyMin} minutos tarde. Disculpa la espera.` : "llegó a la hora estimada."}</p>
         </div>
 
         <section className="flex flex-col items-center gap-2 rounded-lg bg-surface-tile p-4.5 desktop:p-6">
-          <h2 className="text-body-strong font-bold">¿Qué tal la comida?</h2>
-          <div role="radiogroup" aria-label="Calificación de la comida" className="flex gap-1">
+          <h2 className="text-body-strong font-bold">{market ? "¿Qué tal tu compra?" : "¿Qué tal la comida?"}</h2>
+          <div role="radiogroup" aria-label={market ? "Calificación de la compra" : "Calificación de la comida"} className="flex gap-1">
             {[1, 2, 3, 4, 5].map((n) => (
               <button key={n} type="button" role="radio" aria-checked={n === food} aria-label={`${n} ${n === 1 ? "estrella" : "estrellas"}`} onClick={() => setFood(n)} className="grid size-12 place-items-center">
                 <svg viewBox="0 0 24 24" className={`size-9 stroke-2 ${n <= food ? "fill-promo stroke-ink" : "fill-none stroke-border"}`} strokeLinejoin="round" aria-hidden="true">
