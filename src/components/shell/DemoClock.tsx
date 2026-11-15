@@ -37,7 +37,7 @@ export function DemoClock({ franja, hora }: Props) {
             </Link>
           );
         })}
-        <Link href="/" className="flex min-h-10 shrink-0 items-center px-3 text-button text-primary-text">
+        <Link href="/?franja=real" className="flex min-h-10 shrink-0 items-center px-3 text-button text-primary-text">
           Volver a la hora real
         </Link>
       </div>

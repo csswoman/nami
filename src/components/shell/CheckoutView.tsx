@@ -7,12 +7,15 @@ import { Icon, type IconName } from "@/components/nami";
 import { EmptyState } from "@/components/shell/EmptyState";
 import { ScreenBar } from "@/components/shell/ScreenBar";
 import { Stepper } from "@/components/shell/Stepper";
+import { DeliveryChoice } from "@/components/cart/CartPanel";
 import { MinNotice } from "@/components/cart/MinNotice";
 import { StoreMark } from "@/components/shell/StoreMark";
 import { useCart } from "@/lib/cart/hooks";
 import { storeHref } from "@/lib/cart/meta";
-import { minOrderShortfall, useCartStore, type PayMethod } from "@/lib/cart/store";
+import { minOrderShortfall, sumLines, useCartStore, type PayMethod } from "@/lib/cart/store";
 import { formatUsd, formatVes } from "@/lib/money";
+import { formatWhen } from "@/lib/orders/progress";
+import { scheduledFor } from "@/lib/orders/schedule";
 
 type Extra = { id: string; name: string; priceCents: number; icon: IconName };
 type Extras = Record<string, Extra[]>;
@@ -34,9 +37,10 @@ const pill = (on: boolean, tone: "ink" | "primary") =>
 /** Confirmar pedido. Lee el carrito del invitado; al confirmar guarda el pedido y sigue a pago o seguimiento. */
 export function CheckoutView({ extras, rate }: { extras: Extras; rate: number }) {
   const router = useRouter();
-  const { ready, store, lines, subtotal } = useCart();
+  const { ready, groups, delivery, subtotal, shippingCents } = useCart();
   const address = useCartStore((s) => s.address);
   const setQty = useCartStore((s) => s.setQty);
+  const removeStore = useCartStore((s) => s.removeStore);
   const add = useCartStore((s) => s.add);
   const placeOrder = useCartStore((s) => s.placeOrder);
 
@@ -45,7 +49,7 @@ export function CheckoutView({ extras, rate }: { extras: Extras; rate: number })
   const [cash, setCash] = useState(1);
 
   if (!ready) return <div className="min-h-[60dvh]" aria-busy="true" />;
-  if (!store || lines.length === 0) {
+  if (groups.length === 0) {
     return (
       <>
         <ScreenBar title="Confirmar pedido" back="/carrito" />
@@ -55,16 +59,19 @@ export function CheckoutView({ extras, rate }: { extras: Extras; rate: number })
   }
 
   const tipCents = TIPS[tip];
-  const total = subtotal + store.feeCents + tipCents;
+  const multi = groups.length > 1;
+  const total = subtotal + shippingCents + tipCents;
   const cta = `Hacer pedido · ${formatUsd(total)}`;
   const change = CASH[cash].usd ? `Tu vuelto: ${formatUsd(Math.max(0, CASH[cash].usd - total))}` : "Ten el monto exacto a mano.";
-  const shortfall = minOrderShortfall(store, subtotal);
-  const offer = store.kind === "restaurante" ? (extras[store.slug] ?? []).filter((x) => !lines.some((l) => l.productId === x.id)) : [];
-
+  const blocked = groups.find((g) => minOrderShortfall(g.store, sumLines(g.lines)) > 0);
+  const shortfall = blocked ? minOrderShortfall(blocked.store, sumLines(blocked.lines)) : 0;
+  const names = groups.map((g) => g.store.name).join(" + ");
+  const scheduled = scheduledFor(groups.map((g) => g.store), Date.now());
+  const shipLabel = multi ? (delivery === "combined" ? `Envío (un motorizado, ${groups.length} paradas)` : `Envíos (${groups.length})`) : "Envío";
   function confirm() {
-    if (shortfall > 0) return;
+    if (blocked) return;
     const order = placeOrder({ tipCents, payment: pay });
-    if (order) router.push(pay === "movil" ? "/pago" : "/seguimiento");
+    if (order) router.push(pay === "movil" ? "/pago" : `/seguimiento?id=${encodeURIComponent(order.id)}`);
   }
 
   return (
@@ -74,7 +81,7 @@ export function CheckoutView({ extras, rate }: { extras: Extras; rate: number })
         <nav aria-label="Ruta" className="hidden gap-2 text-caption text-ink-muted desktop:flex">
           <Link href="/" className="font-semibold">Inicio</Link>
           <span aria-hidden="true">/</span>
-          <Link href={storeHref(store)} className="font-semibold">{store.name}</Link>
+          <Link href="/carrito" className="font-semibold">{names}</Link>
           <span aria-hidden="true">/</span>
           <span className="text-ink">Confirmar pedido</span>
         </nav>
@@ -95,6 +102,18 @@ export function CheckoutView({ extras, rate }: { extras: Extras; rate: number })
               </div>
               <span className="flex items-center gap-1.5 text-caption text-ink-muted desktop:hidden [&_.nm-icon]:size-5"><Icon name="clock" />{ETA}</span>
             </section>
+            {scheduled ? (
+              <p className="flex items-start gap-3 rounded-lg bg-surface-warm p-4 text-caption [&_.nm-icon]:size-5 [&_.nm-icon]:shrink-0">
+                <Icon name="clock" />
+                <span><b>Pedido programado.</b> {groups.filter((g) => g.store.open === false).map((g) => g.store.name).join(" y ")} {groups.filter((g) => g.store.open === false).length > 1 ? "están cerradas" : "está cerrada"} ahora; empezamos a prepararlo {formatWhen(scheduled, Date.now()).toLowerCase()}.</span>
+              </p>
+            ) : null}
+            {multi ? (
+              <section className="flex flex-col gap-3">
+                <h2 className="font-display text-title-lg desktop:text-[20px]">Envío de {groups.length} tiendas</h2>
+                <DeliveryChoice />
+              </section>
+            ) : null}
 
             <section className="flex flex-col gap-3">
               <h2 className="font-display text-title-lg desktop:text-[20px]">Método de pago</h2>
@@ -147,10 +166,15 @@ export function CheckoutView({ extras, rate }: { extras: Extras; rate: number })
             {/* Resumen (móvil) */}
             <section aria-label="Resumen" className="flex flex-col gap-2 rounded-lg bg-surface-tile p-5 desktop:hidden">
               <h2 className="font-display text-title-lg">Resumen</h2>
-              {lines.map((l) => (
-                <div key={l.key} className="flex justify-between text-body"><span>{l.qty}× {l.name}</span><span>{formatUsd(l.qty * l.unitCents)}</span></div>
+              {groups.map((g) => (
+                <div key={g.store.slug} className="flex flex-col gap-1">
+                  {multi ? <span className="pt-1 text-caption font-bold">{g.store.name}</span> : null}
+                  {g.lines.map((l) => (
+                    <div key={l.key} className="flex justify-between text-body"><span>{l.qty}× {l.name}</span><span>{formatUsd(l.qty * l.unitCents)}</span></div>
+                  ))}
+                </div>
               ))}
-              <div className="flex justify-between text-body text-ink-muted"><span>Envío</span><span>{formatUsd(store.feeCents)}</span></div>
+              <div className="flex justify-between text-body text-ink-muted"><span>{shipLabel}</span><span>{formatUsd(shippingCents)}</span></div>
               <div className="flex justify-between border-b border-dashed border-border pb-2 text-body text-ink-muted"><span>Propina</span><span>{formatUsd(tipCents)}</span></div>
               <div className="flex items-baseline justify-between pt-1">
                 <b className="text-body-strong">Total</b>
@@ -163,43 +187,52 @@ export function CheckoutView({ extras, rate }: { extras: Extras; rate: number })
 
           {/* Tu carrito (escritorio) */}
           <aside aria-label="Tu carrito" className="sticky top-6 hidden flex-col gap-4 rounded-xl border border-border p-6 shadow-card desktop:flex">
-            <div className="flex items-center gap-3">
-              <StoreMark initials={store.initials} color={store.color} size={44} />
-              <span className="flex grow flex-col"><span className="text-body-strong font-bold">{store.name}</span><span className="text-caption text-ink-muted">Tu carrito</span></span>
-              <Link href={storeHref(store)} className="text-button text-primary-text">Ver menú</Link>
-            </div>
-            {lines.map((l) => (
-              <div key={l.key} className="flex items-center gap-3">
-                <span className="grid size-12 shrink-0 place-items-center rounded-md bg-surface-tile [&_.nm-icon]:size-5"><Icon name={l.icon} /></span>
-                <span className="flex min-w-0 grow flex-col"><span className="text-body-strong font-semibold">{l.name}</span><span className="text-caption font-semibold text-ink-muted">{formatUsd(l.qty * l.unitCents)}</span></span>
-                <Stepper qty={l.qty} name={l.name} onMinus={() => setQty(l.key, l.qty - 1)} onPlus={() => setQty(l.key, l.qty + 1)} />
-              </div>
-            ))}
-            {offer.length ? (
-              <div className="flex flex-wrap gap-2">
-                <span className="w-full text-caption font-semibold text-ink-muted">¿Te provoca algo más?</span>
-                {offer.map((x) => (
-                  <button key={x.id} type="button" aria-label={`Agregar ${x.name}`} onClick={() => add(store, { productId: x.id, name: x.name, unitCents: x.priceCents, icon: x.icon })} className="min-h-9 rounded-pill border border-border px-3 text-caption font-semibold">+ {x.name} · {formatUsd(x.priceCents)}</button>
-                ))}
-              </div>
-            ) : null}
+            {groups.map((g) => {
+              const store = g.store;
+              const offer = store.kind === "restaurante" ? (extras[store.slug] ?? []).filter((x) => !g.lines.some((l) => l.productId === x.id)) : [];
+              return (
+                <div key={store.slug} className="flex flex-col gap-4">
+                  <div className="flex items-center gap-3">
+                    <StoreMark initials={store.initials} color={store.color} size={44} />
+                    <span className="flex grow flex-col"><span className="text-body-strong font-bold">{store.name}</span><span className="text-caption text-ink-muted">{multi ? `Parada ${groups.indexOf(g) + 1}` : "Tu carrito"}</span></span>
+                    <Link href={storeHref(store)} className="text-button text-primary-text">Ver menú</Link>
+                    {multi ? <button type="button" onClick={() => removeStore(store.slug)} aria-label={`Quitar ${store.name}`} className="text-button text-ink-muted">Quitar</button> : null}
+                  </div>
+                  {g.lines.map((l) => (
+                    <div key={l.key} className="flex items-center gap-3">
+                      <span className="grid size-12 shrink-0 place-items-center rounded-md bg-surface-tile [&_.nm-icon]:size-5"><Icon name={l.icon} /></span>
+                      <span className="flex min-w-0 grow flex-col"><span className="text-body-strong font-semibold">{l.name}</span><span className="text-caption font-semibold text-ink-muted">{formatUsd(l.qty * l.unitCents)}</span></span>
+                      <Stepper qty={l.qty} name={l.name} onMinus={() => setQty(store.slug, l.key, l.qty - 1)} onPlus={() => setQty(store.slug, l.key, l.qty + 1)} />
+                    </div>
+                  ))}
+                  {offer.length ? (
+                    <div className="flex flex-wrap gap-2">
+                      <span className="w-full text-caption font-semibold text-ink-muted">¿Te provoca algo más?</span>
+                      {offer.map((x) => (
+                        <button key={x.id} type="button" aria-label={`Agregar ${x.name}`} onClick={() => add(store, { productId: x.id, name: x.name, unitCents: x.priceCents, icon: x.icon })} className="min-h-9 rounded-pill border border-border px-3 text-caption font-semibold">+ {x.name} · {formatUsd(x.priceCents)}</button>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
             <div className="flex flex-col gap-1.5 border-t border-dashed border-border pt-3.5 text-body">
               <div className="flex justify-between"><span>Subtotal</span><span>{formatUsd(subtotal)}</span></div>
-              <div className="flex justify-between text-caption text-ink-muted"><span>Envío</span><span>{formatUsd(store.feeCents)}</span></div>
+              <div className="flex justify-between text-caption text-ink-muted"><span>{shipLabel}</span><span>{formatUsd(shippingCents)}</span></div>
               <div className="flex justify-between text-caption text-ink-muted"><span>Propina</span><span>{formatUsd(tipCents)}</span></div>
               <div className="flex items-baseline justify-between pt-1.5">
                 <b className="text-body-strong">Total</b>
                 <span className="flex flex-col items-end"><b className="text-title-md">{formatUsd(total)}</b><span className="text-caption text-ink-muted">{formatVes(total, rate)}</span></span>
               </div>
             </div>
-            {shortfall > 0 ? <MinNotice shortfall={shortfall} min={store.minOrderCents} href={storeHref(store)} /> : null}
-            <button type="button" onClick={confirm} disabled={shortfall > 0} className="nm-btn nm-btn--primary nm-btn--block">{cta}</button>
+            {blocked ? <MinNotice shortfall={shortfall} min={blocked.store.minOrderCents} href={storeHref(blocked.store)} /> : null}
+            <button type="button" onClick={confirm} disabled={!!blocked} className="nm-btn nm-btn--primary nm-btn--block">{cta}</button>
           </aside>
 
           {/* Barra de acción (móvil) */}
           <div className="fixed inset-x-0 bottom-0 z-20 flex flex-col gap-2 bg-surface p-4 shadow-nav desktop:hidden">
-            {shortfall > 0 ? <MinNotice shortfall={shortfall} min={store.minOrderCents} href={storeHref(store)} /> : null}
-            <button type="button" onClick={confirm} disabled={shortfall > 0} className="nm-btn nm-btn--primary nm-btn--block">{cta}</button>
+            {blocked ? <MinNotice shortfall={shortfall} min={blocked.store.minOrderCents} href={storeHref(blocked.store)} /> : null}
+            <button type="button" onClick={confirm} disabled={!!blocked} className="nm-btn nm-btn--primary nm-btn--block">{cta}</button>
           </div>
         </div>
       </div>

@@ -1,9 +1,9 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Icon } from "@/components/nami";
-import { FRANJAS, isFranja, caracasNow, type Franja } from "@/lib/demo/franja";
+import { FRANJAS, isFranja, caracasNow, FRANJA_COOKIE, type Franja } from "@/lib/demo/franja";
 import { FRANJA_CONTENT } from "@/lib/demo/home";
 
 const FRANJA_HOURS: Record<Franja, string> = {
@@ -14,6 +14,10 @@ const FRANJA_HOURS: Record<Franja, string> = {
   noche: "10:00 p. m. a 6:00 a. m.",
 };
 
+function readCookie(): string | undefined {
+  return document.cookie.split("; ").find((c) => c.startsWith(`${FRANJA_COOKIE}=`))?.split("=")[1];
+}
+const subscribeNoop = () => () => {};
 type NavClockProps = {
   variant?: "topbar" | "header";
 };
@@ -49,11 +53,14 @@ function NavClockContent({ variant = "topbar" }: NavClockProps) {
   const [isOpen, setIsOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
 
-  const raw = searchParams.get("franja") ?? undefined;
-  const isManual = isFranja(raw);
+  const cookieValue = useSyncExternalStore(subscribeNoop, readCookie, () => undefined);
+  const param = searchParams.get("franja");
+  const raw = param !== null ? param : cookieValue;
+  const isManual = isFranja(raw ?? undefined);
   const real = caracasNow();
-  const activeFranja: Franja = isManual ? raw : real.franja;
-  const activeHora = isManual ? FRANJA_CONTENT[raw].hora : real.hora;
+  const manual = isManual ? (raw as Franja) : undefined;
+  const activeFranja: Franja = manual ?? real.franja;
+  const activeHora = manual ? FRANJA_CONTENT[manual].hora : real.hora;
   const activeLabel = FRANJA_CONTENT[activeFranja].label;
 
   // Cerrar al hacer clic afuera o pulsar Escape
@@ -87,7 +94,7 @@ function NavClockContent({ variant = "topbar" }: NavClockProps) {
 
   const resetToReal = () => {
     setIsOpen(false);
-    router.push(pathname === "/" ? "/" : "/", { scroll: false });
+    router.push("/?franja=real", { scroll: false });
   };
 
   return (
@@ -180,7 +187,7 @@ function NavClockContent({ variant = "topbar" }: NavClockProps) {
                           <span
                             className={`text-[10px] font-semibold px-1.5 py-0.2 rounded-pill ${
                               isSelected
-                                ? "bg-white/20 text-white"
+                                ? "bg-on-primary/20 text-on-primary"
                                 : "bg-leaf/15 text-leaf font-bold"
                             }`}
                           >
@@ -190,7 +197,7 @@ function NavClockContent({ variant = "topbar" }: NavClockProps) {
                       </div>
                       <span
                         className={`text-[11px] ${
-                          isSelected ? "text-white/80" : "text-ink-muted"
+                          isSelected ? "text-on-primary/80" : "text-ink-muted"
                         }`}
                       >
                         {FRANJA_HOURS[f]}

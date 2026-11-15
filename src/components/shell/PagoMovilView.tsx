@@ -6,7 +6,7 @@ import { CheckIcon, CopyIcon } from "@/components/shell/glyphs";
 import { EmptyState } from "@/components/shell/EmptyState";
 import { ScreenBar } from "@/components/shell/ScreenBar";
 import { useCartReady } from "@/lib/cart/hooks";
-import { useCartStore } from "@/lib/cart/store";
+import { orderStoreName, useCartStore } from "@/lib/cart/store";
 import { formatUsd, formatVes } from "@/lib/money";
 
 type Props = {
@@ -17,7 +17,7 @@ type Props = {
 
 /** Pago móvil simulado. Estado local solo para copiar, escribir la referencia y mostrar el resultado. */
 export function PagoMovilView({ rate, banks, receiver }: Props) {
-  const order = useCartStore((st) => st.order);
+  const order = useCartStore((st) => st.orders[0] ?? null);
   const ready = useCartReady();
   const [bank, setBank] = useState(banks[0]);
   const [ref, setRef] = useState("");
@@ -33,7 +33,7 @@ export function PagoMovilView({ rate, banks, receiver }: Props) {
       </>
     );
   }
-  const storeName = order.store.name;
+  const storeName = orderStoreName(order);
   const orderCode = `#${order.id}`;
   const lines = order.lines.map((l) => ({ id: l.key, label: `${l.qty}× ${l.name}`, amount: formatUsd(l.qty * l.unitCents) }));
   const extrasLabel = formatUsd(order.shippingCents + order.tipCents);
@@ -73,7 +73,7 @@ export function PagoMovilView({ rate, banks, receiver }: Props) {
           <p className="text-center text-caption text-ink-muted">Es una simulación: no se movió dinero real.</p>
         </div>
         <div className="flex flex-col gap-1 px-4 pb-6 desktop:px-0">
-          <Link href="/seguimiento?estado=1" className="nm-btn nm-btn--primary nm-btn--block">Seguir mi pedido</Link>
+          <Link href={`/seguimiento?id=${encodeURIComponent(order.id)}`} className="nm-btn nm-btn--primary nm-btn--block">Seguir mi pedido</Link>
           <button type="button" onClick={() => { setVerified(false); setRef(""); }} className="min-h-11 text-button text-primary-text">Probar de nuevo</button>
         </div>
       </div>

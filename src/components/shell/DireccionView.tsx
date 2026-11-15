@@ -21,17 +21,17 @@ export function DireccionView({ spots, initial, next }: { spots: readonly Spot[]
   const pick = (s: Spot) => { setSel(s.id); setRef(s.ref); };
 
   const map = (
-    <div className="relative aspect-390/300 w-full overflow-hidden bg-[#F4EEE6] desktop:rounded-3xl">
+    <div className="relative aspect-390/300 w-full overflow-hidden bg-map-ground desktop:rounded-3xl">
       <svg className="block size-full" viewBox="0 0 390 300" role="img" aria-label="Mapa de Caracas con las direcciones de prueba">
-        <path d="M0 0H390V58C340 76 300 44 250 62C200 80 150 50 100 70C60 84 30 62 0 74Z" fill="#CFE3C8" />
-        <path d="M0 0H390V30C350 44 300 20 240 36C190 50 140 24 90 40C50 52 20 32 0 40Z" fill="#B7D6AE" />
-        <text x="176" y="24" fontFamily="Figtree, sans-serif" fontSize="11" fontWeight="700" fill="#2F5A2A" letterSpacing="1.5">EL ÁVILA</text>
-        <path d="M0 196C60 186 120 200 180 190S300 176 390 186" fill="none" stroke="#BFD8EE" strokeWidth="8" strokeLinecap="round" />
-        <text x="16" y="216" fontFamily="Figtree, sans-serif" fontSize="9" fontWeight="600" fill="#6B8CAB">Río Guaire</text>
-        <path d="M-10 150H90L150 160H260L300 142L400 130" fill="none" stroke="#FFFFFF" strokeWidth="14" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M30 140L80 150L150 162L250 160L300 142L350 132" fill="none" stroke="#E8182E" strokeOpacity="0.4" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M80 150L78 200L62 262" fill="none" stroke="#1F1A1C" strokeOpacity="0.25" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
-        <text x="240" y="290" fontFamily="Figtree, sans-serif" fontSize="9" fontWeight="600" fill="#8A7F77">Línea 1 y 2 del Metro (referencia)</text>
+        <path d="M0 0H390V58C340 76 300 44 250 62C200 80 150 50 100 70C60 84 30 62 0 74Z" className="fill-map-park" />
+        <path d="M0 0H390V30C350 44 300 20 240 36C190 50 140 24 90 40C50 52 20 32 0 40Z" className="fill-map-park-deep" />
+        <text x="176" y="24" fontFamily="Figtree, sans-serif" fontSize="11" fontWeight="700" className="fill-map-park-label" letterSpacing="1.5">EL ÁVILA</text>
+        <path d="M0 196C60 186 120 200 180 190S300 176 390 186" fill="none" className="stroke-map-water" strokeWidth="8" strokeLinecap="round" />
+        <text x="16" y="216" fontFamily="Figtree, sans-serif" fontSize="9" fontWeight="600" className="fill-map-water-label">Río Guaire</text>
+        <path d="M-10 150H90L150 160H260L300 142L400 130" fill="none" className="stroke-map-road" strokeWidth="14" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M30 140L80 150L150 162L250 160L300 142L350 132" fill="none" className="stroke-primary" strokeOpacity="0.4" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M80 150L78 200L62 262" fill="none" className="stroke-ink" strokeOpacity="0.25" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+        <text x="240" y="290" fontFamily="Figtree, sans-serif" fontSize="9" fontWeight="600" className="fill-map-label">Línea 1 y 2 del Metro (referencia)</text>
       </svg>
       {spots.map((s) => {
         const on = s.id === sel;
@@ -46,8 +46,8 @@ export function DireccionView({ spots, initial, next }: { spots: readonly Spot[]
             className={`absolute flex min-h-11 items-center gap-1 ${on ? "z-30 scale-115" : "z-20"}`}
           >
             <svg width="30" height="36" viewBox="0 0 30 36" aria-hidden="true">
-              <path d="M15 35c-8-9-13-15-13-21a13 13 0 0 1 26 0c0 6-5 12-13 21Z" className={on ? "fill-primary" : "fill-ink"} stroke="#FFFFFF" strokeWidth="2" />
-              <circle cx="15" cy="14" r="5" fill="#FFFFFF" />
+              <path d="M15 35c-8-9-13-15-13-21a13 13 0 0 1 26 0c0 6-5 12-13 21Z" className={on ? "fill-primary stroke-surface" : "fill-ink stroke-surface"} strokeWidth="2" />
+              <circle cx="15" cy="14" r="5" className="fill-surface" />
             </svg>
             <span className={`rounded-pill px-2 py-0.75 text-badge font-bold whitespace-nowrap ${on ? "bg-primary text-on-primary" : "bg-surface-raised text-ink shadow-card"}`}>{s.short}</span>
           </button>
