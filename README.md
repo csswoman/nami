@@ -2,7 +2,7 @@
 
 App de delivery venezolana (comida, mercado, farmacia y tiendas). Proyecto de portafolio: el pedido, el pago y el seguimiento son simulados, y nada se cobra ni se entrega.
 
-Next.js (App Router) · React · TypeScript · PostgreSQL · Drizzle · Zod · Tailwind CSS · Vitest · Playwright.
+Next.js (App Router) · React · TypeScript · PostgreSQL · Drizzle · Zod · Zustand · MapLibre GL · Tailwind CSS · Vitest · Playwright · GitHub Actions.
 
 ## Capturas
 | Inicio y listado con filtros | Tienda | Búsqueda con errores de tipeo |
@@ -98,6 +98,12 @@ El lado de la tienda, sin login: <http://localhost:3000/tienda-admin>.
 
 Si una tienda tiene su panel abierto (lo consultó hace menos de 30 s), los pedidos suyos esperan sus acciones durante "recibido" y "preparando". Si nadie atiende, avanzan solos por tiempo. Cada parada (`order_stops`) avanza por su cuenta con la máquina de estados de `src/lib/orders/stop-machine.ts`, y `advanceOrderStatus` decide el estado general del pedido.
 
+## Checkout: cupones, franjas, sustituciones y cancelación
+- **Cupones:** `src/lib/pricing/coupons.ts` (funciones puras). Soporta porcentaje, monto fijo, envío gratis y 2x1 por sección, con subtotal mínimo, vencimiento, tienda específica y «solo primer pedido». El servidor valida y calcula el descuento al cotizar y al crear el pedido; el cliente nunca decide cuánto se descuenta.
+- **Programar entrega:** `src/lib/orders/slots.ts` ofrece franjas cada 30 minutos (hoy y mañana, hora de Caracas, mínimo 30 min de antelación) en las que todas las tiendas del pedido están abiertas.
+- **Sustituciones:** al hacer el pedido el cliente elige qué hacer si falta un producto (quitarlo, algo parecido o uno concreto). Ver `src/lib/orders/substitution.ts`.
+- **Cancelar:** el cliente puede cancelar con un motivo antes de que el pedido esté «En camino».
+- **Reseñas:** al recibir el pedido el cliente califica cada tienda y la tienda ve las reseñas en su panel.
 ## Perfil, favoritos y búsqueda
 - **`/perfil`:** direcciones guardadas (con su pin; se usan con un clic), moneda, tema, favoritos, enlace al panel de tienda y «Borrar mis datos de demo» (borra tus pedidos en el servidor y lo guardado en el navegador).
 - **Favoritos:** la estrella en tiendas, mercados y productos. Se guardan en `localStorage` (`nami-profile`), nunca en la BD.
