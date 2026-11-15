@@ -25,12 +25,33 @@ export const RESTAURANTS: Restaurant[] = [
   { slug: "hamburguesas-la-curva", name: "Hamburguesas La Curva", image: "hamburguesa", initials: "LC", color: "primary", rating: "4,5", time: "25–35 min", feeCents: 120, plusFree: true, tags: ["hamburguesa", "patacones", "malta", "papelon", "tequeno"] },
 ];
 
-export const CLOSED_RESTAURANTS = [
-  { name: "Pollos en Brasa El Rey", kind: "Pollo en brasa · Almuerzos", initials: "ER", color: "brand-orange", opens: "Abre a las 11:30 a. m." },
-  { name: "Perros El Gocho", kind: "Perros calientes · Callejera", initials: "EG", color: "ink", opens: "Abre a las 6:00 p. m." },
-  { name: "Pepitos La Castellana", kind: "Pepitos · Callejera", initials: "PC", color: "plus", opens: "Abre a las 6:00 p. m." },
-] as const satisfies readonly { name: string; kind: string; initials: string; color: BrandColor; opens: string }[];
-
+/**
+ * Horario de los restaurantes con horario limitado, en minutos desde la medianoche de Caracas.
+ * `close` puede pasar de 1440 (cierra después de medianoche). Los demás abren todo el día.
+ */
+export const RESTAURANT_HOURS: Record<string, { open: number; close: number; kind: string }> = {
+  "pollos-en-brasa-el-rey": { open: 690, close: 1320, kind: "Pollo en brasa · Almuerzos" },
+  "perros-el-gocho": { open: 1080, close: 1500, kind: "Perros calientes · Callejera" },
+  "pepitos-la-castellana": { open: 1080, close: 1500, kind: "Pepitos · Callejera" },
+};
+function isOpenAt(slug: string, minutes: number): boolean {
+  const h = RESTAURANT_HOURS[slug];
+  if (!h) return true;
+  return (minutes >= h.open && minutes < h.close) || (minutes + 1440 >= h.open && minutes + 1440 < h.close);
+}
+function opensLabel(minutes: number): string {
+  const h24 = Math.floor(minutes / 60) % 24;
+  const m = minutes % 60;
+  return `Abre a las ${((h24 + 11) % 12) + 1}:${String(m).padStart(2, "0")} ${h24 < 12 ? "a. m." : "p. m."}`;
+}
+/** Restaurantes abiertos y cerrados a una hora dada (minutos desde la medianoche). */
+export function restaurantsAt(minutes: number) {
+  const open = RESTAURANTS.filter((r) => isOpenAt(r.slug, minutes));
+  const closed = RESTAURANTS.filter((r) => !isOpenAt(r.slug, minutes)).map((r) => ({
+    name: r.name, kind: RESTAURANT_HOURS[r.slug].kind, initials: r.initials, color: r.color, opens: opensLabel(RESTAURANT_HOURS[r.slug].open % 1440),
+  }));
+  return { open, closed };
+}
 /** Filtros de comida: etiqueta → icono y nombre. Los usan el inicio y el listado. */
 export const CUISINE_CHIPS: { icon: IconName; label: string; tag: string }[] = [
   { icon: "pabellon", label: "Criolla", tag: "criolla" },
