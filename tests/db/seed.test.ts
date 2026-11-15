@@ -4,7 +4,9 @@ import { Pool } from "pg";
 import { afterAll, expect, it } from "vitest";
 import { exchangeRates, products, storeHours, stores } from "@/server/db/schema";
 
-const pool = new Pool({ connectionString: process.env.TEST_DATABASE_URL });
+const url = process.env.TEST_DATABASE_URL ?? process.env.DATABASE_URL;
+if (!url) throw new Error("Falta TEST_DATABASE_URL o DATABASE_URL");
+const pool = new Pool({ connectionString: url });
 const db = drizzle(pool);
 afterAll(() => pool.end());
 
