@@ -21,11 +21,11 @@ export function AppShell({ children, activeNav = 0, mobileHeader = true, bottomN
   return (
     <div className="flex min-h-dvh flex-col bg-surface">
       {mobileHeader ? (
-        <div className="desktop:hidden">
+        <div className="relative z-30 desktop:hidden">
           <AppHeader address={address} placeholder="Arepas, perros, harina de maíz…" unread />
         </div>
       ) : null}
-      <div className="hidden desktop:block">
+      <div className="relative z-30 hidden desktop:block">
         {topBar === "logo" ? (
           <header className="nm-topbar">
             <div className="nm-topbar__inner">
@@ -49,6 +49,8 @@ export function AppShell({ children, activeNav = 0, mobileHeader = true, bottomN
       <footer className="hidden bg-surface-tile desktop:block">
         <div className="page-x flex items-center gap-6 py-6 text-caption text-ink-muted">
           <span className="grow">Ñami · Demo de portafolio · Sin pagos reales</span>
+          <Link href="/tienda-admin" className="font-bold text-ink hover:text-primary-text">Panel de tienda</Link>
+          <Link href="/demo" className="font-bold text-ink hover:text-primary-text">Pantalla dividida</Link>
           <Link href="/acerca" className="font-bold text-ink hover:text-primary-text">Acerca del proyecto</Link>
         </div>
       </footer>
