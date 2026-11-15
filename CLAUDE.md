@@ -42,7 +42,7 @@ No usar Supabase como plataforma, ni Express/NestJS, ni microservicios.
 Fuente de verdad: https://claude.ai/artifact/6Pg9gmtxwDps9UjPYiQJiB (copia local en `design/`).
 
 - `design/marca.md` — reglas de marca: voz, color, tipografía, espacio, iconografía. Léelo antes de crear UI.
-- `design/tokens.json` → generan `app/styles/tokens.css` (variables, claro/oscuro) y el `@theme` de `app/globals.css`. Si cambian los tokens, regenera; no edites esos CSS a mano.
+- `design/tokens.json` → generan `app/styles/tokens.css` (variables, claro/oscuro) y el `@theme` de `app/globals.css`. Si cambian los tokens, regenera `tokens.css` con `npm run tokens` (y añade a mano los nuevos al `@theme inline` de `globals.css`); no edites `tokens.css` a mano.
 - `app/styles/nami-components.css` — estilos `.nm-*` de los componentes del sistema (Button, Badge, AppHeader, TopBar, ProductCard…).
 - Usa utilidades mapeadas a tokens: `bg-primary text-on-primary`, `text-ink`, `text-ink-muted`, `bg-surface-tile`, `text-primary-text`, `rounded-pill`, `rounded-lg`, `shadow-card`, `text-title-lg`, `text-price`, `font-display`. Nunca hex sueltos ni la paleta por defecto de Tailwind (`red-500`, etc.).
 - Tipografía: Nunito (`font-display`) solo en títulos y banners; Figtree para todo lo demás, incluidos precios.

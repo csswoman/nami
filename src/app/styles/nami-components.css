@@ -314,7 +314,7 @@
 }
 .nm-topbar__cart:hover {
   filter: brightness(0.97);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-hover);
 }
 .nm-topbar__cart:active {
   transform: scale(0.97);
@@ -331,12 +331,45 @@
 }
 
 /* Category tile */
-.nm-cat { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: var(--space-3); padding: var(--space-5) var(--space-3) var(--space-4); background: var(--surface-tile); border-radius: var(--radius-lg); border: 0; color: var(--ink); cursor: pointer; text-align: center; }
+.nm-cat {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-3) var(--space-4);
+  background: var(--surface-tile);
+  border-radius: var(--radius-lg);
+  border: 0;
+  color: var(--ink);
+  cursor: pointer;
+  text-align: center;
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease, background-color 0.15s ease;
+}
+.nm-cat:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-hover);
+}
+.nm-cat:active {
+  transform: translateY(0) scale(0.97);
+}
 .nm-cat--lg { min-height: 176px; }
 .nm-cat--sm { min-height: 132px; }
 .nm-cat__art { flex: 1; display: grid; place-items: center; width: 100%; }
 .nm-cat__art img { max-width: 100%; max-height: 104px; object-fit: contain; }
-.nm-cat__glyph { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; color: var(--on-primary); }
+.nm-cat__glyph {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--on-primary);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.nm-cat:hover .nm-cat__glyph {
+  transform: scale(1.08);
+}
 .nm-cat--lg .nm-cat__glyph { width: 84px; height: 84px; }
 .nm-cat__glyph .nm-icon { width: 34px; height: 34px; }
 .nm-cat--lg .nm-cat__glyph .nm-icon { width: 42px; height: 42px; }
@@ -349,8 +382,37 @@
 .nm-cat .nm-badge { position: absolute; top: var(--space-3); left: var(--space-3); }
 
 /* Store logo */
-.nm-store { text-decoration: none; display: inline-flex; flex-direction: column; align-items: center; gap: var(--space-2); width: 96px; }
-.nm-store__tile { position: relative; width: 96px; height: 96px; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--surface); display: grid; place-items: center; overflow: visible; }
+.nm-store {
+  text-decoration: none;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  width: 96px;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.nm-store:hover {
+  transform: translateY(-3px);
+}
+.nm-store:active {
+  transform: translateY(0) scale(0.96);
+}
+.nm-store__tile {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  display: grid;
+  place-items: center;
+  overflow: visible;
+  transition: box-shadow 0.2s ease, border-color 0.15s ease, transform 0.2s ease;
+}
+.nm-store:hover .nm-store__tile {
+  box-shadow: var(--shadow-hover);
+  border-color: rgba(232, 24, 46, 0.3);
+}
 .nm-store__tile--brand { background: var(--primary-tint); border-color: transparent; }
 .nm-store__mark { width: 64px; height: 64px; border-radius: var(--radius-md); display: grid; place-items: center; font: 900 20px/1 var(--font-display); color: var(--on-primary); background: var(--primary); }
 .nm-store__tile img { width: 70%; height: 70%; object-fit: contain; }
@@ -358,11 +420,61 @@
 .nm-store .nm-badge { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); }
 
 /* Product card */
-.nm-product { width: 164px; display: flex; flex-direction: column; gap: var(--space-2); }
-.nm-product__img { position: relative; aspect-ratio: 1; border-radius: var(--radius-md); background: var(--surface-tile); display: grid; place-items: center; overflow: hidden; }
-.nm-product__img img { width: 72%; height: 72%; object-fit: contain; }
+.nm-product {
+  width: 164px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.nm-product__img {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: var(--radius-md);
+  background: var(--surface-tile);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  transition: box-shadow 0.2s ease;
+}
+.nm-product:hover .nm-product__img {
+  box-shadow: var(--shadow-hover);
+}
+.nm-product__img img {
+  width: 72%;
+  height: 72%;
+  object-fit: contain;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.nm-product:hover .nm-product__img img {
+  transform: scale(1.08);
+}
 .nm-product__badges { position: absolute; top: var(--space-2); left: var(--space-2); display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-1); }
-.nm-product__add { position: absolute; right: var(--space-2); bottom: var(--space-2); width: 36px; height: 36px; border-radius: 50%; border: 0; display: grid; place-items: center; background: var(--surface-raised); color: var(--primary-text); box-shadow: var(--shadow-card); cursor: pointer; }
+.nm-product__add {
+  position: absolute;
+  right: var(--space-2);
+  bottom: var(--space-2);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 0;
+  display: grid;
+  place-items: center;
+  background: var(--surface-raised);
+  color: var(--primary-text);
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.15s ease, color 0.15s ease, box-shadow 0.2s ease;
+}
+.nm-product__add:hover {
+  transform: scale(1.12) rotate(90deg);
+  background: var(--primary);
+  color: var(--on-primary);
+  box-shadow: 0 4px 14px rgba(232, 24, 46, 0.35);
+}
+.nm-product__add:active {
+  transform: scale(0.86) rotate(90deg);
+}
 .nm-product__add .nm-icon { width: 20px; height: 20px; stroke-width: 2.5; }
 .nm-product__name { font: 400 15px/20px var(--font-sans); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .nm-product__price { display: flex; align-items: baseline; gap: var(--space-2); font: 700 17px/22px var(--font-sans); }
@@ -371,12 +483,49 @@
 .nm-product__unit { font: 500 13px/18px var(--font-sans); color: var(--ink-muted); }
 
 /* Restaurant card */
-.nm-rest { width: 320px; display: flex; flex-direction: column; gap: var(--space-3); }
-.nm-rest__img { position: relative; aspect-ratio: 2 / 1; border-radius: var(--radius-lg); background: var(--surface-tile); overflow: hidden; }
-.nm-rest__img img { width: 100%; height: 100%; object-fit: cover; }
+.nm-rest {
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  cursor: pointer;
+}
+.nm-rest__img {
+  position: relative;
+  aspect-ratio: 2 / 1;
+  border-radius: var(--radius-lg);
+  background: var(--surface-tile);
+  overflow: hidden;
+}
+.nm-rest__img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.nm-rest:hover .nm-rest__img img {
+  transform: scale(1.05);
+}
 .nm-rest__badges { position: absolute; top: var(--space-3); left: var(--space-3); display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-1); }
 .nm-rest__body { display: flex; gap: var(--space-3); align-items: flex-start; }
-.nm-rest__logo { width: 52px; height: 52px; flex: none; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--surface); display: grid; place-items: center; font: 900 16px/1 var(--font-display); color: var(--primary-text); overflow: hidden; }
+.nm-rest__logo {
+  width: 52px;
+  height: 52px;
+  flex: none;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  display: grid;
+  place-items: center;
+  font: 900 16px/1 var(--font-display);
+  color: var(--primary-text);
+  overflow: hidden;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+}
+.nm-rest:hover .nm-rest__logo {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+}
 .nm-rest__logo img { width: 100%; height: 100%; object-fit: cover; }
 .nm-rest__info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .nm-rest__top { display: flex; align-items: center; gap: var(--space-2); }
@@ -458,22 +607,92 @@
 .nm-order__actions .nm-btn { flex: 1; }
 
 /* Promo banner */
-.nm-banner { position: relative; display: flex; align-items: center; min-height: 168px; padding: var(--space-5); padding-right: 42%; background: var(--primary); color: var(--on-primary); border-radius: var(--radius-lg); overflow: hidden; }
+.nm-banner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 168px;
+  padding: var(--space-5);
+  padding-right: 42%;
+  background: var(--primary);
+  color: var(--on-primary);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: box-shadow 0.25s ease, transform 0.2s ease;
+}
+.nm-banner:hover {
+  box-shadow: 0 14px 34px -4px rgba(232, 24, 46, 0.3);
+}
 .nm-banner__copy { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-2); }
 .nm-banner__eyebrow { font: 700 13px/18px var(--font-sans); }
 .nm-banner__title { margin: 0; font: 800 24px/28px var(--font-display); }
-.nm-banner__underline { width: 72px; height: 5px; border-radius: var(--radius-pill); background: var(--brand-yellow); }
-.nm-banner__art { position: absolute; right: -8px; bottom: -6px; height: 112%; width: auto; }
+.nm-banner__underline {
+  width: 72px;
+  height: 5px;
+  border-radius: var(--radius-pill);
+  background: var(--brand-yellow);
+  transform-origin: left;
+  animation: nm-underline-expand 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
+}
+.nm-banner__art {
+  position: absolute;
+  right: -8px;
+  bottom: -6px;
+  height: 112%;
+  width: auto;
+  pointer-events: none;
+  transform-origin: bottom center;
+  animation: nm-guacamaya-arrive 0.75s cubic-bezier(0.16, 1, 0.3, 1) both, nm-guacamaya-idle 3.8s ease-in-out infinite 0.75s;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.nm-banner:hover .nm-banner__art {
+  transform: scale(1.04) rotate(-1.5deg);
+}
 .nm-banner__dots { position: absolute; left: var(--space-5); bottom: var(--space-3); display: flex; gap: 6px; }
 .nm-banner__dots i { width: 8px; height: 8px; border-radius: var(--radius-pill); background: rgba(255,255,255,.5); }
 .nm-banner__dots i.on { width: 20px; background: var(--on-primary); }
 
 /* Cuisine chip */
-.nm-cuisine { display: inline-flex; flex-direction: column; align-items: center; gap: var(--space-2); width: 84px; padding: 0; border: 0; background: none; color: var(--ink); cursor: pointer; }
-.nm-cuisine__disc { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-tile); color: var(--ink); }
-.nm-cuisine__disc .nm-icon { width: 34px; height: 34px; }
+.nm-cuisine {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  width: 84px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.nm-cuisine:hover {
+  transform: translateY(-2px);
+}
+.nm-cuisine__disc {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--surface-tile);
+  color: var(--ink);
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s ease, box-shadow 0.2s ease;
+}
+.nm-cuisine:hover .nm-cuisine__disc {
+  transform: translateY(-3px) scale(1.06);
+  box-shadow: var(--shadow-hover);
+}
+.nm-cuisine:active .nm-cuisine__disc {
+  transform: translateY(0) scale(0.95);
+}
+.nm-cuisine .nm-icon { width: 34px; height: 34px; }
 .nm-cuisine__label { font: 500 13px/18px var(--font-sans); text-align: center; }
-.nm-cuisine.is-on .nm-cuisine__disc { background: var(--primary); color: var(--on-primary); }
+.nm-cuisine.is-on .nm-cuisine__disc {
+  background: var(--primary);
+  color: var(--on-primary);
+  box-shadow: 0 4px 14px rgba(232, 24, 46, 0.3);
+}
 .nm-cuisine.is-on .nm-cuisine__label { font-weight: 700; }
 
 /* Floating Cart Hover Popover */
@@ -507,7 +726,7 @@
   background: var(--surface-raised);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.24), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-popover);
   color: var(--ink);
   display: flex;
   flex-direction: column;
@@ -612,7 +831,7 @@
   background: var(--surface-raised);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.24), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-popover);
   color: var(--ink);
   display: flex;
   flex-direction: column;
@@ -665,5 +884,73 @@
   }
   to {
     transform: translateY(0);
+  }
+}
+
+/* Micro-interaction & Motion Keyframes */
+@keyframes nm-underline-expand {
+  from {
+    transform: scaleX(0);
+    opacity: 0;
+  }
+  to {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
+
+@keyframes nm-guacamaya-arrive {
+  from {
+    opacity: 0;
+    transform: translateX(40px) translateY(10px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) translateY(0) scale(1);
+  }
+}
+
+@keyframes nm-guacamaya-idle {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-5px) rotate(1deg);
+  }
+}
+
+@keyframes nm-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.nm-fade-up {
+  animation: nm-fade-up 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes nm-badge-bump {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+
+/* Reduced motion accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .nm-banner__art {
+    animation: none !important;
   }
 }

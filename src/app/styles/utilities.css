@@ -3,6 +3,8 @@
 /* Carrusel horizontal sin barra de scroll visible; deja asomar la siguiente tarjeta. */
 @utility scroll-x {
   overflow-x: auto;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   &::-webkit-scrollbar {
     display: none;

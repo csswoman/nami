@@ -19,6 +19,7 @@
 - `brand-orange`, `brand-blue`, `brand-green` y `brand-cream` son colores de ilustración y campaña, no de texto.
 - Errores con `danger` (distinto del rojo de marca) y siempre con palabra o icono.
 - Tema oscuro: mismos nombres de token; el header y los botones mantienen el rojo `primary`.
+- Mapas ilustrados (seguimiento, dirección, recorrido): nunca hex sueltos; usan los tokens `map-*` (`map-ground`, `map-block`, `map-road`, `map-park`, `map-park-deep`, `map-park-label`, `map-water`, `map-water-label`, `map-label`) con `fill-*`/`stroke-*`, para que sigan el tema. La ruta y el destino van en `primary`; las etiquetas oscuras del mapa ("Tu casa", Metro) usan `ink` con texto `surface`, así se invierten en oscuro.
 
 ## Tipografía
 
@@ -33,6 +34,7 @@
 - Rejilla de 4px: `space-4` (16px) de margen lateral en móvil, `space-8` en escritorio; `space-8`/`space-12` entre secciones.
 - Todo es redondeado: `radius-pill` para buscador, botones y badges; `radius-lg` para tiles y banners; `radius-md` para logos e imágenes de producto; `radius-xl` solo para las esquinas inferiores del header y hojas inferiores.
 - Móvil plano: sin sombras en tarjetas. Sombras solo en el header fijo (`shadow-header`), el buscador y el hover de tarjetas en escritorio (`shadow-card`).
+- Elevación al pasar el cursor en escritorio: `shadow-hover` (tiles, logos, imágenes de producto); popovers y menús flotantes (carrito, reloj): `shadow-popover`. En oscuro las sombras son más densas y el popover suma un filo claro, porque el negro sobre `surface` casi no se ve.
 - Foco de teclado: anillo sólido de 2px en `focus-ring` con 2px de separación.
 
 ## Móvil y escritorio
