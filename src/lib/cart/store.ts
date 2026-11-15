@@ -5,6 +5,7 @@ import { createJSONStorage, persist } from "zustand/middleware";
 import type { IconName } from "@/components/nami";
 import type { BrandColor } from "@/lib/demo/home";
 import { STAGE_COUNT, planFor, pickCourier, reachedStage, type Courier } from "@/lib/orders/progress";
+import { cartTotals, minOrderShortfall, sumLines, type DeliveryMode } from "@/lib/pricing";
 import { scheduledFor } from "@/lib/orders/schedule";
 
 /**
@@ -38,12 +39,6 @@ export type CartLine = {
 
 export type Address = { name: string; line: string; reference: string };
 export type PayMethod = "movil" | "zelle" | "efectivo";
-/** Cómo llega un carrito con varias tiendas: un motorizado por tienda o uno solo que pasa por todas. */
-export type DeliveryMode = "separate" | "combined";
-
-/** Recargo por cada parada extra cuando un solo motorizado recoge en varias tiendas. */
-export const EXTRA_STOP_CENTS = 60;
-
 export type CartGroup = { store: CartStore; lines: CartLine[] };
 export type OrderStop = { store: CartStore; lines: CartLine[]; subtotalCents: number };
 
@@ -116,30 +111,9 @@ type State = {
 };
 
 export const lineKey = (productId: string, note?: string) => `${productId}|${note ?? ""}`;
-export const sumLines = (lines: Pick<CartLine, "qty" | "unitCents">[]) => lines.reduce((n, l) => n + l.qty * l.unitCents, 0);
-/** Centavos que faltan para el pedido mínimo de la tienda (0 si ya lo alcanza). */
-export const minOrderShortfall = (store: Pick<CartStore, "minOrderCents">, subtotalCents: number) => Math.max(0, store.minOrderCents - subtotalCents);
-export const countLines = (lines: Pick<CartLine, "qty">[]) => lines.reduce((n, l) => n + l.qty, 0);
+// Reexportados para no tocar a quienes ya importan de aquí; el código nuevo debe usar "@/lib/pricing".
+export { EXTRA_STOP_CENTS, cartTotals, countGroups, countLines, minOrderShortfall, shippingOf, subtotalGroups, sumLines, type CartTotals, type DeliveryMode } from "@/lib/pricing";
 export const groupOf = (groups: CartGroup[], slug: string) => groups.find((g) => g.store.slug === slug);
-export const countGroups = (groups: CartGroup[]) => groups.reduce((n, g) => n + countLines(g.lines), 0);
-export const subtotalGroups = (groups: CartGroup[]) => groups.reduce((n, g) => n + sumLines(g.lines), 0);
-
-/** Envío: separado = suma de cada tienda; combinado = el envío más caro + recargo por cada parada extra. */
-export function shippingOf(stores: Pick<CartStore, "feeCents">[], mode: DeliveryMode): number {
-  if (stores.length === 0) return 0;
-  if (mode === "separate" || stores.length === 1) return stores.reduce((n, s) => n + s.feeCents, 0);
-  return Math.max(...stores.map((s) => s.feeCents)) + EXTRA_STOP_CENTS * (stores.length - 1);
-}
-
-export type CartTotals = { itemCount: number; subtotalCents: number; shippingCents: number; tipCents: number; totalCents: number };
-
-/** Única fuente de las sumas del carrito: todas las pantallas (carrito, panel, checkout, pedido) usan esto. */
-export function cartTotals(groups: CartGroup[], mode: DeliveryMode, tipCents = 0): CartTotals {
-  const subtotalCents = subtotalGroups(groups);
-  const shippingCents = shippingOf(groups.map((g) => g.store), mode);
-  return { itemCount: countGroups(groups), subtotalCents, shippingCents, tipCents, totalCents: subtotalCents + shippingCents + tipCents };
-}
-
 /** Nombre(s) de las tiendas de un pedido: "A + B". */
 export const orderStoreName = (o: Pick<Order, "stops">) => o.stops.map((s) => s.store.name).join(" + ");
 
