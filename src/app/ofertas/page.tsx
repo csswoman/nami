@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { Icon, PromoBanner, SectionHeader, type IconName } from "@/components/nami";
@@ -10,7 +11,11 @@ import { StoreMark } from "@/components/shell/StoreMark";
 import type { BrandColor } from "@/lib/demo/home";
 import { formatUsd } from "@/lib/money";
 
-export const metadata = { title: "Ofertas del día · Ñami" };
+export const metadata: Metadata = {
+  title: "Ofertas del día · Ñami",
+  description: "Combos y descuentos del día en restaurantes, supermercados y farmacias de Ñami.",
+  alternates: { canonical: "/ofertas" },
+};
 
 type Combo = { slug: string; name: string; initials: string; color: BrandColor; bg: string; icon: IconName; rating: string; time: string; feeCents: number; deal: string };
 type Deal = { p: MarketProduct; store: CartStore; storeName: string };

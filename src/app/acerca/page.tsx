@@ -1,9 +1,15 @@
 /* eslint-disable @next/next/no-img-element */
+import type { Metadata } from "next";
 import { AppShell } from "@/components/shell/AppShell";
 import { ScreenBar } from "@/components/shell/ScreenBar";
 import { Icon } from "@/components/nami";
 
-export const metadata = { title: "Acerca del proyecto · Ñami" };
+export const metadata: Metadata = {
+  title: "Acerca del proyecto · Ñami",
+  description:
+    "Conoce Ñami: proyecto de portafolio diseñado y desarrollado por Karla con Next.js, React, TypeScript, PostgreSQL, Drizzle y Tailwind CSS.",
+  alternates: { canonical: "/acerca" },
+};
 
 const STACK = ["Next.js", "React", "TypeScript", "PostgreSQL", "Drizzle", "Tailwind CSS", "Sistema de diseño Ñami", "Nunito + Figtree"];
 const LINKS = [

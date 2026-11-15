@@ -1,10 +1,11 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { Badge, CategoryTile, CuisineChip, Icon, PromoBanner, RestaurantCard, SectionHeader, StoreLogo } from "@/components/nami";
 import { AppShell } from "@/components/shell/AppShell";
 import { StoreMark } from "@/components/shell/StoreMark";
-import { caracasNow, isFranja } from "@/lib/demo/franja";
+import { caracasNow, FRANJA_COOKIE, resolveFranja } from "@/lib/demo/franja";
 import { PromoTabs, type PromoGroup } from "@/components/cart/PromoTabs";
 import { cartStoreOf } from "@/lib/cart/meta";
 import { chipTag } from "@/lib/demo/catalog";
@@ -35,7 +36,7 @@ async function HomeContent({ searchParams }: { searchParams: PageProps<"/">["sea
   await connection();
   const { franja: raw } = await searchParams;
   const real = caracasNow();
-  const pick = typeof raw === "string" && isFranja(raw) ? raw : undefined;
+  const pick = resolveFranja(typeof raw === "string" ? raw : undefined, (await cookies()).get(FRANJA_COOKIE)?.value);
   const franja = pick ?? real.franja;
   const content = FRANJA_CONTENT[franja];
 

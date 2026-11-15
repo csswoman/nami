@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -12,7 +13,21 @@ import { DEMO_RATE } from "@/lib/demo/home";
 import { MARKETS, type Market } from "@/lib/demo/mercado";
 import { formatUsd, formatVes } from "@/lib/money";
 
-export const metadata = { title: "Mercado · Ñami" };
+export async function generateMetadata({ params }: PageProps<"/mercado/[slug]">): Promise<Metadata> {
+  const { slug } = await params;
+  const m = MARKETS[slug];
+  if (!m) return { title: "Mercado · Ñami" };
+
+  const title = `${m.name} · Ñami`;
+  const description = `${m.kind} en Ñami · Entrega en ${m.time} · ${m.hours}.`;
+  return {
+    title,
+    description,
+    alternates: { canonical: `/mercado/${slug}` },
+    openGraph: { title, description },
+    twitter: { title, description },
+  };
+}
 
 export default function MercadoPage({ params }: PageProps<"/mercado/[slug]">) {
   return (
@@ -45,29 +60,34 @@ async function Content({ params }: { params: PageProps<"/mercado/[slug]">["param
 
   return (
     <AppShell mobileHeader={false} bottomNav={false}>
-      {/* Banda de marca */}
-      <div className="relative h-28 bg-leaf px-4 pt-4 desktop:h-41.5 desktop:px-8 desktop:pt-8" style={{ background: `var(--${m.color})` }}>
-        <div className="mx-auto flex max-w-316 items-center justify-between">
-          <span className="desktop:hidden"><RoundLink href={m.back.href} label="Volver" onTile><BackIcon /></RoundLink></span>
-          <Link href={m.back.href} className="hidden min-h-11 items-center gap-1 rounded-pill bg-surface-raised pr-4 pl-2.5 text-button text-ink shadow-card desktop:flex [&_.nm-icon]:size-5"><BackIcon />{m.back.label}</Link>
-          <button type="button" aria-label="Guardar en favoritos" className="grid size-11 place-items-center rounded-pill bg-surface-raised text-ink shadow-card desktop:hidden [&_.nm-icon]:size-5">
-            <svg className="nm-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z" /></svg>
-          </button>
-        </div>
-      </div>
-
-      <div className="relative -mt-6 rounded-t-xl bg-surface desktop:mt-0 desktop:rounded-none">
-        <div className="page-x flex flex-col gap-3 pb-4 desktop:flex-row desktop:items-end desktop:gap-6 desktop:pb-6">
-          <span className="-mt-8 w-fit rounded-xl bg-surface-raised p-1.5 shadow-card desktop:-mt-12 desktop:p-2"><StoreMark initials={m.initials} color={m.color} size={72} /></span>
-          <div className="flex min-w-0 grow flex-col gap-1">
-            <div className="flex items-baseline gap-2 desktop:flex-col desktop:gap-1">
-              <h1 className="font-display text-[22px] leading-7 font-extrabold desktop:text-[40px] desktop:leading-11">{m.name}</h1>
-              <span className="text-caption text-ink-muted desktop:hidden">{m.kind} · {m.area}</span>
+      {/* Hero de marca */}
+      <div className="desktop:mx-auto desktop:w-full desktop:max-w-316 desktop:px-8 desktop:pt-6 desktop:pb-8">
+        <div className="desktop:relative desktop:overflow-hidden desktop:rounded-xl desktop:p-6" style={{ background: `var(--${m.color})` }}>
+          <div className="pointer-events-none absolute inset-0 hidden bg-[radial-gradient(circle_at_88%_20%,rgba(255,255,255,0.18),transparent_55%)] desktop:block" aria-hidden="true" />
+          <div className="relative h-28 px-4 pt-4 desktop:h-auto desktop:px-0 desktop:pt-0">
+            <div className="flex items-center justify-between">
+              <span className="desktop:hidden"><RoundLink href={m.back.href} label="Volver" onTile><BackIcon /></RoundLink></span>
+              <Link href={m.back.href} className="hidden min-h-11 items-center gap-1 rounded-pill bg-surface-raised pr-4 pl-2.5 text-button text-ink shadow-card desktop:flex [&_.nm-icon]:size-5"><BackIcon />{m.back.label}</Link>
+              <button type="button" aria-label="Guardar en favoritos" className="grid size-11 place-items-center rounded-pill bg-surface-raised text-ink shadow-card desktop:hidden [&_.nm-icon]:size-5">
+                <svg className="nm-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z" /></svg>
+              </button>
             </div>
-            <div className="hidden text-body text-ink-muted desktop:block">{m.kind} · {m.area}</div>
-            {meta}
           </div>
-          <div className="desktop:w-96">{searchBox}</div>
+
+          <div className="relative -mt-6 rounded-t-xl bg-surface px-4 pb-4 desktop:mt-10 desktop:rounded-lg desktop:bg-surface-raised desktop:p-5 desktop:shadow-card">
+            <div className="flex flex-col gap-3 desktop:flex-row desktop:items-center desktop:gap-5">
+              <span className="-mt-8 w-fit rounded-xl bg-surface-raised p-1.5 shadow-card desktop:mt-0 desktop:bg-transparent desktop:p-0 desktop:shadow-none"><StoreMark initials={m.initials} color={m.color} size={68} /></span>
+              <div className="flex min-w-0 grow flex-col gap-1">
+                <div className="flex items-baseline gap-2 desktop:flex-col desktop:gap-0.5">
+                  <h1 className="font-display text-[22px] leading-7 font-extrabold desktop:text-[32px] desktop:leading-9.5">{m.name}</h1>
+                  <span className="text-caption text-ink-muted desktop:hidden">{m.kind} · {m.area}</span>
+                </div>
+                <div className="hidden text-body text-ink-muted desktop:block">{m.kind} · {m.area}</div>
+                {meta}
+              </div>
+              <div className="desktop:w-96 desktop:shrink-0">{searchBox}</div>
+            </div>
+          </div>
         </div>
       </div>
 

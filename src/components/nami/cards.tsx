@@ -103,8 +103,13 @@ export function RestaurantCard({ name, time, fee, rating, image, logo, initials,
   );
 }
 
-export function OrderCard({ store, date, total, status = "delivered", initials, color, items, className }: {
-  store: string; date: string; total: string; status?: "delivered" | "cancelled"; initials?: string; color?: string; items?: ReactNode[]; className?: string;
+export function OrderCard({ store, date, total, status = "delivered", initials, color, items, summary, actions, className }: {
+  store: string; date: string; total: string; status?: "delivered" | "cancelled"; initials?: string; color?: string; items?: ReactNode[];
+  /** Línea con lo que pediste. */
+  summary?: ReactNode;
+  /** Reemplaza los botones por defecto (Opinar / Repetir). */
+  actions?: ReactNode;
+  className?: string;
 }) {
   const cancelled = status === "cancelled";
   return (
@@ -118,9 +123,14 @@ export function OrderCard({ store, date, total, status = "delivered", initials, 
         <span className="nm-order__total">{total}</span>
       </div>
       {items ? <div className="nm-order__items">{items.map((it, i) => <span key={i} className="nm-order__thumb">{it}</span>)}</div> : null}
+      {summary ? <p className="m-0 line-clamp-2 text-caption text-ink-muted">{summary}</p> : null}
       <div className="nm-order__actions">
-        {cancelled ? null : <Button variant="secondary" icon="starOutline">Opinar</Button>}
-        <Button variant="secondary" icon="repeat">Repetir</Button>
+        {actions ?? (
+          <>
+            {cancelled ? null : <Button variant="secondary" icon="starOutline">Opinar</Button>}
+            <Button variant="secondary" icon="repeat">Repetir</Button>
+          </>
+        )}
       </div>
     </article>
   );

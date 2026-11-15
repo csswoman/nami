@@ -1,21 +1,29 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import { cookies } from "next/headers";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { CuisineChip, Icon, RestaurantCard } from "@/components/nami";
 import { AppShell } from "@/components/shell/AppShell";
 import { ScreenBar, SearchLink } from "@/components/shell/ScreenBar";
 import { StoreMark } from "@/components/shell/StoreMark";
-import { CLOSED_RESTAURANTS, LISTING_CHIPS, RESTAURANTS, STORES } from "@/lib/demo/catalog";
-import type { BrandColor } from "@/lib/demo/home";
+import { LISTING_CHIPS, restaurantsAt, STORES } from "@/lib/demo/catalog";
+import { caracasNow, FRANJA_COOKIE, horaToMinutes, resolveFranja } from "@/lib/demo/franja";
+import { FRANJA_CONTENT, type BrandColor } from "@/lib/demo/home";
 import { MARKETS } from "@/lib/demo/mercado";
 import { BAKERY_SLUGS } from "@/lib/demo/tiendas";
 import { formatUsd } from "@/lib/money";
 
-export const metadata = { title: "Restaurantes · Ñami" };
+export const metadata: Metadata = {
+  title: "Restaurantes y tiendas · Ñami",
+  description: "Explora restaurantes, supermercados, farmacias, bodegones y panaderías en Ñami.",
+  alternates: { canonical: "/listado" },
+};
 
 /** El orden es el de `?v=`: 0 restaurantes, 1 súper, 2 farmacias, 3 bodegones, 4 panaderías, 5 tiendas. */
 const VERTICALS = ["Restaurantes", "Súper", "Farmacia", "Bodegones", "Panaderías", "Tiendas"] as const;
 
-type Query = { v?: string; chip?: string; open?: string; free?: string };
+type Query = { franja?: string; v?: string; chip?: string; open?: string; free?: string };
 
 type Row = { slug: string; name: string; initials: string; color: BrandColor; meta: string; hours: string; href: string };
 
@@ -49,17 +57,23 @@ export default function ListadoPage({ searchParams }: PageProps<"/listado">) {
 }
 
 async function Content({ searchParams }: { searchParams: PageProps<"/listado">["searchParams"] }) {
+  await connection();
   const sp = await searchParams;
   const get = (k: string) => (typeof sp[k] === "string" ? (sp[k] as string) : undefined);
-  const q: Query = { v: get("v"), chip: get("chip"), open: get("open"), free: get("free") };
+  const q: Query = { franja: get("franja"), v: get("v"), chip: get("chip"), open: get("open"), free: get("free") };
   const n = Number(q.v);
   const vi = Number.isInteger(n) && n >= 1 && n < VERTICALS.length ? n : 0;
   const title = VERTICALS[vi];
 
-  const open = RESTAURANTS.filter((r) => (!q.chip || r.tags.includes(q.chip)) && (q.free !== "1" || r.plusFree));
+  const real = caracasNow();
+  const franja = resolveFranja(q.franja, (await cookies()).get(FRANJA_COOKIE)?.value);
+  const label = FRANJA_CONTENT[franja ?? real.franja].label;
+  const hora = franja ? FRANJA_CONTENT[franja].hora : real.hora;
+  const { open: openNow, closed: closedNow } = restaurantsAt(horaToMinutes(hora));
+  const open = openNow.filter((r) => (!q.chip || r.tags.includes(q.chip)) && (q.free !== "1" || r.plusFree));
   const showClosed = vi === 0 && q.open !== "1";
   const rows = vi === 0 ? [] : rowsFor(vi);
-  const count = vi === 0 ? `${RESTAURANTS.length} abiertas · ${CLOSED_RESTAURANTS.length} cerradas` : `${rows.length} abiertas`;
+  const count = vi === 0 ? `${openNow.length} abiertas · ${closedNow.length} cerradas` : `${rows.length} abiertas`;
 
   const filters = [
     { label: "Abiertos ahora", on: q.open === "1", to: href({ ...q, open: q.open === "1" ? undefined : "1" }) },
@@ -87,7 +101,7 @@ async function Content({ searchParams }: { searchParams: PageProps<"/listado">["
           </div>
           <span className="flex items-center gap-1.5 text-caption text-ink-muted desktop:pb-3 desktop:whitespace-nowrap [&_.nm-icon]:size-4">
             <Icon name="clock" />
-            <span><b className="text-ink">Desayuno</b> · 7:40 a. m. en Caracas · {count}</span>
+            <span><b className="text-ink">{label}</b> · {hora} en Caracas · {count}</span>
           </span>
         </div>
 
@@ -162,11 +176,11 @@ async function Content({ searchParams }: { searchParams: PageProps<"/listado">["
               </div>
             )}
 
-            {showClosed ? (
+            {showClosed && closedNow.length > 0 ? (
               <section className="flex flex-col gap-4">
                 <h2 className="font-display text-title-md desktop:text-[20px]">Cerradas ahora</h2>
                 <div className="flex flex-col gap-3 desktop:grid desktop:grid-cols-3 desktop:gap-4">
-                  {CLOSED_RESTAURANTS.map((r) => (
+                  {closedNow.map((r) => (
                     <div key={r.name} className="flex items-center gap-3 rounded-lg border border-border p-3">
                       <StoreMark initials={r.initials} color={r.color} dim />
                       <span className="flex min-w-0 grow flex-col gap-0.5">
