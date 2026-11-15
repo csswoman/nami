@@ -13,7 +13,7 @@ Ya hecho: las tiendas cerradas se pueden abrir desde inicio y listado, y aceptan
 - El panel de tienda no tiene login, como el modo admin local descrito en `CLAUDE.md`.
 - Montos en centavos, tasa de cambio guardada en cada pedido, recálculo de precios en el servidor, polling en vez de websockets.
 
-## Fase 2: Panel de tienda (3-4 días)
+## Fase 2: Panel de tienda (3-4 días) — hecha
 
 Ruta `/tienda-admin/[slug]`, sin login. Un selector indica "estás viendo como Arepera Doña Chela".
 
@@ -33,9 +33,11 @@ Ruta `/tienda-admin/[slug]`, sin login. Un selector indica "estás viendo como A
    - Aviso dentro del panel ("estás viendo como…", cómo volver a la app del cliente y cómo reponer el catálogo).
    - Mismo recorrido en `/acerca` ("Prueba esto en 2 minutos") y en `/demo`.
 
+Estado: hecha. Pendiente de la fase 6: capturas y diagrama en el README.
+
 Listo cuando: un pedido hecho en el cliente aparece en la bandeja, recorre todos los estados desde el panel, y los cambios de stock, precio y horario se reflejan en el cliente. Tests de la máquina de estados en verde.
 
-## Fase 3: Lógica de negocio visible (2-3 días)
+## Fase 3: Lógica de negocio visible (2-3 días)  — hecha
 
 1. **Cupones.** Tabla `coupons` (porcentaje o monto fijo, mínimo, vencimiento, solo una tienda, envío gratis). El servidor los aplica en `createOrder` y el checkout los muestra. Cupones de prueba: `NAMI10`, `ENVIOGRATIS`, `AREPA2X1`. Además: primer pedido gratis y envío gratis desde cierto monto. La tienda los gestiona desde su panel y `/ofertas` muestra cupones aplicables.
 2. **Franjas programadas con hora elegida.** En el checkout, selector de franjas (hoy 6:00 p. m., mañana 10:00 a. m., cada 30 min). Solo ofrece horas dentro del horario de `store_hours` de todas las tiendas del pedido. Se suma a "cuando abra".
@@ -43,7 +45,7 @@ Listo cuando: un pedido hecho en el cliente aparece en la bandeja, recorre todos
 4. **Reseñas.** La calificación de `EntregadoView` se guarda en la tabla `reviews`. Aparece en la página de la tienda con el promedio, y `rating` pasa a calcularse desde las reseñas. La tienda las ve en su panel.
 5. **Sustituciones en mercado.** "Si no hay, cámbialo por…" en cada producto.
 
-## Fase 4: Mapa real y entrega por zona (2 días)
+## Fase 4: Mapa real y entrega por zona (2 días) — hecha
 
 1. **MapLibre GL** con tiles de OpenStreetMap, sin API key.
 2. **Pin en el mapa** para elegir la dirección del cliente (`lat/lng`). Es lo primero que se pide para mostrar tiendas.
@@ -53,7 +55,7 @@ Listo cuando: un pedido hecho en el cliente aparece en la bandeja, recorre todos
 
 Decisión: opción A. El seed precalcula con OSRM la ruta de cada tienda a una lista de zonas de Caracas (Chacao, Altamira, El Cafetal…) y la guarda. El pin del cliente se asigna a la zona más cercana y usa esa ruta guardada. Al pedir no se llama a ningún servicio externo.
 
-## Fase 5: Perfil y pulido de cliente (1-2 días)
+## Fase 5: Perfil y pulido de cliente (1-2 días) — hecha
 
 1. **`/perfil`** (hoy da 404): direcciones guardadas (con pin), moneda, tema, "borrar mis datos de demo" y enlace al panel de tienda.
 2. **Favoritos** de tiendas y productos, guardados en el navegador.
@@ -61,7 +63,7 @@ Decisión: opción A. El seed precalcula con OSRM la ruta de cada tienda a una l
 4. **Búsqueda tolerante** a errores de tipeo con `pg_trgm` ("teqeños" encuentra "tequeños").
 5. **Filtros y orden del listado:** más rápido, mejor calificado, envío gratis, precio, abierto ahora. Usan envío y rating ya reales.
 
-## Fase 6: Presentación (1-2 días)
+## Fase 6: Presentación (1-2 días) — hecha, falta el deploy (lo corre el dueño)
 
 1. **README** con diagrama de arquitectura, decisiones importantes (centavos, tasa guardada por pedido, recálculo en servidor, polling vs websockets) y capturas.
 2. **`/acerca`:** enlaces reales de GitHub y portafolio, y sección "Prueba esto en 2 minutos" con recorridos guiados.

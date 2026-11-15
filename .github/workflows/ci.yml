@@ -1,0 +1,95 @@
+name: CI
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  NEXT_TELEMETRY_DISABLED: "1"
+jobs:
+  quality:
+    name: Lint, tipos y pruebas unitarias
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      # Genera los tipos de rutas (PageProps, RouteContext) que usa el código.
+      - run: npx next typegen
+      - run: npx tsc --noEmit
+      - run: npm test
+  integration:
+    name: Integración contra Postgres
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: nami
+          POSTGRES_PASSWORD: nami
+          POSTGRES_DB: nami_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U nami -d nami_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://nami:nami@localhost:5432/nami_test
+      MIGRATE_DATABASE_URL: postgres://nami:nami@localhost:5432/nami_test
+      SEED_ROUTING: estimate
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx drizzle-kit migrate
+      - run: npx tsx scripts/seed.ts
+      - run: npx vitest run --config vitest.db.config.mts
+  e2e:
+    name: Playwright
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: nami
+          POSTGRES_PASSWORD: nami
+          POSTGRES_DB: nami
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U nami -d nami"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://nami:nami@localhost:5432/nami
+      MIGRATE_DATABASE_URL: postgres://nami:nami@localhost:5432/nami
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx drizzle-kit migrate
+      # Las rutas por calle salen de src/server/db/route-cache.json: no hace falta red.
+      - run: npx tsx scripts/seed.ts
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-results
+          path: test-results/
+          retention-days: 7
