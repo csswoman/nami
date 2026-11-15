@@ -41,6 +41,8 @@ type Trackable = {
   startAt: number;
   stageAt: (number | null)[];
   deliveredAt: number | null;
+  /** Etapa máxima mientras una tienda atiende el pedido desde su panel; ausente o null = avanza solo por tiempo. */
+  hold?: number | null;
 };
 
 const at = (o: Trackable, i: number) => o.startAt + o.plan[i] * 60_000;
@@ -50,7 +52,7 @@ export function reachedStage(o: Trackable, now: number): number {
   if (o.status === "delivered") return STAGE_COUNT - 1;
   let s = 0;
   for (let i = 0; i < STAGE_COUNT; i++) if (o.stageAt[i] != null || at(o, i) <= now) s = i;
-  return s;
+  return o.hold != null ? Math.min(s, o.hold) : s;
 }
 
 /** Después de este tiempo con el pedido en la puerta lo damos por entregado aunque no lo confirmes. */
@@ -75,6 +77,11 @@ export function progressOf(o: Trackable, now: number): Progress {
   const times = o.plan.map((_, i) => o.stageAt[i] ?? at(o, i));
   // Si una etapa llegó antes de lo previsto, las siguientes no pueden quedar antes que ella.
   for (let i = 1; i < times.length; i++) times[i] = Math.max(times[i], times[i - 1]);
+  // Con la tienda al mando, las etapas que faltan empiezan a contar desde ahora, no desde el plan original.
+  if (o.hold != null) {
+    const lag = Math.max(0, now - at(o, o.hold + 1));
+    for (let i = o.hold + 1; i < times.length; i++) if (o.stageAt[i] == null) times[i] += lag;
+  }
   const etaAt = o.deliveredAt ?? times[STAGE_COUNT - 1];
   const arrived = stage === STAGE_COUNT - 1;
   return {
@@ -138,3 +145,11 @@ export function formatWhen(ts: number, now: number): string {
 
 /** Minutos entre dos horas, redondeado y nunca negativo. */
 export const minutesBetween = (a: number, b: number) => Math.max(0, Math.round((b - a) / 60_000));
+/** Cuándo empieza un pedido programado: "hoy a las 6:00 p. m." · "mañana a las 10:00 a. m." · "9 ene., 10:00 a. m.". */
+export function formatSchedule(ts: number, now: number): string {
+  const startOf = (ms: number) => { const x = new Date(ms); return new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime(); };
+  const ahead = Math.round((startOf(ts) - startOf(now)) / 86_400_000);
+  if (ahead === 0) return `hoy a las ${formatClock(ts)}`;
+  if (ahead === 1) return `mañana a las ${formatClock(ts)}`;
+  return `${new Date(ts).toLocaleDateString("es-VE", { day: "numeric", month: "short" })}, ${formatClock(ts)}`;
+}

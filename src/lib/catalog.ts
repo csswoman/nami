@@ -24,9 +24,15 @@ export type StoreSummary = {
   reviews: string | null;
   /** "20–30 min" */
   time: string;
+  /** Tope del tiempo estimado en minutos (null si la tienda no lo informa). */
+  etaMaxMin: number | null;
+  /** Precio promedio de sus productos disponibles, en centavos (para el filtro de precio). */
+  avgPriceCents: number | null;
   feeCents: number;
   minOrderCents: number;
   plusFree: boolean;
+  /** Envío hasta la dirección del cliente (si el servidor la conoce): distancia por calle y si la tienda llega hasta allá. */
+  delivery?: { distanceM: number | null; durationS: number | null; covered: boolean; /** Hasta dónde reparte la tienda (metros por calle). */ maxM: number };
   /** Interruptor manual de la tienda (independiente del horario). */
   isOpen: boolean;
   /** Horario semanal (hora de Caracas). Un día sin turnos está cerrado. */

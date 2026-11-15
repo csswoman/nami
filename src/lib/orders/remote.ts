@@ -1,7 +1,7 @@
 "use client";
 import { useEffect } from "react";
 import { create } from "zustand";
-import { advanceOrderAction, confirmOrderAction, restartOrderAction } from "@/app/seguimiento/actions";
+import { advanceOrderAction, cancelOrderAction, confirmOrderAction, restartOrderAction } from "@/app/seguimiento/actions";
 import { useCartStore, type Order } from "@/lib/cart/store";
 
 /**
@@ -78,6 +78,12 @@ export function useOrderActions() {
   return {
     advance: (id: string) => (isRemoteId(id) ? remote(advanceOrderAction, id) : (local().advanceOrder(id), Promise.resolve(true))),
     restart: (id: string) => (isRemoteId(id) ? remote(restartOrderAction, id) : (local().restartOrder(id), Promise.resolve(true))),
+    /** Cancela con un motivo. Devuelve el error para mostrarlo, o null si salió bien. Solo pedidos del servidor. */
+    cancel: async (id: string, reason: string): Promise<string | null> => {
+      const r = await cancelOrderAction(id, reason);
+      if (r.ok) put(r.order);
+      return r.ok ? null : r.error.message;
+    },
     confirm: (id: string) => (isRemoteId(id) ? remote(confirmOrderAction, id) : (local().confirmDelivered(id), Promise.resolve(true))),
   };
 }

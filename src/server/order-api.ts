@@ -4,7 +4,7 @@ import type { ApiError } from "@/lib/orders/input";
 import { orderInputSchema, type OrderInput } from "@/lib/orders/input";
 import type { Order } from "@/lib/cart/store";
 import { currentGuestToken } from "./guest";
-import { OrderError, createOrder } from "./orders";
+import { OrderError, createOrder, quoteOrder, type OrderQuote } from "./orders";
 
 export type ActionResult = { ok: true; order: Order } | ({ ok: false } & ApiError);
 
@@ -24,5 +24,20 @@ export async function placeFromUnknown(raw: unknown): Promise<{ status: number; 
     if (e instanceof OrderError) return { status: e.status, body: fail(e.code, e.message) };
     console.error("createOrder", e);
     return { status: 500, body: fail("INTERNAL", "No pudimos crear el pedido. Intenta de nuevo.") };
+  }
+}
+export type QuoteResult = { ok: true; quote: OrderQuote } | ({ ok: false } & ApiError);
+/** Cotiza el pedido con su cupón (sin crearlo). Mismas validaciones que `placeFromUnknown`. */
+export async function quoteFromUnknown(raw: unknown): Promise<QuoteResult> {
+  const parsed = orderInputSchema.safeParse(raw);
+  if (!parsed.success) return { ok: false, ...fail("INVALID_INPUT", z.prettifyError(parsed.error)) };
+  const token = await currentGuestToken();
+  if (!token) return { ok: false, ...fail("NO_GUEST_TOKEN", "Falta la cookie de invitado. Abre la página una vez y vuelve a intentar.") };
+  try {
+    return { ok: true, quote: await quoteOrder(parsed.data as OrderInput, token) };
+  } catch (e) {
+    if (e instanceof OrderError) return { ok: false, ...fail(e.code, e.message) };
+    console.error("quoteOrder", e);
+    return { ok: false, ...fail("INTERNAL", "No pudimos revisar el cupón. Intenta de nuevo.") };
   }
 }

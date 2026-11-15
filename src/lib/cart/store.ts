@@ -8,6 +8,7 @@ import { STAGE_COUNT, planFor, pickCourier, reachedStage, type Courier } from "@
 import { cartTotals, minOrderShortfall, sumLines, type DeliveryMode } from "@/lib/pricing";
 import { scheduledFor } from "@/lib/orders/schedule";
 import { lineKey } from "@/lib/cart/line";
+import { DEFAULT_LOCATION } from "@/lib/geo";
 
 /**
  * Estado de cliente del invitado: carrito, dirección elegida y sus pedidos (todo en el navegador).
@@ -43,7 +44,8 @@ export type CartLine = {
   /** Nota escrita por el cliente, sin las opciones. */
   userNote?: string;
 };
-export type Address = { name: string; line: string; reference: string };
+/** `lat`/`lng`: el punto elegido en el mapa; con él el servidor calcula el envío por distancia. */
+export type Address = { name: string; line: string; reference: string; lat?: number; lng?: number };
 export type PayMethod = "movil" | "zelle" | "efectivo";
 export type CartGroup = { store: CartStore; lines: CartLine[] };
 export type OrderStop = { store: CartStore; lines: CartLine[]; subtotalCents: number };
@@ -83,12 +85,22 @@ export type Order = {
   courier: Courier;
   /** Hora a la que arranca un pedido programado (tienda cerrada al pedir); null = se prepara ya. */
   scheduledFor: number | null;
+  /** Etapa máxima mientras una tienda atiende el pedido desde su panel (0–1); null o ausente = avanza solo. */
+  hold?: number | null;
+  /** Cupón aplicado y lo que descontó en total (productos + envío); `totalCents` ya viene sin eso. */
+  couponCode?: string | null;
+  discountCents?: number;
+  /** Cambios que hizo la tienda por falta de stock (productos quitados o sustituidos). */
+  changes?: string[];
+  /** Motivo que dio el cliente al cancelar. */
+  cancelReason?: string | null;
 };
 
 export const DEFAULT_ADDRESS: Address = {
   name: "Altamira",
   line: "Av. Luis Roche, Edif. Los Samanes, apto. 4B, Altamira",
   reference: "Frente a la panadería La Reina",
+  ...DEFAULT_LOCATION,
 };
 
 type State = {
@@ -115,6 +127,8 @@ type State = {
   clear: () => void;
   setDelivery: (m: DeliveryMode) => void;
   setAddress: (a: Address) => void;
+  /** Pone al día el envío de cada tienda del carrito (slug → centavos) cuando cambia la dirección. */
+  setStoreFees: (fees: Record<string, number>) => void;
   placeOrder: (o: { tipCents: number; payment: PayMethod }) => Order | null;
   /** Demo: salta a la siguiente etapa del recorrido. */
   advanceOrder: (id: string) => void;
@@ -200,6 +214,7 @@ export const useCartStore = create<State>()(
       clear: () => set({ groups: [] }),
       setDelivery: (delivery) => set({ delivery }),
       setAddress: (address) => set({ address }),
+      setStoreFees: (fees) => set((s) => ({ groups: s.groups.map((g) => (g.store.slug in fees ? { ...g, store: { ...g.store, feeCents: fees[g.store.slug] } } : g)) })),
       placeOrder: ({ tipCents, payment }) => {
         const { groups, address, delivery, seq, orders } = get();
         if (groups.length === 0) return null;

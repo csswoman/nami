@@ -45,6 +45,11 @@ export type OrderView = {
   shippingCents: number;
   shippingLabel: string;
   tipCents: number;
+  /** Cupón aplicado y lo que descontó (productos + envío); `totalCents` ya lo trae restado. */
+  couponCode?: string;
+  discountCents?: number;
+  /** Cambios de la tienda por falta de stock (productos quitados o sustituidos). */
+  changes?: string[];
   totalCents: number;
   payment: string;
   paymentRef: string;
@@ -101,6 +106,7 @@ export function fromOrder(o: Order, p: Progress, now: number): OrderView {
     id: o.id,
     code: o.code ?? o.id,
     status: o.status === "cancelled" ? "cancelled" : "delivered",
+    cancelReason: o.cancelReason ? `Cancelaste este pedido. Motivo: ${o.cancelReason}` : undefined,
     when: formatWhen(o.createdAt, now),
     whenLong: formatWhen(o.createdAt, now).replace(", ", " · "),
     stops: o.stops.map((s) => ({
@@ -119,6 +125,9 @@ export function fromOrder(o: Order, p: Progress, now: number): OrderView {
     shippingCents: o.shippingCents,
     shippingLabel: multi ? (o.delivery === "combined" ? `Envío (un motorizado, ${o.stops.length} paradas)` : `Envíos (${o.stops.length})`) : "Envío",
     tipCents: o.tipCents,
+    couponCode: o.couponCode ?? undefined,
+    discountCents: o.discountCents ?? 0,
+    changes: o.changes,
     totalCents: o.totalCents,
     payment: PAY[o.payment][0],
     paymentRef: `${PAY[o.payment][1]} · ${formatClock(o.createdAt)}`,
