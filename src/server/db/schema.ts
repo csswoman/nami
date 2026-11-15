@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import type { Resolution, Substitution } from "@/lib/orders/substitution";
 import {
   check,
   index,
@@ -11,6 +12,7 @@ import {
   timestamp,
   uuid,
   boolean,
+  doublePrecision,
   unique,
 } from "drizzle-orm/pg-core";
 
@@ -28,6 +30,9 @@ export const storeCategory = pgEnum("store_category", [
 export const storeKind = pgEnum("store_kind", ["restaurante", "mercado"]);
 export const orderStatus = pgEnum("order_status", [
   "recibido",
+  // Solo en paradas: la tienda aceptó el pedido / lo dejó listo para retirar.
+  "aceptado",
+  "listo",
   "preparando",
   "buscando_motorizado",
   "en_camino",
@@ -71,9 +76,34 @@ export const stores = pgTable("stores", {
   // Pestañas del listado donde aparece: 0 restaurantes, 1 súper, 2 farmacia, 3 bodegones, 4 panaderías, 5 tiendas.
   verticals: integer("verticals").array().notNull().default(sql`'{}'::integer[]`),
   sortOrder: integer("sort_order").notNull().default(0),
+  // Ubicación de la tienda y hasta dónde reparte (metros por calle).
+  lat: doublePrecision("lat"),
+  lng: doublePrecision("lng"),
+  maxDeliveryM: integer("max_delivery_m").notNull().default(7000),
+  // Última vez que alguien tuvo abierto el panel de la tienda: si es reciente, los pedidos los atiende la tienda.
+  panelSeenAt: timestamp("panel_seen_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// Ruta por calle de una tienda al centro de cada zona de entrega, calculada una vez en el seed (OSRM).
+export const storeRoutes = pgTable(
+  "store_routes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    storeId: uuid("store_id")
+      .notNull()
+      .references(() => stores.id, { onDelete: "cascade" }),
+    // Slug de la zona (lib/geo ZONES).
+    zone: text("zone").notNull(),
+    distanceM: integer("distance_m").notNull(),
+    durationS: integer("duration_s").notNull(),
+    // Polilínea [lng, lat] de la tienda a la zona.
+    geometry: jsonb("geometry").$type<[number, number][]>().notNull(),
+    // "osrm" = ruta real; "estimate" = línea recta × 1,4 cuando no hubo red.
+    source: text("source").notNull().default("osrm"),
+  },
+  (t) => [unique("store_routes_store_zone_uq").on(t.storeId, t.zone), index("store_routes_zone_idx").on(t.zone)],
+);
 // Horario semanal de una tienda: un turno por fila (day 0 = lunes … 6 = domingo, hora de Caracas).
 // closesAt puede pasar de 1440 (cierra después de medianoche). Un día sin filas está cerrado.
 export const storeHours = pgTable(
@@ -91,6 +121,31 @@ export const storeHours = pgTable(
     index("store_hours_store_idx").on(t.storeId),
     check("store_hours_day_ck", sql`${t.day} between 0 and 6`),
     check("store_hours_span_ck", sql`${t.opensAt} >= 0 and ${t.closesAt} > ${t.opensAt} and ${t.closesAt} <= 2880`),
+  ],
+);
+// Cupones de descuento. Los aplica el servidor al crear el pedido (ver lib/pricing/coupons).
+export const coupons = pgTable(
+  "coupons",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    // Siempre en mayúsculas y sin espacios.
+    code: text("code").notNull().unique(),
+    description: text("description").notNull().default(""),
+    percent: integer("percent"),
+    amountCents: integer("amount_cents"),
+    freeShipping: boolean("free_shipping").notNull().default(false),
+    // "2x1" en esta sección de la tienda del cupón.
+    bogoSection: text("bogo_section"),
+    minSubtotalCents: integer("min_subtotal_cents").notNull().default(0),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    // Solo vale en esta tienda; null = en cualquiera.
+    storeId: uuid("store_id").references(() => stores.id, { onDelete: "cascade" }),
+    firstOrderOnly: boolean("first_order_only").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    check("coupons_percent_ck", sql`${t.percent} is null or ${t.percent} between 1 and 100`),
+    check("coupons_amount_ck", sql`${t.amountCents} is null or ${t.amountCents} > 0`),
   ],
 );
 export const products = pgTable(
@@ -210,6 +265,11 @@ export const orders = pgTable(
     deliveredAt: timestamp("delivered_at", { withTimezone: true }),
     deliveryMode: deliveryMode("delivery_mode").notNull().default("combined"),
     tipCents: integer("tip_cents").notNull().default(0),
+    // Cupón aplicado y cuánto descontó en total (productos + envío). totalCents ya lo trae restado.
+    // Motivo que dio el cliente al cancelar el pedido.
+    cancelReason: text("cancel_reason"),
+    couponCode: text("coupon_code"),
+    discountCents: integer("discount_cents").notNull().default(0),
     paymentMethod: paymentMethod("payment_method").notNull().default("movil"),
     // Hora de inicio de un pedido programado (tienda cerrada al pedir); null = se prepara ya.
     scheduledFor: timestamp("scheduled_for", { withTimezone: true }),
@@ -222,6 +282,8 @@ export const orders = pgTable(
     route: jsonb("route").$type<RoutePoint[]>(),
     deliveryStartedAt: timestamp("delivery_started_at", { withTimezone: true }),
     deliveryDurationSeconds: integer("delivery_duration_seconds"),
+    // Etapa máxima (0–1) mientras una tienda atiende el pedido desde su panel; null = avanza solo por tiempo.
+    holdStage: integer("hold_stage"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
@@ -246,11 +308,36 @@ export const orderStops = pgTable(
     position: integer("position").notNull().default(0),
     subtotalCents: integer("subtotal_cents").notNull(),
     status: orderStatus("status").notNull().default("recibido"),
+    // Motivo que escribió la tienda al rechazar.
+    rejectReason: text("reject_reason"),
   },
   (t) => [
     index("order_stops_order_idx").on(t.orderId),
     index("order_stops_store_idx").on(t.storeId),
     unique("order_stops_order_store_uq").on(t.orderId, t.storeId),
+  ],
+);
+// Reseña de un pedido entregado: una por tienda del pedido (la calificación del cliente aplica a cada tienda).
+export const reviews = pgTable(
+  "reviews",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orderId: uuid("order_id")
+      .notNull()
+      .references(() => orders.id, { onDelete: "cascade" }),
+    storeId: uuid("store_id")
+      .notNull()
+      .references(() => stores.id, { onDelete: "cascade" }),
+    rating: integer("rating").notNull(),
+    // Etiquetas elegidas ("Llegó rápido", "Bien empacado"…).
+    tags: text("tags").array().notNull().default(sql`'{}'::text[]`),
+    comment: text("comment"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    unique("reviews_order_store_uq").on(t.orderId, t.storeId),
+    index("reviews_store_idx").on(t.storeId),
+    check("reviews_rating_ck", sql`${t.rating} between 1 and 5`),
   ],
 );
 export const orderItems = pgTable(
@@ -272,6 +359,9 @@ export const orderItems = pgTable(
     note: text("note"),
     // Opciones elegidas, tal como eran al comprar.
     options: jsonb("options").$type<ChosenOption[]>(),
+    // Mercados: qué hacer si no hay el producto (lo elige el cliente) y qué pasó (lo resuelve la tienda).
+    substitution: jsonb("substitution").$type<Substitution>(),
+    resolution: jsonb("resolution").$type<Resolution>(),
   },
   (t) => [index("order_items_stop_idx").on(t.stopId)],
 );

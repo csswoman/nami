@@ -45,3 +45,12 @@ it("searchCatalog ignora tildes y mayúsculas, y trata % y _ como texto", async 
   expect((await searchCatalog("%")).products).toHaveLength(0);
   expect(await searchCatalog("   ")).toEqual({ stores: [], products: [] });
 });
+it("searchCatalog tolera errores de tipeo con pg_trgm", async () => {
+  const typo = await searchCatalog("teqeños");
+  expect(typo.stores.map((s) => s.slug)).toContain("tequenos-la-esquina");
+  expect(typo.products.length).toBeGreaterThan(0);
+  expect((await searchCatalog("areppas")).products.length).toBeGreaterThan(0);
+  // Menos de 4 letras no se busca con tolerancia, y un texto sin relación no devuelve nada.
+  expect((await searchCatalog("xqz")).stores).toHaveLength(0);
+  expect(await searchCatalog("zzzzzzzz")).toEqual({ stores: [], products: [] });
+});

@@ -12,7 +12,7 @@ if (!["localhost", "127.0.0.1", "::1"].includes(host)) {
   process.exit(1);
 }
 
-const env = { ...process.env, DATABASE_URL: url, MIGRATE_DATABASE_URL: url, TEST_DATABASE_URL: url };
+const env = { ...process.env, SEED_ROUTING: process.env.SEED_ROUTING ?? "estimate", DATABASE_URL: url, MIGRATE_DATABASE_URL: url, TEST_DATABASE_URL: url };
 const run = (cmd, args, opts = {}) => {
   const r = spawnSync(cmd, args, { stdio: "inherit", shell: true, env, ...opts });
   if (r.status !== 0) throw new Error(`Falló: ${cmd} ${args.join(" ")}`);
