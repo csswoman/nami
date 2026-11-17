@@ -56,8 +56,9 @@ function StoreRow({ s, minutes }: { s: StoreSummary; minutes: number }) {
 function ProductRow({ p, money }: { p: SearchProduct; money: { currency: Currency; rate: number } }) {
   const out = p.soldOut;
   return (
-    <li className={`flex items-center gap-4 border-b border-border py-3.5 ${out ? "opacity-55" : ""}`}>
-      <span className="grid size-16 shrink-0 place-items-center rounded-md bg-surface-tile [&_.nm-icon]:size-8"><Icon name={p.icon ?? "basket"} /></span>
+    <li className="flex items-center gap-4 border-b border-border py-3.5">
+      {/* Agotado: se atenúa solo el ícono; el texto conserva su contraste. */}
+      <span className={`grid size-16 shrink-0 place-items-center rounded-md bg-surface-tile [&_.nm-icon]:size-8 ${out ? "opacity-55" : ""}`}><Icon name={p.icon ?? "basket"} /></span>
       <span className="flex min-w-0 grow flex-col">
         <span className="text-body-strong font-bold">{p.name}</span>
         <span className="text-caption text-ink-muted">{p.store.name}</span>

@@ -3,6 +3,7 @@ import { useState } from "react";
 import type { DayHours } from "@/lib/catalog";
 import type { StoreReview } from "@/server/reviews";
 import type { InventoryItem, PanelData } from "@/server/store-panel";
+import { DEMO_RESTORE_MINUTES } from "@/lib/demo/restore";
 import { callPanel } from "./api";
 import { InventoryPanel } from "./InventoryPanel";
 import { SchedulePanel } from "./SchedulePanel";
@@ -45,7 +46,7 @@ export function PanelTabs({ slug, orders, inventory, schedule, reviews }: { slug
       <section className="flex flex-wrap items-center gap-3 rounded-lg border border-dashed border-border p-4">
         <div className="grow">
           <p className="text-body-strong font-bold">Zona de demo</p>
-          <p className="text-caption text-ink-muted">Cualquier visitante puede cambiar precios y horarios. Este botón deja la tienda como en el seed.</p>
+          <p className="text-caption text-ink-muted">La demo es compartida: lo que cambies aquí lo ven los demás visitantes. Precios, stock, horario y estado vuelven solos a los datos de demo {DEMO_RESTORE_MINUTES} minutos después del primer cambio. Este botón lo hace ya.</p>
           {error ? <p role="alert" className="text-caption text-danger">{error}</p> : null}
         </div>
         <button type="button" disabled={resetting} onClick={reset} className="nm-btn nm-btn--secondary">Reponer catálogo</button>

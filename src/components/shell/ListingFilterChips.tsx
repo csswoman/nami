@@ -12,9 +12,9 @@ export function ListingFilterChips({ filters: f, to, row = false }: { filters: L
     { label: `Hasta ${FAST_MAX_MIN} min`, active: f.fast, patch: { fast: !f.fast } },
   ];
   const sorts = (Object.keys(SORT_LABELS) as SortKey[]).map((k) => ({ label: SORT_LABELS[k], active: f.sort === k, patch: { sort: f.sort === k ? null : k } }));
-  const prices = PRICES.map((p) => ({ label: "$".repeat(p), name: `Precio ${"$".repeat(p)}`, active: f.price === p, patch: { price: f.price === p ? null : p } }));
+  const prices = PRICES.map((p) => ({ label: "$".repeat(p), name: "Precio", active: f.price === p, patch: { price: f.price === p ? null : p } }));
   const chip = (c: { label: string; name?: string; active: boolean; patch: Partial<ListingFilters> }) => (
-    <Link key={c.name ?? c.label} href={to(c.patch)} scroll={false} replace aria-pressed={c.active} aria-label={c.name} className={`${base} ${c.active ? on : off}`}>{c.label}</Link>
+    <Link key={`${c.name ?? ""}${c.label}`} href={to(c.patch)} scroll={false} replace className={`${base} ${c.active ? on : off}`}>{c.name ? <span className="sr-only">{c.name} </span> : null}{c.label}{c.active ? <span className="sr-only">, activado</span> : null}</Link>
   );
   return (
     <div className={`scroll-x -mx-4 flex gap-2 px-4 desktop:mx-0 desktop:px-0 ${row ? "" : "desktop:flex-col desktop:overflow-visible"}`}>

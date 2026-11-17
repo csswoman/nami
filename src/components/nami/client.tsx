@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, type FormEvent, type KeyboardEvent } from "react";
+import { useState, useEffect, useRef, useCallback, useId, type FormEvent, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import { cx } from "./cx";
 import { Icon, type IconName } from "./icon";
@@ -90,6 +90,7 @@ export function SearchBar({
   const [activeIndex, setActiveIndex] = useState(-1);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const popoverId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -328,8 +329,7 @@ export function SearchBar({
           spellCheck="false"
           placeholder={placeholder}
           aria-label="Buscar en Ñami"
-          aria-expanded={isOpen}
-          aria-haspopup="listbox"
+          aria-controls={isOpen ? popoverId : undefined}
           value={query}
           autoFocus={autoFocus}
           onChange={(e) => {
@@ -369,10 +369,15 @@ export function SearchBar({
       {/* Popover desplegable con sugerencias y resultados en vivo */}
       {isOpen ? (
         <div
+          id={popoverId}
           className="nm-search__popover"
-          role="listbox"
+          role="region"
           aria-label="Sugerencias de búsqueda"
         >
+          {/* Lo que cambia mientras escribes se anuncia sin mover el foco del campo. */}
+          <p className="sr-only" aria-live="polite">
+            {isTyping && !isLoading ? (hasMatches ? `${stores.length} tiendas y ${products.length} productos` : "Sin resultados") : ""}
+          </p>
           {/* CASO 1: Cuando el usuario está escribiendo */}
           {isTyping ? (
             <div className="flex flex-col py-1.5">

@@ -116,13 +116,13 @@ function NavClockContent({ variant = "topbar" }: NavClockProps) {
           type="button"
           onClick={() => setIsOpen((prev) => !prev)}
           className="nm-topbar__clock"
-          aria-label={`Simulador de hora: ${activeLabel} (${activeHora})`}
           aria-expanded={isOpen}
           aria-haspopup="dialog"
         >
           <Icon name="clock" />
+          <span className="sr-only">Simulador de hora:</span>
           <span className="font-bold">{activeLabel}</span>
-          <span className="opacity-80">· {activeHora}</span>
+          <span>· {activeHora}</span>
           {isManual ? (
             <span className="nm-badge nm-badge--promo text-[10px] py-0 px-1.5 ml-0.5">Demo</span>
           ) : null}

@@ -20,6 +20,7 @@ type AppShellProps = {
 export function AppShell({ children, activeNav = 0, mobileHeader = true, bottomNav = true, address = "Av. Francisco de Miranda, Chacao", topBar = "full" }: AppShellProps) {
   return (
     <div className="flex min-h-dvh flex-col bg-surface">
+      <a href="#contenido" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-pill focus:bg-primary focus:px-4 focus:py-2.5 focus:font-bold focus:text-on-primary">Saltar al contenido</a>
       {mobileHeader ? (
         <div className="relative z-30 desktop:hidden">
           <AppHeader address={address} placeholder="Arepas, perros, harina de maíz…" unread />
@@ -44,7 +45,7 @@ export function AppShell({ children, activeNav = 0, mobileHeader = true, bottomN
         )}
       </div>
 
-      <div className={`flex-1 desktop:pb-12 ${bottomNav ? "pb-24" : "pb-28"}`}>{children}</div>
+      <main id="contenido" className={`flex-1 desktop:pb-12 ${bottomNav ? "pb-24" : "pb-28"}`}>{children}</main>
 
       <footer className="hidden bg-surface-tile desktop:block">
         <div className="page-x flex items-center gap-6 py-6 text-caption text-ink-muted">

@@ -59,13 +59,13 @@ export function CartLink({ variant }: { variant: "topbar" | "header" }) {
         <Link
           href="/carrito"
           className="nm-topbar__cart"
-          aria-label={`Carrito, ${count} productos`}
           aria-expanded={isOpen}
           aria-haspopup="dialog"
         >
           <Icon name="cart" />
           <span>Carrito</span>
           <span className="nm-topbar__count">{count}</span>
+          <span className="sr-only">{count === 1 ? "producto" : "productos"}</span>
         </Link>
       )}
 

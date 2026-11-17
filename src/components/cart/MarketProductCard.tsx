@@ -24,7 +24,7 @@ export function MarketProductCard({ store, p, money = { currency: "USD", rate: D
         name={p.name}
         price={formatMoney(p.priceCents, money.currency, money.rate)}
         oldPrice={p.oldPriceCents ? formatMoney(p.oldPriceCents, money.currency, money.rate) : undefined}
-        badges={p.oldPriceCents ? <Badge tone="brand" className="animate-pulse">Oferta</Badge> : undefined}
+        badges={p.oldPriceCents ? <Badge tone="brand">Oferta</Badge> : undefined}
         unit={`${p.unit} · ${formatMoney(p.priceCents, other, money.rate)}`}
         image={p.image}
         onAdd={out ? undefined : () => add(store, { productId: p.id, name: p.name, unitCents: p.priceCents, icon: "basket", image: p.image })}

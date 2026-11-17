@@ -156,7 +156,8 @@ async function Content({ params, searchParams }: Pick<PageProps<"/tienda/[slug]"
         {/* Menú */}
         <div className="px-4 desktop:grid desktop:grid-cols-[220px_minmax(0,1fr)_340px] desktop:items-start desktop:gap-8 desktop:px-0 desktop:pt-9">
           <nav aria-label="Categorías del menú" className="nm-tabs scroll-x sticky top-0 z-10 mt-4 bg-surface desktop:hidden">
-            {store.menu.map((s, i) => <a key={s.id} href={`#${s.id}`} role="tab" aria-selected={i === 0} className="nm-tab">{s.title}</a>)}
+            {/* Son enlaces a secciones, no pestañas: role="tab" exige un tablist que controle paneles. */}
+            {store.menu.map((s, i) => <a key={s.id} href={`#${s.id}`} aria-current={i === 0 ? "true" : undefined} className="nm-tab">{s.title}</a>)}
           </nav>
           <nav aria-label="Categorías del menú" className="sticky top-6 hidden flex-col gap-1 desktop:flex">
             {store.menu.map((s, i) => (
@@ -193,7 +194,7 @@ function MenuCard({ item, slug, store, hasOptions, money }: { item: CatalogProdu
   const other: Currency = money.currency === "USD" ? "VES" : "USD";
   const out = item.soldOut;
   return (
-    <article className={`relative flex min-h-26 gap-4 border-b border-border py-4 desktop:rounded-lg desktop:border desktop:p-4 ${out ? "opacity-50" : ""}`}>
+    <article className="relative flex min-h-26 gap-4 border-b border-border py-4 desktop:rounded-lg desktop:border desktop:p-4">
       <div className="flex min-w-0 grow flex-col gap-1">
         <h3 className="text-body-strong font-semibold">
           {out ? item.name : <Link href={`/tienda/${slug}/${item.id}`} className="after:absolute after:inset-0">{item.name}</Link>}
@@ -206,7 +207,8 @@ function MenuCard({ item, slug, store, hasOptions, money }: { item: CatalogProdu
         {item.stock ? <span className="text-badge text-primary-text">Quedan {item.stock}</span> : null}
         {out ? <span className="self-start rounded-pill bg-surface-tile px-2.5 py-1 text-badge">{soldOutLabel(item.soldOutUntil)}</span> : null}
       </div>
-      <div className="relative size-26 shrink-0 overflow-hidden rounded-md bg-surface-tile">
+      {/* Agotado: se atenúa solo la imagen; el texto conserva su contraste y la etiqueta dice por qué. */}
+      <div className={`relative size-26 shrink-0 overflow-hidden rounded-md bg-surface-tile ${out ? "opacity-50 grayscale" : ""}`}>
         {item.image ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={item.image} alt="" className="size-full object-cover" />

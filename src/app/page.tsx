@@ -71,12 +71,12 @@ async function HomeContent({ searchParams }: { searchParams: PageProps<"/">["sea
           image="/brand/guacamaya-moto.png"
           slides={3}
         />
-        <aside className="hidden flex-col justify-between gap-5 rounded-lg bg-surface-warm p-7 desktop:flex desktop:h-[290px] border border-border/40 shadow-card transition-all duration-300 hover:shadow-hover">
+        <aside className="hidden flex-col justify-between gap-4 rounded-lg bg-surface-warm p-8 desktop:flex desktop:h-[280px] border border-border/40 shadow-card transition-all duration-300 hover:shadow-hover">
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-2">
               <Badge tone="promo">Demo de portafolio</Badge>
             </div>
-            <h2 className="font-display text-[26px] leading-[1.2] font-extrabold text-ink tracking-tight">Pide como si estuvieras en Caracas</h2>
+            <h2 className="font-display text-[26px] leading-8 font-extrabold text-ink tracking-tight">Pide como si estuvieras en Caracas</h2>
             <p className="text-body text-ink-muted leading-relaxed">Las tiendas siguen la hora de Caracas. Si todo está cerrado, cambia de franja con el modo demo.</p>
           </div>
           <Link href="/acerca" className="nm-btn nm-btn--secondary self-start bg-surface border border-border/80 shadow-xs transition-transform hover:scale-105 active:scale-95">Cómo funciona</Link>

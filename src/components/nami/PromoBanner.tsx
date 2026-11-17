@@ -85,7 +85,7 @@ export function PromoBanner({
             image: image ?? DEFAULT_SLIDES[0].image,
             href: "/listado",
             ctaText: DEFAULT_SLIDES[0].ctaText,
-            bg: "var(--primary)",
+            bg: DEFAULT_SLIDES[0].bg,
           },
           DEFAULT_SLIDES[1],
           DEFAULT_SLIDES[2],
@@ -98,7 +98,7 @@ export function PromoBanner({
             image: image ?? DEFAULT_SLIDES[0].image,
             href: "/listado",
             ctaText: DEFAULT_SLIDES[0].ctaText,
-            bg: "var(--primary)",
+            bg: DEFAULT_SLIDES[0].bg,
           },
         ];
 
@@ -158,17 +158,25 @@ export function PromoBanner({
       aria-roledescription="carousel"
       aria-label="Promociones destacadas"
     >
-      {/* Overlay protector para garantizar legibilidad del texto en cualquier pantalla e imagen */}
+      {/* Iluminación sutil y profundidad para garantizar contraste sin apagar el color de fondo */}
       <div
-        className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-r from-black/30 via-black/10 to-transparent"
+        className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-r from-black/20 via-black/5 to-transparent desktop:from-black/15 desktop:to-transparent"
+        aria-hidden="true"
+      />
+      <div
+        className="pointer-events-none absolute -right-6 -bottom-6 size-48 rounded-full bg-white/10 blur-2xl desktop:size-64"
         aria-hidden="true"
       />
 
       <div key={`copy-${index}`} className="nm-banner__copy animate-in fade-in slide-in-from-left-2 duration-300">
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-2">
           {active.badge}
-          {active.eyebrow ? (
-            <span className={cx("nm-banner__eyebrow", active.badge ? "hidden desktop:inline" : "")}>
+          {active.eyebrow && !active.badge ? (
+            <span className="nm-banner__eyebrow">
+              {active.eyebrow}
+            </span>
+          ) : active.eyebrow && active.badge ? (
+            <span className="hidden items-center gap-1.5 rounded-pill bg-black/20 px-2.5 py-0.5 text-[11px] font-semibold text-white/90 backdrop-blur-xs desktop:inline-flex">
               {active.eyebrow}
             </span>
           ) : null}
@@ -178,10 +186,10 @@ export function PromoBanner({
         {active.href ? (
           <Link
             href={active.href}
-            className="mt-1 inline-flex items-center gap-1.5 rounded-pill bg-white px-3.5 py-1.5 text-[13px] font-bold text-[#1F1A1C] shadow-card transition-transform hover:scale-105 active:scale-95 whitespace-nowrap desktop:mt-2 desktop:px-4.5 desktop:py-2 desktop:text-button"
+            className="group/cta mt-auto inline-flex items-center gap-2 rounded-pill bg-white px-4 py-1.5 text-caption font-bold text-ink shadow-card transition-all duration-200 hover:scale-105 hover:bg-white/95 active:scale-95 whitespace-nowrap desktop:px-5 desktop:py-2.5 desktop:text-button"
           >
             <span>{active.ctaText ?? "Ver más"}</span>
-            <Icon name="arrowRight" className="size-4 text-[#1F1A1C]" />
+            <Icon name="arrowRight" className="size-4 text-ink transition-transform duration-200 group-hover/cta:translate-x-0.5" />
           </Link>
         ) : null}
       </div>
@@ -193,6 +201,8 @@ export function PromoBanner({
           className="nm-banner__art animate-in fade-in zoom-in-95 duration-400"
           src={active.image}
           alt=""
+          loading="eager"
+          decoding="async"
         />
       ) : null}
 
@@ -206,7 +216,7 @@ export function PromoBanner({
               prev();
             }}
             aria-label="Promoción anterior"
-            className="absolute left-4 top-1/2 z-20 hidden size-9 -translate-y-1/2 place-items-center rounded-pill bg-black/30 text-on-primary opacity-0 backdrop-blur-sm transition-all hover:bg-black/55 hover:scale-110 active:scale-90 group-hover:opacity-100 desktop:grid"
+            className="absolute left-3 top-1/2 z-20 hidden size-9 -translate-y-1/2 place-items-center rounded-pill bg-black/25 text-on-primary opacity-0 backdrop-blur-xs transition-all hover:bg-black/50 hover:scale-110 active:scale-95 group-hover:opacity-100 desktop:grid"
           >
             <Icon name="chevronLeft" className="size-5" />
           </button>
@@ -217,14 +227,14 @@ export function PromoBanner({
               next();
             }}
             aria-label="Promoción siguiente"
-            className="absolute right-4 top-1/2 z-20 hidden size-9 -translate-y-1/2 place-items-center rounded-pill bg-black/30 text-on-primary opacity-0 backdrop-blur-sm transition-all hover:bg-black/55 hover:scale-110 active:scale-90 group-hover:opacity-100 desktop:grid"
+            className="absolute right-3 top-1/2 z-20 hidden size-9 -translate-y-1/2 place-items-center rounded-pill bg-black/25 text-on-primary opacity-0 backdrop-blur-xs transition-all hover:bg-black/50 hover:scale-110 active:scale-95 group-hover:opacity-100 desktop:grid"
           >
             <Icon name="chevronRight" className="size-5" />
           </button>
         </>
       ) : null}
 
-      {/* Indicadores de diapositiva (dots) interactivos */}
+      {/* Indicadores de diapositiva (dots) interactivos con área táctil cómoda */}
       {total > 1 ? (
         <div className="nm-banner__dots z-20" role="tablist" aria-label="Seleccionar diapositiva">
           {slideList.map((_, i) => (
@@ -235,10 +245,14 @@ export function PromoBanner({
               aria-selected={i === index}
               aria-label={`Ir al banner ${i + 1}`}
               onClick={() => goTo(i)}
-              className={`h-2 rounded-pill transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white ${
-                i === index ? "w-6 bg-white shadow-xs" : "w-2 bg-white/45 hover:bg-white/75"
-              }`}
-            />
+              className="group/dot flex h-5 items-center p-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white rounded-pill"
+            >
+              <span
+                className={`h-2 rounded-pill transition-all duration-300 ${
+                  i === index ? "w-6 bg-white shadow-xs" : "w-2 bg-white/45 group-hover/dot:bg-white/75"
+                }`}
+              />
+            </button>
           ))}
         </div>
       ) : null}

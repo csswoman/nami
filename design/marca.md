@@ -13,13 +13,13 @@
 ## Color
 
 - La interfaz es blanca (`surface`) con tiles gris cálido sutil (`surface-tile`, `#F7F3EE` en claro).
-- Las tarjetas de categorías en el Home usan `surface-category` (`#F5EEDE` en claro / `#221D20` en oscuro), unificado exactamente con el fondo de las ilustraciones 3D de categorías (Restaurantes, Súper, Farmacias, Bodegones, Panaderías, Tiendas).
-- Las imágenes y packshots de productos usan el token `surface-product` (`#F2EBD9` en claro / `#221D20` en oscuro), reservado exclusivamente para el fondo de las fotos de productos. El rojo se concentra en el header, el botón primario y los estados activos.
+- Las tarjetas de categorías en el Home usan `surface-category` (`#F5EEDE` en claro / `#1C1C20` en oscuro), unificado exactamente con el fondo de las ilustraciones 3D de categorías (Restaurantes, Súper, Farmacias, Bodegones, Panaderías, Tiendas).
+- Las imágenes y packshots de productos usan el token `surface-product` (`#F2EBD9` en claro / `#1C1C20` en oscuro), reservado exclusivamente para el fondo de las fotos de productos. El rojo se concentra en el header, el botón primario y los estados activos.
 - `brand` (#FF2D3B) es el rojo de identidad: campañas, ilustración y texto grande. Para cualquier fondo con texto pequeño usa `primary` (#E8182E) con `on-primary`; el blanco sobre `brand` solo cumple a 24px o más.
 - Rojo sobre blanco (precio en oferta, “Ver todo”): `primary-text`, nunca `brand`.
 - Badges: variantes semánticas con contraste garantizado:
   - `promo`: fondo `promo` (#FFD23F) con texto `on-promo` (#1F1A1C) para descuentos y avisos comerciales.
-  - `brand`: fondo suave `brand-tint` (#FFEAEB en claro / #3B1418 en oscuro) con texto `primary-text` y borde sutil.
+  - `brand`: fondo suave `brand-tint` (#FFEAEB en claro / #3A1218 en oscuro) con texto `primary-text` y borde sutil.
   - `surface`: fondo blanco translúcido (`rgba(255,255,255,0.92)` con backdrop blur y sombra ligera) para contrastar limpiamente sobre fondos oscuros o de color de banners (`PromoBanner`).
   - `success`: fondo `success-tint` con texto `success` para confirmaciones y horarios abiertos.
   - `plus`: fondo `plus` con texto `on-primary` para la membresía Ñami+.
@@ -27,7 +27,7 @@
 - Amarillo = descuento: `promo` con `on-promo`. Azul = Ñami+: `plus`. Verde = confirmación: `success` para texto, `success-tint` para chips, `leaf` para fondos sólidos con blanco.
 - `brand-orange`, `brand-blue`, `brand-green` y `brand-cream` son colores de ilustración y campaña, no de texto.
 - Errores con `danger` (distinto del rojo de marca) y siempre con palabra o icono.
-- Tema oscuro: mismos nombres de token; el header y los botones mantienen el rojo `primary`.
+- Tema oscuro: mismos nombres de token; el header y los botones mantienen el rojo `primary`. Las superficies son grafitos neutros (sin tinte rojizo) con elevación por luminosidad: `surface` → `surface-warm` → `surface-tile` → `surface-raised`. Las ilustraciones con fondo crema horneado se muestran como una placa redondeada (`radius-md`) dentro de la tarjeta.
 - Mapas ilustrados (seguimiento, dirección, recorrido): nunca hex sueltos; usan los tokens `map-*` (`map-ground`, `map-block`, `map-road`, `map-park`, `map-park-deep`, `map-park-label`, `map-water`, `map-water-label`, `map-label`) con `fill-*`/`stroke-*`, para que sigan el tema. La ruta y el destino van en `primary`; las etiquetas oscuras del mapa ("Tu casa", Metro) usan `ink` con texto `surface`, así se invierten en oscuro.
 
 ## Tipografía
