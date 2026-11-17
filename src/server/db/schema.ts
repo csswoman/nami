@@ -82,6 +82,9 @@ export const stores = pgTable("stores", {
   maxDeliveryM: integer("max_delivery_m").notNull().default(7000),
   // Última vez que alguien tuvo abierto el panel de la tienda: si es reciente, los pedidos los atiende la tienda.
   panelSeenAt: timestamp("panel_seen_at", { withTimezone: true }),
+  // Primera vez que un visitante cambió el catálogo desde el panel (precios, stock, horario, abierta/cerrada).
+  // La demo es compartida: pasado un rato la tienda vuelve sola al seed (src/server/demo-restore.ts).
+  catalogChangedAt: timestamp("catalog_changed_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -365,3 +368,10 @@ export const orderItems = pgTable(
   },
   (t) => [index("order_items_stop_idx").on(t.stopId)],
 );
+
+// Límite de peticiones por ventana fija: una fila por clave ("orders:<ip>"). Ver src/server/rate-limit.ts.
+export const rateLimits = pgTable("rate_limits", {
+  key: text("key").primaryKey(),
+  windowStart: timestamp("window_start", { withTimezone: true }).notNull(),
+  count: integer("count").notNull(),
+});

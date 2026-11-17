@@ -12,6 +12,7 @@ import { validateSchedule } from "@/lib/store-schedule";
 import { orderItems, orderStops, orders, products, storeHours, stores } from "./db/schema";
 import { resetSeedStores } from "./db/seed-data";
 import { reconcileOrder, takeControl } from "./order-flow";
+import { markCatalogChanged, restoreStaleStoresSafely } from "./demo-restore";
 /** Error de negocio del panel; las rutas lo traducen a `{ error: { code, message } }` con su `status`. */
 export class PanelError extends Error {
   constructor(public code: ApiErrorCode, message: string, public status: number) {
@@ -56,12 +57,15 @@ export type PanelData = {
 /** Cuánto atrás mira la bandeja. */
 const WINDOW_MS = 24 * 3_600_000;
 async function findStore(slug: string) {
+  // Antes de leer o cambiar una tienda, las que llevan mucho rato cambiadas vuelven al seed.
+  await restoreStaleStoresSafely();
   const [store] = await db.select().from(stores).where(eq(stores.slug, slug)).limit(1);
   if (!store) throw new PanelError("STORE_NOT_FOUND", "No existe esa tienda.", 404);
   return store;
 }
 /** Tiendas que se pueden ver en el panel (selector de /tienda-admin). */
 export async function listPanelStores(): Promise<{ slug: string; name: string; kind: "restaurante" | "mercado"; initials: string; color: BrandColor; isOpen: boolean }[]> {
+  await restoreStaleStoresSafely();
   const rows = await db
     .select({ slug: stores.slug, name: stores.name, kind: stores.kind, initials: stores.initials, color: stores.color, isOpen: stores.isOpen })
     .from(stores)
@@ -171,6 +175,7 @@ export async function actOnStop(slug: string, stopId: string, action: StopAction
 export async function setStoreOpen(slug: string, open: boolean): Promise<void> {
   const store = await findStore(slug);
   await db.update(stores).set({ isOpen: open }).where(eq(stores.id, store.id));
+  await markCatalogChanged(store.id);
 }
 export type InventoryItem = { slug: string; name: string; section: string; sectionTitle: string; priceCents: number; isAvailable: boolean };
 /** Productos de la tienda para el inventario, en el orden del menú. */
@@ -203,6 +208,7 @@ export async function updateProduct(slug: string, productSlug: string, patch: { 
     .where(and(eq(products.storeId, store.id), eq(products.slug, productSlug)))
     .returning({ slug: products.slug, name: products.name, section: products.section, sectionTitle: products.sectionTitle, priceCents: products.priceCents, isAvailable: products.isAvailable });
   if (!row) throw new PanelError("PRODUCT_NOT_FOUND", "Ese producto no existe en tu tienda.", 404);
+  await markCatalogChanged(store.id);
   return row;
 }
 /** Horario semanal de la tienda. */
@@ -222,6 +228,7 @@ export async function setSchedule(slug: string, raw: unknown): Promise<DayHours[
   await db.transaction(async (tx) => {
     await tx.delete(storeHours).where(eq(storeHours.storeId, store.id));
     if (result.schedule.length) await tx.insert(storeHours).values(result.schedule.map((h) => ({ ...h, storeId: store.id })));
+    await markCatalogChanged(store.id, tx);
   });
   return result.schedule;
 }
@@ -272,7 +279,10 @@ export async function markOutOfStock(slug: string, stopId: string, itemId: strin
       await tx.update(orderItems).set({ resolution }).where(eq(orderItems.id, itemId));
     }
     // Lo que no hay queda agotado en el catálogo.
-    if (item.productId) await tx.update(products).set({ isAvailable: false, soldOutUntil: null }).where(eq(products.id, item.productId));
+    if (item.productId) {
+      await tx.update(products).set({ isAvailable: false, soldOutUntil: null }).where(eq(products.id, item.productId));
+      await markCatalogChanged(store.id, tx);
+    }
     // Totales: la parada, el pedido (con el mismo envío, propina y descuento topado) y los bolívares a la tasa guardada.
     const items = await tx.select().from(orderItems).where(eq(orderItems.stopId, stopId));
     const stopSubtotal = items.filter((i) => i.resolution?.kind !== "removed").reduce((n, i) => n + i.quantity * i.unitPriceCents, 0);

@@ -3,7 +3,9 @@ import { z } from "zod";
 import type { ApiError } from "@/lib/orders/input";
 import { orderInputSchema, type OrderInput } from "@/lib/orders/input";
 import type { Order } from "@/lib/cart/store";
-import { currentGuestToken } from "./guest";
+import { currentClientIp, currentGuestToken } from "./guest";
+import { logError } from "./log";
+import { LIMITS, checkRateLimit, rateLimitMessage } from "./rate-limit";
 import { OrderError, createOrder, quoteOrder, type OrderQuote } from "./orders";
 
 export type ActionResult = { ok: true; order: Order } | ({ ok: false } & ApiError);
@@ -11,7 +13,9 @@ export type ActionResult = { ok: true; order: Order } | ({ ok: false } & ApiErro
 const fail = (code: ApiError["error"]["code"], message: string): ApiError => ({ error: { code, message } });
 
 /** Valida, resuelve el invitado y crea el pedido. Lo usan la Server Action y POST /api/orders. */
-export async function placeFromUnknown(raw: unknown): Promise<{ status: number; body: { order: Order } | ApiError }> {
+export async function placeFromUnknown(raw: unknown): Promise<{ status: number; body: { order: Order } | ApiError; retryAfterS?: number }> {
+  const limited = await checkRateLimit(`orders:${await currentClientIp()}`, LIMITS.orders);
+  if (!limited.ok) return { status: 429, body: fail("RATE_LIMITED", rateLimitMessage(limited.retryAfterS)), retryAfterS: limited.retryAfterS };
   const parsed = orderInputSchema.safeParse(raw);
   if (!parsed.success) {
     return { status: 400, body: fail("INVALID_INPUT", z.prettifyError(parsed.error)) };
@@ -22,7 +26,7 @@ export async function placeFromUnknown(raw: unknown): Promise<{ status: number; 
     return { status: 201, body: { order: await createOrder(parsed.data as OrderInput, token) } };
   } catch (e) {
     if (e instanceof OrderError) return { status: e.status, body: fail(e.code, e.message) };
-    console.error("createOrder", e);
+    await logError("createOrder", e);
     return { status: 500, body: fail("INTERNAL", "No pudimos crear el pedido. Intenta de nuevo.") };
   }
 }
@@ -37,7 +41,7 @@ export async function quoteFromUnknown(raw: unknown): Promise<QuoteResult> {
     return { ok: true, quote: await quoteOrder(parsed.data as OrderInput, token) };
   } catch (e) {
     if (e instanceof OrderError) return { ok: false, ...fail(e.code, e.message) };
-    console.error("quoteOrder", e);
+    await logError("quoteOrder", e);
     return { ok: false, ...fail("INTERNAL", "No pudimos revisar el cupón. Intenta de nuevo.") };
   }
 }

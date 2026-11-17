@@ -58,5 +58,6 @@ export type ApiErrorCode =
   | "COUPON_EXPIRED"
   | "COUPON_NOT_APPLICABLE"
   | "COUPON_MIN_NOT_MET"
+  | "RATE_LIMITED"
   | "INTERNAL";
 export type ApiError = { error: { code: ApiErrorCode; message: string } };

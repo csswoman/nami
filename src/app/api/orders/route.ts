@@ -9,6 +9,8 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: { code: "INVALID_INPUT", message: "El cuerpo debe ser JSON." } }, { status: 400 });
   }
-  const { status, body } = await placeFromUnknown(raw);
-  return NextResponse.json(body, { status, headers: { "Cache-Control": "no-store" } });
+  const { status, body, retryAfterS } = await placeFromUnknown(raw);
+  const headers: Record<string, string> = { "Cache-Control": "no-store" };
+  if (retryAfterS) headers["Retry-After"] = String(retryAfterS);
+  return NextResponse.json(body, { status, headers });
 }

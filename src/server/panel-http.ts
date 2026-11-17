@@ -1,6 +1,9 @@
 import "server-only";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { clientIp } from "@/lib/client-ip";
+import { logError } from "./log";
+import { LIMITS, checkRateLimit, rateLimitMessage } from "./rate-limit";
 import { PanelError } from "./store-panel";
 const headers = { "Cache-Control": "no-store" };
 export const jsonOk = (body: unknown, status = 200) => NextResponse.json(body, { status, headers });
@@ -8,7 +11,7 @@ export const jsonError = (code: string, message: string, status: number) => Next
 /** Traduce un error del panel a su respuesta HTTP; lo desconocido es un 500 sin detalles. */
 export function panelFailure(e: unknown) {
   if (e instanceof PanelError) return jsonError(e.code, e.message, e.status);
-  console.error("tienda-admin", e);
+  void logError("tienda-admin", e);
   return jsonError("INTERNAL", "No pudimos completar la acción. Intenta de nuevo.", 500);
 }
 /** Lee el cuerpo JSON y lo valida con Zod; si falla, devuelve la respuesta 400 lista para enviar. */
@@ -22,4 +25,10 @@ export async function parseBody<S extends z.ZodType>(request: Request, schema: S
   const parsed = schema.safeParse(raw);
   if (!parsed.success) return { error: jsonError("INVALID_INPUT", parsed.error.issues[0]?.message ?? z.prettifyError(parsed.error), 400) };
   return { data: parsed.data };
+}
+/** Límite de cambios desde el panel por IP. Devuelve el 429 listo para enviar, o null si pasa. */
+export async function limitPanel(request: Request): Promise<NextResponse | null> {
+  const r = await checkRateLimit(`panel:${clientIp(request.headers)}`, LIMITS.panel);
+  if (r.ok) return null;
+  return NextResponse.json({ error: { code: "RATE_LIMITED", message: rateLimitMessage(r.retryAfterS) } }, { status: 429, headers: { ...headers, "Retry-After": String(r.retryAfterS) } });
 }

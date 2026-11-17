@@ -9,7 +9,7 @@ import { loadEnvConfig } from "@next/env";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { lt } from "drizzle-orm";
 import { Pool } from "pg";
-import { orders } from "../src/server/db/schema";
+import { orders, rateLimits } from "../src/server/db/schema";
 import { resetSeedStores } from "../src/server/db/seed-data";
 loadEnvConfig(process.cwd(), true);
 const url = process.env.DATABASE_URL;
@@ -28,6 +28,9 @@ async function main() {
     const cutoff = new Date(Date.now() - days * 86_400_000);
     const gone = await db.delete(orders).where(lt(orders.createdAt, cutoff)).returning({ id: orders.id });
     console.log(`Listo en ${host}: ${gone.length} pedidos de más de ${days} días borrados.`);
+    // Contadores del límite de peticiones: pasada su ventana ya no sirven.
+    const limits = await db.delete(rateLimits).where(lt(rateLimits.windowStart, new Date(Date.now() - 86_400_000))).returning({ key: rateLimits.key });
+    console.log(`${limits.length} contadores de límite de peticiones viejos borrados.`);
     if (process.env.KEEP_CATALOG !== "1") {
       const n = await db.transaction((tx) => resetSeedStores(tx));
       console.log(`Catálogo repuesto: ${n} tiendas como en el seed.`);

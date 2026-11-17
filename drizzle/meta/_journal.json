@@ -113,6 +113,13 @@
       "when": 1794782292333,
       "tag": "0015_pg_trgm",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1794924773681,
+      "tag": "0016_demo_restore_rate_limit",
+      "breakpoints": true
     }
   ]
 }

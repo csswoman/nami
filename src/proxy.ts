@@ -2,21 +2,28 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { FRANJA_COOKIE, isFranja } from "@/lib/demo/franja";
 import { GUEST_COOKIE, GUEST_COOKIE_MAX_AGE, isGuestToken, newGuestToken } from "@/lib/guest";
+const REQUEST_ID_HEADER = "x-request-id";
 /**
- * 1) Token de invitado: si no hay cookie `nami_guest`, crea una (httpOnly). También se la pasa a la
+ * 1) Id de petición: llega a la app en `x-request-id` (los logs de src/server/log.ts lo incluyen) y vuelve en la
+ *    respuesta, así un error que ve el visitante se puede buscar en los logs.
+ * 2) Token de invitado: si no hay cookie `nami_guest`, crea una (httpOnly). También se la pasa a la
  *    petición en curso para que el primer POST /api/orders ya la vea.
- * 2) Recuerda la franja del modo demo en una cookie para que sobreviva a la navegación.
+ * 3) Recuerda la franja del modo demo en una cookie para que sobreviva a la navegación.
  *    `?franja=cena` la fija; `?franja=real` la borra (vuelve a la hora real de Caracas).
  */
 export function proxy(request: NextRequest) {
+  const headers = new Headers(request.headers);
+  const requestId = request.headers.get("x-vercel-id") ?? crypto.randomUUID();
+  headers.set(REQUEST_ID_HEADER, requestId);
   const existing = request.cookies.get(GUEST_COOKIE)?.value;
   const token = isGuestToken(existing) ? undefined : newGuestToken();
-  let res: NextResponse;
   if (token) {
-    const headers = new Headers(request.headers);
     const cookie = request.headers.get("cookie");
     headers.set("cookie", `${cookie ? `${cookie}; ` : ""}${GUEST_COOKIE}=${token}`);
-    res = NextResponse.next({ request: { headers } });
+  }
+  const res = NextResponse.next({ request: { headers } });
+  res.headers.set(REQUEST_ID_HEADER, requestId);
+  if (token) {
     res.cookies.set(GUEST_COOKIE, token, {
       httpOnly: true,
       sameSite: "lax",
@@ -24,8 +31,6 @@ export function proxy(request: NextRequest) {
       path: "/",
       maxAge: GUEST_COOKIE_MAX_AGE,
     });
-  } else {
-    res = NextResponse.next();
   }
   const value = request.nextUrl.searchParams.get("franja");
   if (isFranja(value ?? undefined)) res.cookies.set(FRANJA_COOKIE, value!, { path: "/", sameSite: "lax" });

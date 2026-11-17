@@ -93,7 +93,7 @@ type Conn = PgDatabase<any, any, any>;
 export async function upsertSeedStore(tx: Conn, s: SeedStore, sortOrder: number, routes: RouteCache = ROUTE_CACHE): Promise<string> {
   const { products: items, ...rest } = s;
   const loc = storeLocation(s.slug, s.area);
-  const row = { ...rest, sortOrder, lat: loc.lat, lng: loc.lng };
+  const row = { ...rest, sortOrder, lat: loc.lat, lng: loc.lng, catalogChangedAt: null };
   const [st] = await tx.insert(stores).values(row).onConflictDoUpdate({ target: stores.slug, set: row }).returning({ id: stores.id });
   // Borrar los productos arrastra sus grupos y opciones (cascade).
   await tx.delete(products).where(eq(products.storeId, st.id));

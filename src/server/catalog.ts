@@ -13,6 +13,7 @@ import type {
   StoreSummary,
 } from "@/lib/catalog";
 import type { BrandColor } from "@/lib/demo/home";
+import { restoreStaleStoresSafely } from "./demo-restore";
 import { deliveryFeeCents } from "@/lib/geo";
 import { blendRating, formatRating } from "@/lib/reviews";
 import { db } from "./db";
@@ -111,6 +112,7 @@ function toProduct(r: ProductRow): CatalogProduct {
 
 /** Tiendas ordenadas como en el listado. `vertical` filtra por pestaña (0 restaurantes … 5 tiendas). */
 export async function getStores(opts: { vertical?: number; delivery?: DeliveryContext } = {}): Promise<StoreSummary[]> {
+  await restoreStaleStoresSafely();
   const where = opts.vertical === undefined ? undefined : sql`${opts.vertical} = any(${stores.verticals})`;
   const rows = await db.select().from(stores).where(where).orderBy(asc(stores.sortOrder), asc(stores.name));
   const ids = rows.map((r) => r.id);
@@ -142,6 +144,7 @@ async function hoursOf(storeIds: string[]): Promise<Map<string, DayHours[]>> {
 
 /** Tienda con su catálogo agrupado por sección. */
 export async function getStore(slug: string, delivery?: DeliveryContext): Promise<StoreDetail | null> {
+  await restoreStaleStoresSafely();
   const [row] = await db.select().from(stores).where(eq(stores.slug, slug)).limit(1);
   if (!row) return null;
   const items = await db
@@ -161,6 +164,7 @@ export async function getStore(slug: string, delivery?: DeliveryContext): Promis
 
 /** Un producto con sus grupos de opciones. `productSlug` es el id estable dentro de la tienda. */
 export async function getProduct(storeSlug: string, productSlug: string, delivery?: DeliveryContext): Promise<ProductDetail | null> {
+  await restoreStaleStoresSafely();
   const [row] = await db.select().from(stores).where(eq(stores.slug, storeSlug)).limit(1);
   if (!row) return null;
   const [p] = await db
@@ -225,6 +229,7 @@ const similar = (col: SQL | AnyColumn, text: string) => sql`word_similarity(lowe
  * Las coincidencias exactas salen primero.
  */
 export async function searchCatalog(q: string, limits = { stores: 20, products: 50 }, delivery?: DeliveryContext): Promise<SearchResults> {
+  await restoreStaleStoresSafely();
   const text = q.trim();
   if (!text) return { stores: [], products: [] };
   const pattern = likePattern(text);
