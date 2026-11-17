@@ -1,129 +1,120 @@
 # Ñami
 
-App de delivery venezolana (comida, mercado, farmacia y tiendas). Proyecto de portafolio: el pedido, el pago y el seguimiento son simulados, y nada se cobra ni se entrega.
+[![CI](https://github.com/csswoman/nami/actions/workflows/ci.yml/badge.svg)](https://github.com/csswoman/nami/actions/workflows/ci.yml)
 
-Next.js (App Router) · React · TypeScript · PostgreSQL · Drizzle · Zod · Zustand · MapLibre GL · Tailwind CSS · Vitest · Playwright · GitHub Actions.
+**Live demo: [nami-taupe.vercel.app](https://nami-taupe.vercel.app)** · [Try the two-sided demo](https://nami-taupe.vercel.app/demo) · [API docs](https://nami-taupe.vercel.app/api/docs) · [Leer en español](README.es.md)
 
-## Capturas
-| Inicio y listado con filtros | Tienda | Búsqueda con errores de tipeo |
+A Venezuelan food and grocery delivery app (restaurants, markets, pharmacies and shops), built end to end by one developer: design system, frontend, backend and database. Checkout, payment and the courier are simulated, so you can place an order and follow it without signing up. Nothing is charged or delivered.
+
+Next.js (App Router) · React 19 · TypeScript (strict) · PostgreSQL · Drizzle · Zod · Zustand · MapLibre GL · Tailwind CSS v4 · Vitest · Playwright · axe-core · Lighthouse CI · GitHub Actions · Vercel + Neon
+
+## Try it in 2 minutes
+
+1. Open **[/demo](https://nami-taupe.vercel.app/demo)**: the customer app on the left, the store's admin panel on the right (on a phone, open both in separate tabs).
+2. On the left, order something from the selected store. It shows up under "Por atender" in a few seconds.
+3. On the right, accept the order and move it forward: the customer's tracking screen updates stage by stage.
+4. Close the panel (or wait 30 s): the order keeps going on its own, as if the store were on autopilot.
+
+The store panel is an open, shared demo, so other visitors see your changes. Prices, stock, hours and open/closed state go back to the demo data on their own 15 minutes after the first change.
+
+## Screenshots
+
+| Home and filters | Store | Typo-tolerant search |
 | --- | --- | --- |
-| ![Listado](docs/screenshots/listado.png) | ![Tienda](docs/screenshots/tienda.png) | ![Búsqueda](docs/screenshots/busqueda.png) |
+| ![Listing](docs/screenshots/listado.png) | ![Store](docs/screenshots/tienda.png) | ![Search](docs/screenshots/busqueda.png) |
 
-| Dirección en el mapa | Panel de tienda | Perfil |
+| Address on the map | Store panel | Profile |
 | --- | --- | --- |
-| ![Dirección](docs/screenshots/direccion.png) | ![Panel de tienda](docs/screenshots/panel-tienda.png) | ![Perfil](docs/screenshots/perfil.png) |
+| ![Address](docs/screenshots/direccion.png) | ![Store panel](docs/screenshots/panel-tienda.png) | ![Profile](docs/screenshots/perfil.png) |
 
-## Arquitectura
+## What's worth looking at
+
+- **The server never trusts the client's money.** The cart lives in the browser, but at checkout the server recomputes prices, delivery fees, coupons and totals inside a transaction. A test sends `totalCents: 1` and checks that the stored order still has the real total. All amounts are integer cents. Each order stores the Bs./$ rate it was placed with.
+- **One order, several stores, one state machine per stop.** `orders` + `order_stops`: each store accepts, prepares and hands over only its own part. An invalid transition is a `409`. A concurrency test has five panel tabs accept the same order at once: exactly one wins.
+- **Thin handlers, pure domain logic.** Server Actions and Route Handlers only validate with Zod, call a service in `src/server/` and respond. Pricing, coupons, delivery slots and substitutions are pure functions in `src/lib/`, so they also run in the browser for content that never reaches the DB.
+- **Public-demo hardening.** Per-IP rate limiting in Postgres (an atomic `INSERT … ON CONFLICT`, tested with 25 concurrent requests where exactly 10 get through), `429` with `Retry-After`. Self-healing shared catalog. Structured JSON error logs with a request id that is also returned to the browser.
+- **API contract generated from the validators.** [`/api/docs`](https://nami-taupe.vercel.app/api/docs) is Swagger UI over an OpenAPI 3.1 spec built from the same Zod schemas the routes use. A unit test fails if a Route Handler is added without being documented.
+- **Accessibility checked in CI.** axe-core (WCAG 2.1 AA) runs on the main screens in light and dark mode, and Lighthouse runs against the production build. Accessibility and best practices block the build; performance and SEO only warn.
+- **Maps without paid APIs.** Street routes from every store to every delivery zone are computed once with OSRM and stored. The courier's position is interpolated on the client along that route, so tracking needs no external calls.
+
+## Architecture
+
 ```mermaid
 flowchart LR
-  subgraph Navegador
-    UI[Páginas React<br/>Server y Client Components]
-    LS[(localStorage<br/>carrito, favoritos,<br/>direcciones)]
-    CK[(Cookies<br/>moneda, punto de entrega,<br/>token de invitado)]
+  subgraph Browser
+    UI[React pages<br/>Server + Client Components]
+    LS[(localStorage<br/>cart, favorites,<br/>addresses)]
+    CK[(Cookies<br/>currency, delivery point,<br/>guest token)]
   end
   subgraph Next.js
-    SC[Server Components<br/>leen el catálogo]
-    SA[Server Actions y<br/>Route Handlers<br/>validan con Zod]
-    SV[src/server<br/>createOrder, advanceOrderStatus,<br/>máquina de estados]
+    PX[proxy.ts<br/>guest token, request id]
+    SC[Server Components<br/>read the catalog]
+    SA[Server Actions and<br/>Route Handlers<br/>validate with Zod,<br/>rate limit]
+    SV[src/server<br/>createOrder, advanceOrderStatus,<br/>state machine]
   end
   DB[(PostgreSQL<br/>Drizzle + pg_trgm)]
-  UI --> SC
-  UI --> SA
+  UI --> PX --> SC
+  PX --> SA
   UI <--> LS
   UI <--> CK
   SC --> SV
   SA --> SV
   SV --> DB
-  UI -. "polling cada pocos segundos" .-> SA
-  Panel[Panel de tienda<br/>/tienda-admin/slug] --> SA
+  UI -. "polling every few seconds" .-> SA
 ```
-Las páginas leen datos en el servidor y las mutaciones pasan por Server Actions o Route Handlers que solo validan (Zod) y llaman a `src/server`, donde vive la lógica. Lo que crea un visitante (carrito, favoritos, direcciones) se queda en su navegador; los pedidos del catálogo de la app van a la BD con un token de invitado.
 
-## Decisiones importantes
-- **Dinero en centavos.** Todos los montos son enteros (`integer`). Así no hay errores de redondeo con decimales flotantes y los totales se pueden comparar con `===`. La conversión a Bs. se hace solo al mostrar.
-- **Tasa guardada en cada pedido.** El pedido guarda la tasa Bs./$ y el total en bolívares con que se creó. Si la tasa cambia después, el historial no cambia.
-- **Recálculo en el servidor.** El carrito vive en el navegador, pero al pedir el servidor vuelve a calcular precios, envío, cupones y totales dentro de una transacción. Nunca confía en un monto que venga del cliente.
-- **Un pedido con varias paradas.** `orders` + `order_stops`: el seguimiento es uno solo y cada tienda ve y avanza solo su parte con una máquina de estados (una transición inválida devuelve 409).
-- **Productos con slug.** El carrito guardado en el navegador referencia productos por slug, así sigue sirviendo cuando el seed recrea los uuid.
-- **Polling y no websockets.** El estado de un pedido cambia cada varios segundos y lo consultan pocos clientes. Un `fetch` periódico es suficiente, funciona igual en Vercel (sin conexiones largas) y es mucho más simple de operar y probar. La posición del repartidor se calcula en el cliente sobre una ruta precalculada, así que no hay tráfico por cada movimiento.
-- **Sin servicios externos al pedir.** Las rutas por calle (OSRM) se calculan una vez en el seed; los tiles del mapa son los de OpenStreetMap.
-- **Sin login.** El cliente es un invitado con cookie anónima y el panel de tienda es un modo de demo abierto, como se describe en `CLAUDE.md`.
+The reasoning behind the main decisions is in [`docs/adr/`](docs/adr):
 
-## Cómo correrlo
+| ADR | Decision |
+| --- | --- |
+| [0001](docs/adr/0001-polling-instead-of-websockets.md) | Polling instead of WebSockets for order tracking |
+| [0002](docs/adr/0002-guest-checkout-without-accounts.md) | Guest checkout with an anonymous cookie, no accounts |
+| [0003](docs/adr/0003-precomputed-routes.md) | Precomputed street routes and a client-side courier |
+| [0004](docs/adr/0004-shared-demo-panel.md) | Shared store panel that restores itself |
+| [0005](docs/adr/0005-rate-limiting-in-postgres.md) | Rate limiting in Postgres instead of Redis |
+
+## Tests and CI
+
+| Layer | What | Where |
+| --- | --- | --- |
+| Unit | Pricing, coupons, slots, state machine, substitutions, OpenAPI coverage of every route | `src/**/*.test.ts` (Vitest, coverage thresholds) |
+| Integration | Services against a real Postgres (no ORM mocks), including concurrency and rate limiting | `tests/db` |
+| End to end | Order → tracking → delivery, map, profile, filters, accessibility (axe, light and dark) | `tests/e2e` (Playwright) |
+| Lighthouse | Home, listing and store page on the production build | `lighthouserc.json` |
+
+`.github/workflows/ci.yml` runs four jobs on every push and pull request: lint + types + unit tests with coverage, integration against Postgres 17, Playwright, and Lighthouse.
+
+## Running it locally
 
 ```bash
-cp .env.example .env.development.local   # DATABASE_URL apunta al Postgres de Docker
+cp .env.example .env.development.local   # DATABASE_URL points to the Docker Postgres
 npm install
-npm run db:up        # Postgres local (Docker)
-npm run db:migrate   # esquema
-npm run db:seed      # tiendas, productos, horarios, rutas y tasa de demo (la primera vez pide ~325 rutas a OSRM)
+npm run db:up        # local Postgres (Docker)
+npm run db:migrate
+npm run db:seed      # stores, products, hours, routes and a demo exchange rate
 npm run dev          # http://localhost:3000
 ```
 
-Pruebas: `npm test` (unitarias) · `npm run test:db` (integración contra un Postgres de prueba en Docker) · `npm run test:e2e` (Playwright).
+Tests: `npm test` · `npm run test:coverage` · `npm run test:db` (integration, starts its own Postgres in Docker) · `npm run test:e2e` · `npm run lighthouse` (after `next build`).
 
-## Mapa y envío por distancia
+On Windows, run the tests from a path with an uppercase drive letter (`D:\…`, not `d:\…`). Otherwise Vitest loads two copies of itself and every suite fails with `Cannot read properties of undefined (reading 'config')`.
 
-`/direccion` muestra un mapa de OpenStreetMap (MapLibre GL, sin API key). El cliente arrastra el pin o toca el mapa, o elige una zona de prueba.
+## With more time
 
-- **Zonas:** `src/lib/geo.ts` define 13 zonas de Caracas. El pin se asigna a la zona más cercana (a menos de 2,5 km de su centro; si no, queda fuera del mapa de entregas).
-- **Rutas:** el seed calcula con OSRM la ruta por calle de cada tienda a cada zona y la guarda en `store_routes`. Se piden una sola vez y quedan en `src/server/db/route-cache.json`, así que `db:seed` y «Reponer catálogo» no necesitan red después. Al pedir nunca se llama a un servicio externo. Sin red se usa una estimación en línea recta (`SEED_ROUTING=estimate` la fuerza).
-- **Cobertura:** cada tienda reparte hasta cierta distancia por calle (`max_delivery_m`, 7 km por defecto). Inicio, listado y búsqueda solo muestran las tiendas que llegan; la página de una tienda lejana avisa y el servidor rechaza el pedido (`OUT_OF_COVERAGE`).
-- **Envío:** tarifa base de la tienda + 30 centavos por kilómetro pasados los primeros 2, redondeado a 5 centavos. Con varias tiendas en un solo motorizado vale el envío más caro más el recargo por parada extra.
-- **Dónde se guarda el punto:** en la dirección del carrito y en la cookie `nami_loc`, que el servidor lee para filtrar y calcular el envío. Sin cookie se usa Altamira.
-
-Los mapas usan los tiles públicos de OpenStreetMap, pensados para uso ligero (una demo de portafolio); para tráfico real habría que contratar un proveedor de tiles.
-
-## Panel de tienda
-
-El lado de la tienda, sin login: <http://localhost:3000/tienda-admin>.
-
-- **Entrar:** elige una tienda de la lista. Arriba verás "Estás viendo como…" y un selector para cambiar de tienda. También hay un enlace en la página de cada tienda, en el pie de la app y en `/acerca`.
-- **Pedidos:** la bandeja se actualiza cada 4 segundos. Cada tienda acepta o rechaza (con motivo), pasa a "en preparación" y marca "listo para retirar". Una acción que no corresponde al estado actual devuelve **409**.
-- **Mercados:** el panel también sirve para mercados, farmacias y tiendas. Si al preparar un pedido falta un producto, «No hay» aplica lo que eligió el cliente (quitarlo, algo parecido o un producto concreto); el reemplazo nunca cobra más de lo pedido y los totales se recalculan.
-- **Inventario:** agotar o reponer productos y cambiar precios. El cliente lo ve en su siguiente consulta y los pedidos nuevos se cobran con ese precio.
-- **Horario:** turnos por día de la semana, hora de Caracas. Un día sin turnos queda cerrado y los pedidos se programan para la próxima apertura.
-- **Reseñas:** lo que los clientes calificaron al recibir su pedido.
-- **Abrir o cerrar** la tienda a mano (se combina con el horario).
-- **Reponer catálogo:** el botón de la "Zona de demo" devuelve esa tienda a los datos del seed. `npm run db:cleanup` lo hace para todas y borra los pedidos de más de 7 días.
-
-### Probarlo en 2 minutos
-
-1. Abre <http://localhost:3000/demo>: cliente a la izquierda, tienda a la derecha (en pantallas anchas; en móvil abre las dos en pestañas).
-2. A la izquierda pide algo de la tienda elegida. Aparece en "Por atender" en unos segundos.
-3. A la derecha, acepta y avanza el pedido: el seguimiento del cliente cambia de etapa. El pedido espera a la tienda mientras el panel esté abierto.
-4. Cierra el panel (o espera 30 segundos sin actividad): el pedido sigue solo con el plan de tiempos, como en el modo automático.
-
-### Modo automático y manual
-
-Si una tienda tiene su panel abierto (lo consultó hace menos de 30 s), los pedidos suyos esperan sus acciones durante "recibido" y "preparando". Si nadie atiende, avanzan solos por tiempo. Cada parada (`order_stops`) avanza por su cuenta con la máquina de estados de `src/lib/orders/stop-machine.ts`, y `advanceOrderStatus` decide el estado general del pedido.
-
-## Checkout: cupones, franjas, sustituciones y cancelación
-- **Cupones:** `src/lib/pricing/coupons.ts` (funciones puras). Soporta porcentaje, monto fijo, envío gratis y 2x1 por sección, con subtotal mínimo, vencimiento, tienda específica y «solo primer pedido». El servidor valida y calcula el descuento al cotizar y al crear el pedido; el cliente nunca decide cuánto se descuenta.
-- **Programar entrega:** `src/lib/orders/slots.ts` ofrece franjas cada 30 minutos (hoy y mañana, hora de Caracas, mínimo 30 min de antelación) en las que todas las tiendas del pedido están abiertas.
-- **Sustituciones:** al hacer el pedido el cliente elige qué hacer si falta un producto (quitarlo, algo parecido o uno concreto). Ver `src/lib/orders/substitution.ts`.
-- **Cancelar:** el cliente puede cancelar con un motivo antes de que el pedido esté «En camino».
-- **Reseñas:** al recibir el pedido el cliente califica cada tienda y la tienda ve las reseñas en su panel.
-## Perfil, favoritos y búsqueda
-- **`/perfil`:** direcciones guardadas (con su pin; se usan con un clic), moneda, tema, favoritos, enlace al panel de tienda y «Borrar mis datos de demo» (borra tus pedidos en el servidor y lo guardado en el navegador).
-- **Favoritos:** la estrella en tiendas, mercados y productos. Se guardan en `localStorage` (`nami-profile`), nunca en la BD.
-- **Búsqueda tolerante:** `searchCatalog` combina `unaccent` + `ILIKE` con `word_similarity` de `pg_trgm` (umbral 0,5, solo con 4 letras o más). «teqeños» encuentra «tequeños» y las coincidencias exactas salen primero.
-- **Filtros y orden** (listado y búsqueda; viven en la URL): abierto ahora, envío gratis, hasta 30 min, precio ($ hasta 3,00 · $$ hasta 4,50 · $$$ más, según el promedio de sus productos) y orden por rapidez o calificación. La lógica pura está en `src/lib/listing.ts`.
-
-## Pruebas y CI
-`.github/workflows/ci.yml` corre en cada push y pull request:
-1. **Calidad:** `npm run lint`, `npx next typegen` + `tsc --noEmit` y `npm test` (unitarias).
-2. **Integración:** Postgres 17 como servicio, migraciones, seed y `vitest.db.config.mts` (`tests/db`).
-3. **Playwright:** Postgres, migraciones, seed (las rutas salen de `route-cache.json`) y `playwright test`.
+- **Server-Sent Events for tracking**, if the number of concurrent viewers grew. Polling is the right call at this scale (see ADR 0001).
+- **Per-visitor sandbox for the store panel.** Today the panel is shared and restores itself. A real sandbox would put each visitor's catalog changes in an overlay keyed by their guest token.
+- **Real accounts and payments** (order history, saved cards, Pago Móvil confirmation). They were left out on purpose, so a recruiter can try the whole flow without signing up.
+- **Error tracking** (Sentry or similar) on top of the structured logs.
+- **Visual regression tests** for the design system components.
 
 ## Deploy (Vercel + Neon)
-El seed y el cron de limpieza en producción los corre el dueño del proyecto, no se ejecutan solos.
-1. Crea el proyecto en Neon y copia la cadena de conexión *pooled* a `DATABASE_URL` (Vercel) y la directa a `MIGRATE_DATABASE_URL` (para migrar).
-2. Migraciones desde tu máquina: `MIGRATE_DATABASE_URL=<directa> npm run db:migrate`.
-3. Seed: `SEED_ALLOW_REMOTE=1 DATABASE_URL=<directa> npm run db:seed`.
-4. Limpieza periódica (pedidos de más de 7 días y catálogo al seed): `CLEANUP_ALLOW_REMOTE=1 DATABASE_URL=<directa> npm run db:cleanup`.
-5. Importa el repositorio en Vercel. Variables opcionales: `NEXT_PUBLIC_REPO_URL` y `NEXT_PUBLIC_PORTFOLIO_URL` (enlaces de `/acerca`).
 
-## Más
+Production seeding and cleanup are run by hand by the project owner.
 
-Convenciones y arquitectura: `CLAUDE.md`. Plan de trabajo: `docs/PLAN.md`.
+1. Create the Neon project. Set the *pooled* connection string as `DATABASE_URL` in Vercel and keep the direct one for migrations.
+2. Migrate: `MIGRATE_DATABASE_URL=<direct> npm run db:migrate`.
+3. Seed: `SEED_ALLOW_REMOTE=1 DATABASE_URL=<direct> npm run db:seed`.
+4. Cleanup (orders older than 7 days, old rate-limit counters, catalog back to the seed): `CLEANUP_ALLOW_REMOTE=1 DATABASE_URL=<direct> npm run db:cleanup`.
+5. Import the repo into Vercel. Optional: `NEXT_PUBLIC_REPO_URL`, `NEXT_PUBLIC_PORTFOLIO_URL` (links on `/acerca`).
+
+Conventions and architecture rules: [`CLAUDE.md`](CLAUDE.md) (in Spanish). Work plan: [`docs/PLAN.md`](docs/PLAN.md).

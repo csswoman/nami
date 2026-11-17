@@ -13,6 +13,8 @@ export default defineConfig({
     command: `npx next dev -p ${port}`,
     url: `http://localhost:${port}`,
     reuseExistingServer: !process.env.CI,
+    // Las pruebas hacen muchos pedidos seguidos desde la misma IP: sin esto chocarían con el límite de la demo.
+    env: { RATE_LIMIT: "off" },
     timeout: 120_000,
   },
 });

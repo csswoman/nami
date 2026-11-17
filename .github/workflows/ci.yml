@@ -23,7 +23,23 @@ jobs:
       # Genera los tipos de rutas (PageProps, RouteContext) que usa el código.
       - run: npx next typegen
       - run: npx tsc --noEmit
-      - run: npm test
+      # Unitarias con cobertura: falla si baja de los umbrales de vitest.config.mts.
+      - run: npm run test:coverage
+      - name: Resumen de cobertura
+        if: always()
+        run: |
+          node -e '
+            const t = require("./coverage/coverage-summary.json").total;
+            const row = (k) => `| ${k} | ${t[k].pct} % | ${t[k].covered}/${t[k].total} |`;
+            console.log(["### Cobertura de src/lib", "| Métrica | % | Cubierto |", "| --- | --- | --- |", ...["statements", "branches", "functions", "lines"].map(row)].join("
+"));
+          ' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage
+          path: coverage/
+          retention-days: 7
   integration:
     name: Integración contra Postgres
     runs-on: ubuntu-latest
@@ -86,10 +102,49 @@ jobs:
       # Las rutas por calle salen de src/server/db/route-cache.json: no hace falta red.
       - run: npx tsx scripts/seed.ts
       - run: npx playwright install --with-deps chromium
+      # Incluye tests/e2e/a11y.spec.ts: axe-core (WCAG 2.1 AA) en las pantallas principales, tema claro y oscuro.
       - run: npx playwright test
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: playwright-results
           path: test-results/
+          retention-days: 7
+  lighthouse:
+    name: Lighthouse
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: nami
+          POSTGRES_PASSWORD: nami
+          POSTGRES_DB: nami
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U nami -d nami"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://nami:nami@localhost:5432/nami
+      MIGRATE_DATABASE_URL: postgres://nami:nami@localhost:5432/nami
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx drizzle-kit migrate
+      - run: npx tsx scripts/seed.ts
+      - run: npx next build
+      # Build de producción: accesibilidad, buenas prácticas y SEO bloquean; rendimiento solo avisa (ver lighthouserc.json).
+      - run: npm run lighthouse
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighthouse
+          path: lighthouse/
           retention-days: 7

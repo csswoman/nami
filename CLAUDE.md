@@ -27,6 +27,12 @@ No usar Supabase como plataforma, ni Express/NestJS, ni microservicios.
 - Seguimiento del repartidor: ruta precalculada + hora de inicio guardadas en el pedido; el cliente calcula la posición y hace polling del estado (`preparando → en camino → entregado`). Sin websockets por ahora.
 - Route Handlers: códigos de estado correctos y errores con forma consistente `{ error: { code, message } }`.
 - Tests de integración contra un Postgres de prueba (Docker), no mocks del ORM.
+- Errores del servidor: `logError(scope, e)` de `src/server/log.ts` (JSON con `requestId`), no `console.error`.
+- Endpoints públicos que escriben: límite por IP con `checkRateLimit` (`src/server/rate-limit.ts`) → 429 `RATE_LIMITED` con `Retry-After`.
+- Route Handler nuevo o cambiado: documentarlo en `src/lib/openapi.ts` (una prueba falla si falta).
+- Mutación nueva del panel sobre el catálogo: llamar `markCatalogChanged` para que la tienda vuelva sola al seed (ver `docs/adr/0004`).
+- Nada de `Date.now()` en código que corre al renderizar una página (cacheComponents): pasar el tiempo como parámetro o calcularlo en SQL.
+- Gestor de paquetes: npm (`package-lock.json`). En Windows, corre las pruebas desde `D:\` en mayúscula.
 ## Moneda
 - Precio base en USD (centavos) y por tienda: cada tienda tiene sus propios `products` y precios.
 - El usuario elige ver USD o Bs.; la preferencia va en una **cookie** (para que el servidor renderice en la moneda correcta). Es preferencia de UI, no de Zustand.

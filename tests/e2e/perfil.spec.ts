@@ -33,8 +33,10 @@ test.describe("perfil y favoritos", () => {
 });
 test("el listado aplica filtros de la URL", async ({ page }) => {
   await page.goto("/listado?fast=1&price=1");
-  await expect(page.getByRole("link", { name: "Hasta 30 min" })).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByRole("link", { name: "Precio $", exact: true })).toHaveAttribute("aria-pressed", "true");
+  // El estado activo va en el nombre accesible (aria-pressed no es válido en un enlace).
+  await expect(page.getByRole("link", { name: /^Hasta 30 min\s*, activado$/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: /^Precio \$\s*, activado$/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Precio $$", exact: true })).toBeVisible();
 });
 test("la búsqueda encuentra con errores de tipeo", async ({ page }) => {
   await page.goto("/busqueda?q=teqe%C3%B1os");

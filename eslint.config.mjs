@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Reportes generados (vitest --coverage, Lighthouse CI).
+    "coverage/**",
+    "lighthouse/**",
+    ".lighthouseci/**",
   ]),
 ]);
 

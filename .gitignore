@@ -70,3 +70,7 @@ Thumbs.db
 # playwright
 /test-results/
 /playwright-report/
+
+# Lighthouse CI
+/lighthouse/
+/.lighthouseci/
