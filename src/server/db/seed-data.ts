@@ -72,7 +72,7 @@ export function buildSeedStores(): SeedStore[] {
   }));
   const markets: SeedStore[] = Object.values(MARKETS).map((m) => ({
     slug: m.slug, name: m.name, category: m.kind === "Farmacia" ? "farmacia" : m.kind === "Tienda" ? "tienda" : "mercado", description: m.kind,
-    imageUrl: null, deliveryFeeCents: m.feeCents, isOpen: true,
+    imageUrl: `/brand/stores/${m.slug}.jpg`, deliveryFeeCents: m.feeCents, isOpen: true,
     kind: "mercado", minOrderCents: m.minOrderCents, initials: m.initials, color: m.color,
     // "Abierto todo el día" / "24 horas" → sin horario; "Hasta las 9:00 p. m." → solo hora de cierre.
     ...(m.hours === "Abierto 24 horas" ? { opensAt: 0, closesAt: 1440 } : hoursOf(null, m.hours)), rating: null, reviews: null,

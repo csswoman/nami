@@ -9,7 +9,7 @@ afterAll(async () => {
 
 it("getStores filtra por pestaña y respeta el orden del listado", async () => {
   const restaurants = await getStores({ vertical: 0 });
-  expect(restaurants).toHaveLength(11);
+  expect(restaurants).toHaveLength(15);
   expect(restaurants[0].slug).toBe("arepera-dona-chela");
   const markets = await getStores({ vertical: 1 });
   expect(markets.every((s) => s.kind === "mercado")).toBe(true);

@@ -1,4 +1,5 @@
 import type { BrandColor } from "@/lib/demo/home";
+import { MORE_MARKETS } from "./mercados-extra";
 
 /** Mercados (súper y farmacia) de ejemplo. Montos en centavos de USD. */
 export type MarketProduct = {
@@ -279,6 +280,7 @@ export const MARKETS: Record<string, Market> = {
   },
 };
 
+Object.assign(MARKETS, MORE_MARKETS);
 /** Promociones de un mercado: primero lo rebajado, luego lo que queda poco y después el resto (sin agotados). */
 export function promosOf(slug: string, max = 5): MarketProduct[] {
   const m = MARKETS[slug];

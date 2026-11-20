@@ -65,7 +65,26 @@ const DISH_IMAGE_MAP: Record<string, string> = {
   "catalinas": "/brand/food/catalinas.jpg",
   "golfeado-clara": "/brand/food/golfeado.jpg",
   "papelon": "/brand/food/papelon-vaso.jpg",
-  "malta": "/brand/products/malta-6.jpg"
+  "malta": "/brand/products/malta-6.jpg",
+  "pizza-margarita": "/brand/food/pizza-margarita.jpg",
+  "pizza-jamon-queso": "/brand/food/pizza-jamon-queso.jpg",
+  "pizza-pepperoni": "/brand/food/pizza-pepperoni.jpg",
+  "ceviche": "/brand/food/ceviche.jpg",
+  "arroz-marisco": "/brand/food/arroz-marisco.jpg",
+  "pastelito": "/brand/food/pastelito.jpg",
+  "sancocho": "/brand/food/sancocho.jpg",
+  "hervido-res": "/brand/food/hervido-res.jpg",
+  "pan-de-queso": "/brand/food/pan-de-queso.jpg",
+  "croissant": "/brand/food/croissant.jpg",
+  "brazo-gitano": "/brand/food/brazo-gitano.jpg",
+  "pastelito-carne": "/brand/food/pastelito.jpg",
+  "pastelito-queso": "/brand/food/pastelito.jpg",
+  "cachito-jamon": "/brand/food/cachito.jpg",
+  "cachito-queso": "/brand/food/cachito.jpg",
+  "empanada-cazon": "/brand/food/empanada-cazon.jpg",
+  "refresco": "/brand/products/refresco.jpg",
+  "quesillo": "/brand/products/quesillo.jpg",
+  "pan-jamon": "/brand/food/pan-de-jamon.jpg"
 };
 
 const it = (id: string, name: string, desc: string, priceCents: number, icon: IconName, extra: Extra = {}): MenuItem => ({
@@ -254,6 +273,106 @@ export const MORE_STORES: StoreDetail[] = [
       BEBIDAS(CAFE, it("chicha-clara", "Chicha", "De arroz, con canela.", 180, "chicha")),
     ],
   }),
+  // Más restaurantes
+  mk({
+    slug: "pizzeria-la-nona", name: "Pizzería La Nona", initials: "LN", color: "brand-orange", heroImage: "pizza-margarita", kind: "Pizzas · Pastas · Las Mercedes",
+    rating: "4,7", reviews: "870", time: "30–40 min", feeCents: 150, openUntil: "Hasta las 11:00 p. m.", opensAt: "Abre mañana a las 12:00 p. m.", minOrderCents: 1000,
+    menu: [
+      sec("pizzas", "Pizzas", [
+        it("pizza-margarita", "Pizza margarita", "Salsa de tomate, mozzarella y albahaca. 8 porciones.", 900, "pan-de-jamon"),
+        it("pizza-jamon-queso", "Pizza de jamón y queso", "Jamón de pierna y mozzarella. 8 porciones.", 1050, "pan-de-jamon"),
+        it("pizza-pepperoni", "Pizza de pepperoni", "Doble pepperoni y mozzarella. 8 porciones.", 1150, "pan-de-jamon", { low: 4 }),
+      ]),
+      sec("entradas", "Entradas", [
+        it("pan-ajo", "Pan de ajo", "Con mantequilla y perejil.", 280, "pan-de-jamon"),
+        it("papas", "Papas fritas", "Porción mediana.", 220, "platano", { soldOut: true }),
+      ]),
+      BEBIDAS(it("refresco", "Refresco de cola", "Botella de 1 l.", 200, "malta"), MALTA),
+    ],
+  }),
+  mk({
+    slug: "mariscos-el-faro", name: "Mariscos El Faro", initials: "EF", color: "primary", heroImage: "ceviche", kind: "Pescados · Mariscos · Chacaíto",
+    rating: "4,6", reviews: "560", time: "30–40 min", feeCents: 140, openUntil: "Hasta las 8:00 p. m.", opensAt: "Abre mañana a las 11:00 a. m.", minOrderCents: 900,
+    menu: [
+      sec("platos", "Platos", [
+        it("pescado-frito", "Pescado frito entero", "Con tostones y ensalada.", 850, "pabellon"),
+        it("ceviche", "Ceviche de pescado", "Limón, cebolla morada y cilantro.", 780, "pabellon"),
+        it("arroz-marisco", "Arroz con mariscos", "Camarones, calamares y mejillones.", 950, "pabellon", { low: 3 }),
+      ]),
+      sec("frituras", "Frituras", [
+        it("empanada-cazon", "Empanada de cazón", "Al estilo oriental.", 220, "empanada"),
+        it("tostones", "Tostones", "Con salsa rosada.", 300, "platano"),
+        it("yuca", "Yuca frita", "Con salsa de ajo.", 240, "platano", { soldOut: true }),
+      ]),
+      BEBIDAS(PAPELON, MALTA),
+    ],
+  }),
+  mk({
+    slug: "cachitos-don-pepe", name: "Cachitos Don Pepe", initials: "DP", color: "brand-orange", heroImage: "cachito", kind: "Cachitos · Pastelitos · La Candelaria",
+    rating: "4,6", reviews: "390", time: "15–25 min", feeCents: 90, openUntil: "Hasta las 6:00 p. m.", opensAt: "Abre mañana a las 6:00 a. m.", minOrderCents: 400,
+    menu: [
+      sec("cachitos", "Cachitos", [
+        it("cachito-jamon", "Cachito de jamón", "Pan relleno de jamón, recién horneado.", 220, "pan-de-jamon"),
+        it("cachito-queso", "Cachito de queso", "Relleno de queso blanco.", 200, "pan-de-jamon", { low: 6 }),
+      ]),
+      sec("frituras", "Frituras", [
+        it("pastelito-carne", "Pastelito de carne", "Frito al momento.", 180, "empanada"),
+        it("pastelito-queso", "Pastelito de queso", "Frito al momento.", 160, "empanada"),
+        it("mandocas", "Mandocas", "Con queso rallado.", 280, "arepa", { soldOut: true }),
+      ]),
+      BEBIDAS(CAFE, it("cafe-leche", "Café con leche", "Recién colado.", 140, "cafe")),
+    ],
+  }),
+  mk({
+    slug: "hervidos-la-abuela", name: "Hervidos La Abuela", initials: "HA", color: "leaf", heroImage: "sancocho", kind: "Sopas · Hervidos · Criolla · El Cafetal",
+    rating: "4,8", reviews: "710", time: "30–40 min", feeCents: 150, openUntil: "Hasta las 3:00 p. m.", opensAt: "Abre mañana a las 10:00 a. m.", minOrderCents: 700,
+    menu: [
+      sec("sopas", "Sopas", [
+        it("sancocho", "Sancocho de gallina", "Con yuca, ñame, ocumo y mazorca.", 650, "pabellon", { low: 5 }),
+        it("hervido-res", "Hervido de res", "Con verduras y arepa.", 700, "pabellon"),
+      ]),
+      sec("segundos", "Segundos", [
+        it("pollo-guisado", "Pollo guisado", "Con puré de papa y arroz.", 590, "pabellon"),
+        it("hallaca", "Hallaca", "Envuelta en hoja de plátano.", 450, "hallaca", { soldOut: true }),
+      ]),
+      BEBIDAS(PAPELON, it("chicha", "Chicha", "De arroz, con canela por encima.", 180, "chicha"), CAFE),
+    ],
+  }),
+  // Más panaderías y pastelerías
+  mk({
+    slug: "panaderia-el-trigal", name: "Panadería El Trigal", initials: "TR", color: "leaf", heroImage: "croissant", kind: "Panadería · Desayunos · Sabana Grande",
+    rating: "4,5", reviews: "420", time: "20–30 min", feeCents: 90, openUntil: "Hasta las 8:00 p. m.", opensAt: "Abre mañana a las 5:30 a. m.", minOrderCents: 400,
+    menu: [
+      sec("panes", "Panes", [
+        it("pan-jamon", "Pan de jamón", "Relleno de jamón, tocineta, aceitunas y pasas. Porción de 1/4.", 450, "pan-de-jamon"),
+        it("pan-de-queso", "Pan de queso", "Suave, con queso blanco por dentro.", 200, "pan-de-jamon"),
+        it("campesino", "Pan campesino", "Masa madre, corteza gruesa.", 350, "pan-de-jamon", { low: 5 }),
+        it("croissant", "Croissant de mantequilla", "Hojaldrado, recién horneado.", 220, "pan-de-jamon"),
+      ]),
+      sec("desayunos", "Desayunos", [
+        it("cachito-jamon", "Cachito de jamón", "Con guayoyo.", 220, "pan-de-jamon"),
+        it("combo-jamon", "Sándwich de jamón y queso", "En pan sobao, con café.", 450, "pan-de-jamon", { soldOut: true }),
+      ]),
+      BEBIDAS(CAFE, it("cafe-leche", "Café con leche", "Recién colado.", 140, "cafe")),
+    ],
+  }),
+  mk({
+    slug: "pasteleria-dulce-caracas", name: "Pastelería Dulce Caracas", initials: "DU", color: "plus", heroImage: "brazo-gitano", kind: "Pastelería · Postres · Los Chaguaramos",
+    rating: "4,8", reviews: "640", time: "30–40 min", feeCents: 120, openUntil: "Hasta las 7:00 p. m.", opensAt: "Abre mañana a las 9:00 a. m.", minOrderCents: 600,
+    menu: [
+      sec("postres", "Postres", [
+        it("tres-leches", "Torta tres leches", "Porción individual.", 400, "cuatro"),
+        it("chocolate", "Torta de chocolate", "Con ganache, porción individual.", 420, "cuatro"),
+        it("brazo-gitano", "Brazo gitano", "Relleno de dulce de leche, porción individual.", 380, "cuatro", { low: 4 }),
+        it("quesillo", "Quesillo", "Con caramelo, porción individual.", 300, "cuatro", { soldOut: true }),
+      ]),
+      sec("galletas", "Galletas y bocados", [
+        it("alfajores", "Alfajores x6", "Rellenos de dulce de leche.", 450, "catalina"),
+        it("catalinas", "Catalinas x4", "Galleta con cobertura de papelón.", 380, "catalina"),
+      ]),
+      BEBIDAS(CAFE, it("cafe-leche", "Café con leche", "Recién colado.", 140, "cafe")),
+    ],
+  }),
 ];
 
-export const BAKERY_SLUGS = ["panaderia-la-reina", "panaderia-santa-rosa", "pasteleria-dona-clara"];
+export const BAKERY_SLUGS = ["panaderia-la-reina", "panaderia-santa-rosa", "pasteleria-dona-clara", "panaderia-el-trigal", "pasteleria-dulce-caracas"];

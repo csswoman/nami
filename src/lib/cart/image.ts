@@ -24,6 +24,17 @@ const DISH_ICON_FALLBACK: Record<string, string> = {
   patacones: "/brand/food/patacon.jpg",
   patacon: "/brand/food/patacon.jpg",
   parrilla: "/brand/food/parrilla-mixta.jpg",
+  "pizza-margarita": "/brand/food/pizza-margarita.jpg",
+  "pizza-jamon-queso": "/brand/food/pizza-jamon-queso.jpg",
+  "pizza-pepperoni": "/brand/food/pizza-pepperoni.jpg",
+  ceviche: "/brand/food/ceviche.jpg",
+  "arroz-marisco": "/brand/food/arroz-marisco.jpg",
+  pastelito: "/brand/food/pastelito.jpg",
+  sancocho: "/brand/food/sancocho.jpg",
+  "hervido-res": "/brand/food/hervido-res.jpg",
+  "pan-de-queso": "/brand/food/pan-de-queso.jpg",
+  croissant: "/brand/food/croissant.jpg",
+  "brazo-gitano": "/brand/food/brazo-gitano.jpg",
 };
 
 export function getProductImage(productId: string, storeSlug?: string): string | undefined {

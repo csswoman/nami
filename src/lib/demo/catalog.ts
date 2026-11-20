@@ -23,6 +23,10 @@ export const RESTAURANTS: Restaurant[] = [
   { slug: "perros-el-gocho", name: "Perros El Gocho", image: "perro", initials: "EG", color: "ink", rating: "4,7", time: "15–25 min", feeCents: 80, plusFree: true, tags: ["perro", "tequeno", "patacones", "malta", "papelon"] },
   { slug: "pepitos-la-castellana", name: "Pepitos La Castellana", image: "pepito", initials: "PC", color: "plus", rating: "4,6", time: "20–30 min", feeCents: 100, plusFree: false, tags: ["pepito", "perro", "patacones", "malta", "papelon"] },
   { slug: "hamburguesas-la-curva", name: "Hamburguesas La Curva", image: "hamburguesa", initials: "LC", color: "primary", rating: "4,5", time: "25–35 min", feeCents: 120, plusFree: true, tags: ["hamburguesa", "patacones", "malta", "papelon", "tequeno"] },
+  { slug: "pizzeria-la-nona", name: "Pizzería La Nona", image: "pizza-margarita", initials: "LN", color: "brand-orange", rating: "4,7", time: "30–40 min", feeCents: 150, plusFree: true, tags: ["pizza", "malta"] },
+  { slug: "mariscos-el-faro", name: "Mariscos El Faro", image: "ceviche", initials: "EF", color: "primary", rating: "4,6", time: "30–40 min", feeCents: 140, plusFree: false, tags: ["mariscos", "empanada", "patacones", "malta", "papelon"] },
+  { slug: "cachitos-don-pepe", name: "Cachitos Don Pepe", image: "cachito", initials: "DP", color: "brand-orange", rating: "4,6", time: "15–25 min", feeCents: 90, plusFree: false, tags: ["cachito", "cafe"] },
+  { slug: "hervidos-la-abuela", name: "Hervidos La Abuela", image: "sancocho", initials: "HA", color: "leaf", rating: "4,8", time: "30–40 min", feeCents: 150, plusFree: true, tags: ["criolla", "hallaca", "papelon", "chicha", "cafe"] },
 ];
 
 /**

@@ -14,7 +14,7 @@ test.describe("dirección en el mapa", () => {
     await expect(page.getByTestId("coverage-summary")).toContainText("0 de");
     await page.getByRole("button", { name: "Confirmar dirección" }).first().click();
     await page.goto("/");
-    await expect(page.getByTestId("delivery-bar")).toContainText("Entregando en Caricuao", { timeout: 20_000 });
+    await expect(page.getByTestId("delivery-bar")).toContainText(/no llegan? a Caricuao/, { timeout: 20_000 });
   });
   test("cambiar de zona cambia el envío que ve el cliente", async ({ page }) => {
     const fee = async () => {

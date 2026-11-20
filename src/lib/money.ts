@@ -32,3 +32,15 @@ export function formatMoney(usdCents: number, currency: Currency, rate: number):
 export function formatBs(vesCents: number): string {
   return `Bs. ${formatNumber(vesCents)}`;
 }
+
+/** Lo que la tienda escribe en un campo de precio ("3,50", "3.5", "12") → centavos. NaN si no es un precio válido. */
+export function parsePriceCents(text: string): number {
+  const clean = text.trim().replace(",", ".");
+  if (!/^\d+(\.\d{0,2})?$/.test(clean)) return NaN;
+  return Math.round(Number(clean) * 100);
+}
+
+/** Centavos → texto editable con coma decimal y sin símbolo ("3,50"). */
+export function priceInputValue(cents: number): string {
+  return (cents / 100).toFixed(2).replace(".", ",");
+}

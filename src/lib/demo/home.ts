@@ -20,7 +20,21 @@ export type FoodImage =
   | "pan-de-jamon"
   | "asado-negro"
   | "churrasco"
-  | "pescado-frito";
+  | "pescado-frito"
+  | "pizza-margarita"
+  | "pizza-jamon-queso"
+  | "pizza-pepperoni"
+  | "cachito"
+  | "pollo-guisado"
+  | "tres-leches"
+  | "ceviche"
+  | "arroz-marisco"
+  | "pastelito"
+  | "sancocho"
+  | "hervido-res"
+  | "pan-de-queso"
+  | "croissant"
+  | "brazo-gitano";
 export type BrandColor = "primary" | "primary-pressed" | "leaf" | "ink" | "plus" | "brand-orange";
 
 export type OpenStore = { slug: string; name: string; image: FoodImage; initials: string; rating: string; time: string; feeCents: number; plusFree: boolean };
@@ -117,6 +131,12 @@ export const VERTICALS = [
 export const TRUSTED_MARKETS: { slug: string; name: string; initials: string; color?: BrandColor; featured?: boolean }[] = [
   { slug: "nami-market", name: "Ñami Market", initials: "Ñ", featured: true },
   { slug: "abasto-el-saman", name: "Abasto El Samán", initials: "AS", color: "leaf" },
+  { slug: "supermercado-la-granja", name: "Supermercado La Granja", initials: "LG", color: "leaf" },
+  { slug: "bodegon-las-mercedes", name: "Bodegón Las Mercedes", initials: "BM", color: "plus" },
+  { slug: "farmacia-la-salud", name: "Farmacia La Salud", initials: "FL", color: "primary" },
+  { slug: "ferreteria-el-tornillo", name: "Ferretería El Tornillo", initials: "FT", color: "ink" },
+  { slug: "patitas-pet-shop", name: "Patitas Pet Shop", initials: "PP", color: "brand-orange" },
+  { slug: "fruteria-el-mango", name: "Frutería El Mango", initials: "EM", color: "leaf" },
   { slug: "bodegon-la-candelaria", name: "Bodegón La Candelaria", initials: "BC", color: "ink" },
   { slug: "farmacia-san-onofre", name: "Farmacia San Onofre", initials: "FS", color: "plus" },
   { slug: "automercado-avila", name: "Automercado Ávila", initials: "AA", color: "primary-pressed" },
