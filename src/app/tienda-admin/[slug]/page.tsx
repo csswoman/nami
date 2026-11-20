@@ -8,10 +8,19 @@ import { PanelTabs } from "@/components/panel/PanelTabs";
 import { StoreSwitcher } from "@/components/panel/StoreSwitcher";
 import { listReviews, reviewStats, storeIdOf } from "@/server/reviews";
 import { PanelError, getInventory, getPanel, getSchedule, listPanelStores } from "@/server/store-panel";
+import { SPLIT_VIEW, clientHrefOf } from "@/lib/demo/split-view";
 export const metadata: Metadata = { title: "Panel de tienda · Ñami", robots: { index: false } };
-export default async function PanelPage({ params }: PageProps<"/tienda-admin/[slug]">) {
+async function loadReviews(slug: string) {
+  const storeId = await storeIdOf(slug);
+  if (!storeId) return { items: [], count: 0, sum: 0 };
+  const [items, stats] = await Promise.all([listReviews(storeId, 20), reviewStats([storeId])]);
+  const stat = stats.get(storeId) ?? { count: 0, sum: 0 };
+  return { items, count: stat.count, sum: stat.sum };
+}
+export default async function PanelPage({ params, searchParams }: PageProps<"/tienda-admin/[slug]">) {
   await connection();
-  const { slug } = await params;
+  const [{ slug }, sp] = await Promise.all([params, searchParams]);
+  const embedded = sp.vista === SPLIT_VIEW;
   const [all, initial] = await Promise.all([
     listPanelStores(),
     getPanel(slug).catch((e) => {
@@ -20,11 +29,18 @@ export default async function PanelPage({ params }: PageProps<"/tienda-admin/[sl
     }),
   ]);
   if (!initial) notFound();
-  const kind = all.find((s) => s.slug === slug)?.kind;
-  const clientHref = kind === "mercado" ? `/mercado/${slug}` : `/tienda/${slug}`;
-  const [inventory, schedule, storeId] = await Promise.all([getInventory(slug), getSchedule(slug), storeIdOf(slug)]);
-  const [items, stats] = storeId ? await Promise.all([listReviews(storeId, 20), reviewStats([storeId])]) : [[], new Map()];
-  const stat = (storeId && stats.get(storeId)) || { count: 0, sum: 0 };
+  const [inventory, schedule, reviews] = await Promise.all([getInventory(slug), getSchedule(slug), loadReviews(slug)]);
+  const tabs = <PanelTabs slug={slug} orders={initial} inventory={inventory} schedule={schedule} reviews={reviews} />;
+  // Dentro de la pantalla dividida: sin barras ni selector (lo maneja la página de afuera, que mantiene sincronizados los dos lados).
+  if (embedded) {
+    return (
+      <main id="contenido" className="flex min-h-dvh flex-col gap-4 bg-surface px-4 py-4">
+        <h1 className="font-display text-title-lg">{initial.store.name}</h1>
+        {tabs}
+      </main>
+    );
+  }
+  const clientHref = clientHrefOf(slug, all.find((s) => s.slug === slug)?.kind);
   return (
     <AppShell mobileHeader={false} bottomNav={false}>
       <ScreenBar title="Panel de tienda" back="/tienda-admin" />
@@ -40,7 +56,7 @@ export default async function PanelPage({ params }: PageProps<"/tienda-admin/[sl
         <p className="text-caption text-ink-muted">
           Panel de demo, sin login. Para ver los dos lados a la vez abre la <Link href={`/demo?tienda=${slug}`} className="font-bold text-primary-text underline">pantalla dividida</Link> o <Link href="/" className="font-bold text-primary-text underline">vuelve a la app del cliente</Link>.
         </p>
-        <PanelTabs slug={slug} orders={initial} inventory={inventory} schedule={schedule} reviews={{ items, count: stat.count, sum: stat.sum }} />
+        {tabs}
       </div>
     </AppShell>
   );

@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import type { DayHours } from "@/lib/catalog";
-import { callPanel } from "./api";
+import { callPanel, notifyCatalogChanged } from "./api";
 const DAYS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 const toTime = (min: number) => `${String(Math.floor(min / 60) % 24).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
 const fromTime = (t: string) => {
@@ -26,7 +26,10 @@ export function SchedulePanel({ slug, initial }: { slug: string; initial: DayHou
   async function save() {
     setBusy(true);
     const r = await callPanel<{ schedule: DayHours[] }>(`/api/tienda-admin/${slug}/hours`, "PUT", { schedule: shifts });
-    if (r.data) setShifts(r.data.schedule);
+    if (r.data) {
+      setShifts(r.data.schedule);
+      notifyCatalogChanged();
+    }
     setMessage(r.error ? { ok: false, text: r.error } : { ok: true, text: "Horario guardado. Los clientes ya lo ven." });
     setBusy(false);
   }
