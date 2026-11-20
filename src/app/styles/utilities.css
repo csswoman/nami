@@ -11,13 +11,25 @@
   }
 }
 
+/* Banner principal del Inicio en móvil: franja inferior reservada para los puntos, así no chocan con el botón. */
+.nm-banner--hero {
+  height: 232px;
+  min-height: 232px;
+  max-height: 232px;
+  padding: var(--space-5) var(--space-5) 36px;
+}
+.nm-banner--hero .nm-banner__dots {
+  bottom: var(--space-2);
+}
+
 /* Banner principal del Inicio en escritorio: altura fija estable, título calibrado y excelente separación texto/imagen. */
 @media (min-width: 64rem) {
   .nm-banner--hero {
     height: 280px;
     min-height: 280px;
     max-height: 280px;
-    padding: var(--space-8);
+    /* Más aire abajo: los puntos viven bajo el botón sin tocarlo. */
+    padding: var(--space-8) var(--space-8) 40px;
   }
   .nm-banner--hero .nm-banner__copy {
     max-width: 58%;

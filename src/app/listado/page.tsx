@@ -8,7 +8,7 @@ import { AppShell } from "@/components/shell/AppShell";
 import { ScreenBar, SearchLink } from "@/components/shell/ScreenBar";
 import { DeliveryBar } from "@/components/shell/DeliveryBar";
 import { StoreMark } from "@/components/shell/StoreMark";
-import { hoursText, isOpenAt, LISTING_TABS, opensText, type StoreSummary } from "@/lib/catalog";
+import { isOpenAt, LISTING_TABS, opensText } from "@/lib/catalog";
 import { ListingFilterChips } from "@/components/shell/ListingFilterChips";
 import { applyListing, filterParams, parseFilters, type ListingFilters } from "@/lib/listing";
 import { LISTING_CHIPS } from "@/lib/demo/catalog";
@@ -29,11 +29,6 @@ const VERTICALS = LISTING_TABS;
 
 type Query = { franja?: string; v?: string; chip?: string };
 
-const rowOf = (s: StoreSummary) => ({
-  slug: s.slug, name: s.name, initials: s.initials, color: s.color,
-  meta: `${s.description.split(" · ")[0]} · ${s.time} · ${formatUsd(s.feeCents)}`,
-  hours: hoursText(s), href: s.kind === "mercado" ? `/mercado/${s.slug}` : `/tienda/${s.slug}`,
-});
 
 function href(q: Query, f?: ListingFilters): string {
   const p = new URLSearchParams();
@@ -72,13 +67,12 @@ async function Content({ searchParams }: { searchParams: PageProps<"/listado">["
   const listed = all.filter((s) => s.delivery?.covered !== false);
   const hidden = all.length - listed.length;
   // Los filtros se aplican a las abiertas y a las cerradas; "abiertos ahora" oculta la sección de cerradas.
-  const restaurants = vi === 0 ? applyListing(listed, { ...filters, open: false }, minutes).filter((r) => !q.chip || r.tags.includes(q.chip)) : [];
+  const restaurants = applyListing(listed, { ...filters, open: false }, minutes).filter((r) => vi !== 0 || !q.chip || r.tags.includes(q.chip));
   const openNow = restaurants.filter((r) => isOpenAt(r, minutes));
   const closedNow = restaurants.filter((r) => !isOpenAt(r, minutes));
   const open = openNow;
-  const showClosed = vi === 0 && !filters.open;
-  const rows = vi === 0 ? [] : listed.map(rowOf);
-  const count = vi === 0 ? `${openNow.length} abiertas · ${closedNow.length} cerradas` : `${rows.length} abiertas`;
+  const showClosed = !filters.open;
+    const count = `${openNow.length} abiertas · ${closedNow.length} cerradas`;
 
   return (
     <>
@@ -92,8 +86,8 @@ async function Content({ searchParams }: { searchParams: PageProps<"/listado">["
           <span className="text-ink">{title}</span>
         </nav>
 
-        <div className="flex flex-col gap-3 desktop:flex-row desktop:items-end desktop:gap-8">
-          <h1 className="hidden font-display text-[40px] leading-11 font-extrabold desktop:block">{title}</h1>
+        <div className="flex flex-col gap-3 desktop:flex-row desktop:items-end desktop:gap-10">
+          <h1 className="hidden font-display text-[32px] leading-10 font-extrabold desktop:block desktop:w-[240px] desktop:shrink-0">{title}</h1>
           <div role="tablist" className="nm-tabs scroll-x grow">
             {VERTICALS.map((label, i) => (
               <Link key={label} href={href({ v: i ? String(i) : undefined }, filters)} role="tab" aria-selected={i === vi} className="nm-tab">{label}</Link>
@@ -105,16 +99,15 @@ async function Content({ searchParams }: { searchParams: PageProps<"/listado">["
           </span>
         </div>
 
-        <div className={`grid grid-cols-1 gap-4 desktop:items-start desktop:gap-10 ${vi === 0 ? "desktop:grid-cols-[240px_minmax(0,1fr)]" : ""}`}>
-          {vi === 0 ? <aside aria-label="Filtros" className="flex flex-col gap-3 desktop:sticky desktop:top-6 desktop:order-first">
+        <div className={`grid grid-cols-1 gap-4 desktop:items-start desktop:gap-10 desktop:grid-cols-[240px_minmax(0,1fr)]`}>
+          <aside aria-label="Filtros" className="flex flex-col gap-3 desktop:sticky desktop:top-6 desktop:order-first">
             <h2 className="hidden font-display text-title-md desktop:block">Filtros</h2>
             <div className="order-2 desktop:order-none"><ListingFilterChips filters={filters} to={(patch) => href(q, { ...filters, ...patch })} /></div>
             <p className="hidden text-caption text-ink-muted desktop:block">¿Todo cerrado? Cambia de franja con el modo demo del inicio.</p>
-          </aside> : null}
+          </aside>
 
           <div className="flex flex-col gap-6 desktop:gap-8">
             {vi === 0 ? (
-              <>
                 <div className="scroll-x -mx-4 flex gap-4 px-4 desktop:mx-0 desktop:gap-5 desktop:px-0">
                   {LISTING_CHIPS.map((c) => {
                     const on = q.chip === c.tag;
@@ -126,9 +119,10 @@ async function Content({ searchParams }: { searchParams: PageProps<"/listado">["
                   })}
                 </div>
 
+            ) : null}
                 <div className="flex flex-col gap-6 desktop:grid desktop:grid-cols-3 desktop:gap-6">
                   {open.map((r) => (
-                    <Link key={r.slug} href={`/tienda/${r.slug}`} className="flex flex-col">
+                    <Link key={r.slug} href={r.kind === "mercado" ? `/mercado/${r.slug}` : `/tienda/${r.slug}`} className="flex flex-col">
                       <RestaurantCard
                         className="w-full"
                         name={r.name}
@@ -143,28 +137,11 @@ async function Content({ searchParams }: { searchParams: PageProps<"/listado">["
                     </Link>
                   ))}
                 </div>
-                {open.length === 0 ? (
-                  <p className="rounded-lg bg-surface-tile p-8 text-center text-body text-ink-muted">
-                    No hay tiendas abiertas con ese filtro ahora. Prueba otra comida o usa el modo demo.
-                  </p>
-                ) : null}
-              </>
-            ) : (
-              <div className="grid gap-3 desktop:grid-cols-2 desktop:gap-4">
-                {rows.map((s) => (
-                  <Link key={s.slug} href={s.href} className="flex min-h-22 items-center gap-3.5 rounded-lg border border-border p-4 text-ink">
-                    <StoreMark initials={s.initials} color={s.color} slug={s.slug} />
-                    <span className="flex grow flex-col gap-0.5">
-                      <span className="text-body-strong font-bold">{s.name}</span>
-                      <span className="text-caption text-ink-muted">{s.meta}</span>
-                      <span className="text-badge text-success">Abierto · {s.hours}</span>
-                    </span>
-                    <span className="text-ink-muted"><Icon name="chevronRight" /></span>
-                  </Link>
-                ))}
-              </div>
-            )}
-
+            {open.length === 0 ? (
+              <p className="rounded-lg bg-surface-tile p-8 text-center text-body text-ink-muted">
+                No hay tiendas abiertas con ese filtro ahora. Prueba otra franja con el modo demo.
+              </p>
+            ) : null}
             {showClosed && closedNow.length > 0 ? (
               <section className="flex flex-col gap-4">
                 <h2 className="font-display text-title-md desktop:text-[20px]">Cerradas ahora</h2>

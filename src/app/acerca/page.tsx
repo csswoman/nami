@@ -66,7 +66,7 @@ export default function AcercaPage() {
     <AppShell mobileHeader={false} bottomNav={false}>
       <ScreenBar title="Acerca del proyecto" back="/" />
       <div className="page-x flex flex-col gap-8 pt-2 desktop:gap-12 desktop:pt-8">
-        <section className="relative flex min-h-60 items-center overflow-hidden rounded-xl bg-primary px-6 text-on-primary desktop:min-h-120 desktop:px-20">
+        <section className="relative flex min-h-60 items-center overflow-hidden rounded-xl bg-primary px-6 text-on-primary desktop:min-h-96 desktop:px-20">
           <div className="relative z-10 flex max-w-[58%] flex-col gap-3 desktop:max-w-[55%] desktop:gap-8">
             <img src="/brand/nami-logo.png" alt="Ñami" className="h-7 w-auto self-start brightness-0 invert desktop:h-14" />
             <h1 className="font-display text-[22px] leading-7 font-extrabold desktop:text-[60px] desktop:leading-18">Tu delivery caraqueño, en un solo lugar.</h1>
@@ -77,9 +77,9 @@ export default function AcercaPage() {
 
         <section aria-labelledby="dos-minutos" className="flex flex-col gap-4">
           <h2 id="dos-minutos" className="font-display text-title-lg desktop:text-[32px]">Prueba esto en 2 minutos</h2>
-          <div className="grid gap-4 desktop:grid-cols-2">
+          <div className="scroll-x -mx-4 flex snap-x snap-mandatory gap-4 px-4 pb-2 desktop:mx-0 desktop:grid desktop:grid-cols-4 desktop:overflow-visible desktop:px-0 desktop:pb-0">
             {TOURS.map((t, i) => (
-              <article key={t.title} className="flex flex-col gap-3 rounded-xl border border-border p-5">
+              <article key={t.title} className="flex w-[78%] shrink-0 snap-start scroll-ml-4 flex-col gap-3 rounded-xl border border-border p-5 desktop:w-auto desktop:shrink">
                 <h3 className="font-display text-title-md"><span className="text-primary-text">{i + 1}.</span> {t.title}</h3>
                 <ol className="flex list-decimal flex-col gap-1 pl-5 text-body text-ink-muted">{t.steps.map((st) => <li key={st}>{st}</li>)}</ol>
                 <Link href={t.href} className="nm-btn nm-btn--secondary nm-btn--sm mt-auto self-start">{t.cta}</Link>

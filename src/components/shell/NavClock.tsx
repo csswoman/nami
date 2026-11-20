@@ -82,21 +82,15 @@ function NavClockContent({ variant = "topbar" }: NavClockProps) {
     };
   }, [isOpen]);
 
-  const selectFranja = (f: Franja) => {
+  // Mantiene la página actual (y sus otros params); el proxy guarda la cookie con ?franja=
+  const goFranja = (value: string) => {
     setIsOpen(false);
-    // Si estamos en la home, actualizamos query param
-    if (pathname === "/") {
-      router.push(`/?franja=${f}`, { scroll: false });
-    } else {
-      router.push(`/?franja=${f}`);
-    }
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("franja", value);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
-
-  const resetToReal = () => {
-    setIsOpen(false);
-    router.push("/?franja=real", { scroll: false });
-  };
-
+  const selectFranja = (f: Franja) => goFranja(f);
+  const resetToReal = () => goFranja("real");
   return (
     <div ref={wrapperRef} className="relative inline-flex items-center">
       {variant === "header" ? (

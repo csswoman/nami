@@ -23,8 +23,8 @@ async function Content({ searchParams }: { searchParams: PageProps<"/pedidos">["
   const money = await getMoneyPrefs();
   return (
     <AppShell mobileHeader={false} activeNav={3}>
-      <div className="page-x flex flex-col gap-8 pt-5 pb-28 desktop:pt-8 desktop:pb-8">
-        <h1 className="font-display text-[32px] leading-9 font-extrabold desktop:text-[56px] desktop:leading-16">Mis pedidos</h1>
+      <div className="page-x mx-auto flex w-full max-w-6xl flex-col gap-6 pt-5 pb-28 desktop:gap-8 desktop:pt-8 desktop:pb-8">
+        <h1 className="font-display text-[28px] leading-8 font-extrabold tracking-[-0.01em] text-balance desktop:text-[40px] desktop:leading-11">Mis pedidos</h1>
         {empty ? (
           <EmptyState
             title="Aún no tienes pedidos"

@@ -603,8 +603,22 @@
 .nm-cat:active {
   transform: translateY(0) scale(0.97);
 }
-.nm-cat--lg { min-height: 176px; }
-.nm-cat--sm { min-height: 132px; }
+/* Móvil compacto: las categorías no deben empujar el contenido fuera de la primera pantalla. */
+/* Grande: título arriba a la izquierda, ilustración en la esquina inferior derecha. */
+.nm-cat--lg { min-height: 96px; align-items: flex-start; justify-content: flex-start; padding: var(--space-3) var(--space-4); text-align: left; overflow: hidden; }
+.nm-cat--lg .nm-cat__art { position: absolute; right: var(--space-1); bottom: var(--space-1); width: auto; flex: none; }
+.nm-cat--lg .nm-cat__art img { max-height: 68px; max-width: 80px; }
+.nm-cat--lg .nm-cat__title { position: relative; z-index: 1; }
+.nm-cat--sm { min-height: 88px; gap: var(--space-1); padding: var(--space-2) var(--space-2) var(--space-3); }
+.nm-cat--sm .nm-cat__art img { max-height: 44px; }
+.nm-cat--sm .nm-cat__glyph { width: 52px; height: 52px; }
+.nm-cat--sm .nm-cat__glyph .nm-icon { width: 28px; height: 28px; }
+@media (min-width: 64rem) {
+  .nm-cat--sm { min-height: 132px; gap: var(--space-3); padding: var(--space-5) var(--space-3) var(--space-4); }
+  .nm-cat--sm .nm-cat__art img { max-height: 104px; }
+  .nm-cat--sm .nm-cat__glyph { width: 64px; height: 64px; }
+  .nm-cat--sm .nm-cat__glyph .nm-icon { width: 34px; height: 34px; }
+}
 .nm-cat__art { flex: 1; display: grid; place-items: center; width: 100%; }
 .nm-cat__art img {
   max-width: 100%;
@@ -638,7 +652,9 @@
 .nm-cat__glyph--blue { background: var(--plus); }
 .nm-cat__glyph--ink { background: var(--ink); color: var(--surface); }
 .nm-cat__title { font: 700 15px/20px var(--font-sans); }
-.nm-cat--lg .nm-cat__title { font: 700 18px/24px var(--font-display); }
+.nm-cat--lg .nm-cat__title { font: 700 16px/20px var(--font-display); }
+.nm-cat--sm .nm-cat__title { font-size: 13px; line-height: 18px; }
+@media (min-width: 64rem) { .nm-cat--sm .nm-cat__title { font-size: 15px; line-height: 20px; } }
 .nm-cat .nm-badge { position: absolute; top: var(--space-3); left: var(--space-3); }
 
 /* Store logo */
@@ -1270,3 +1286,181 @@
     animation: none !important;
   }
 }
+
+/* ── Inicio geométrico ─────────────────────────────────────────────
+   Formas asimétricas: una esquina muy redonda (2× radius-xl) contra
+   radius-lg en las otras tres. Se alternan por sección para dar ritmo. */
+:root { --radius-geo: calc(var(--radius-xl) * 2); }
+
+/* Hero: panel curvo claro detrás de la ilustración. */
+.nm-banner--geo::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 44%;
+  background: rgba(255, 255, 255, 0.16);
+  border-top-left-radius: 100% 80%;
+  pointer-events: none;
+  z-index: 0;
+}
+.nm-banner--geo { border-bottom-right-radius: var(--radius-geo); }
+
+/* Tarjeta relámpago amarilla */
+.nm-geo-flash {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-height: 168px;
+  padding: var(--space-8) var(--space-5) var(--space-5);
+  margin-top: var(--space-3);
+  background: var(--promo);
+  border-radius: var(--radius-lg) var(--radius-geo) var(--radius-lg) var(--radius-lg);
+}
+.nm-geo-flash__pill {
+  position: absolute;
+  top: calc(var(--space-3) * -1);
+  left: var(--space-5);
+  padding: 4px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--ink);
+  color: var(--promo);
+  font: 700 13px/18px var(--font-sans);
+  letter-spacing: 0.04em;
+}
+.nm-geo-flash__art {
+  position: absolute;
+  right: var(--space-3);
+  bottom: 0;
+  height: 115%;
+  max-width: 40%;
+  object-fit: contain;
+  object-position: right bottom;
+  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.18));
+  transition: transform 0.3s ease;
+}
+.nm-geo-flash:hover .nm-geo-flash__art { transform: rotate(-3deg) scale(1.03); }
+
+/* Banners secundarios */
+.nm-geo-banner {
+  position: relative;
+  flex: none;
+  width: 86%;
+  max-width: 360px;
+  min-height: 150px;
+  display: flex;
+  align-items: center;
+  padding: var(--space-5);
+  overflow: hidden;
+  color: var(--on-primary);
+  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-geo) var(--radius-lg);
+}
+@media (min-width: 64rem) { .nm-geo-banner { width: auto; max-width: none; min-height: 168px; } }
+.nm-geo-banner--primary { background: var(--primary); }
+.nm-geo-banner--leaf { background: var(--leaf); }
+.nm-geo-banner--plus { background: var(--plus); }
+.nm-geo-banner--ink { background: var(--ink); color: var(--surface); }
+.nm-geo-banner__tag {
+  align-self: flex-start;
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--promo);
+  color: var(--on-promo);
+  font: 800 12px/18px var(--font-sans);
+  letter-spacing: 0.04em;
+}
+.nm-geo-banner__art {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 42%;
+  overflow: hidden;
+  border-top-left-radius: 100% 70%;
+}
+.nm-geo-banner__art img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; }
+.nm-geo-banner:hover .nm-geo-banner__art img { transform: scale(1.06); }
+
+/* Populares: cuadrado con logo al centro */
+.nm-geo-pop { flex: none; width: 148px; display: flex; flex-direction: column; gap: 4px; }
+.nm-geo-pop__img {
+  position: relative;
+  aspect-ratio: 1;
+  margin-bottom: 4px;
+  border-radius: var(--radius-lg);
+  overflow: visible;
+}
+.nm-geo-pop__img > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--radius-lg);
+  background: var(--surface-tile);
+}
+.nm-geo-pop__img .nm-badge { white-space: nowrap; }
+.nm-geo-pop__logo {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 56%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  border: 3px solid var(--surface);
+  box-shadow: var(--shadow-card);
+  transition: transform 0.2s ease;
+}
+.nm-geo-pop__logo img { width: 100%; height: 100%; object-fit: cover; }
+.nm-geo-pop:hover .nm-geo-pop__logo { transform: scale(1.06); }
+@media (min-width: 64rem) { .nm-geo-pop { width: auto; } }
+
+/* Panel temático gris */
+.nm-geo-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-6) 0;
+  background: var(--surface-tile);
+  border-radius: var(--radius-lg) var(--radius-geo) var(--radius-lg) var(--radius-lg);
+}
+@media (min-width: 64rem) { .nm-geo-panel { padding: var(--space-8) 0; } }
+.nm-geo-card {
+  flex: none;
+  width: 264px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  transition: box-shadow 0.2s ease;
+}
+.nm-geo-card:hover { box-shadow: var(--shadow-hover); }
+.nm-geo-card__img { position: relative; display: block; aspect-ratio: 16 / 9; background: var(--surface-product); }
+.nm-geo-card__img > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.nm-geo-card__logo {
+  position: absolute;
+  left: var(--space-3);
+  bottom: calc(var(--space-5) * -1);
+  width: 44px;
+  height: 44px;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--surface);
+  background: var(--surface-raised);
+}
+.nm-geo-card__logo img { width: 100%; height: 100%; object-fit: cover; }
+@media (min-width: 64rem) { .nm-geo-card { width: auto; } }
+
+/* Descubre: foto grande con esquinas alternas */
+.nm-geo-discover { flex: none; width: 86%; max-width: 420px; display: flex; flex-direction: column; gap: var(--space-3); }
+.nm-geo-discover__img {
+  position: relative;
+  display: block;
+  aspect-ratio: 2 / 1;
+  overflow: hidden;
+  background: var(--surface-tile);
+  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg) var(--radius-geo);
+}
+.nm-geo-discover__img--alt { border-radius: var(--radius-geo) var(--radius-lg) var(--radius-lg) var(--radius-lg); }
+.nm-geo-discover__img > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; }
+.nm-geo-discover:hover .nm-geo-discover__img > img { transform: scale(1.04); }
+@media (min-width: 64rem) { .nm-geo-discover { width: auto; max-width: none; } }

@@ -2,6 +2,8 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { CurrencyToggle } from "@/components/shell/CurrencyToggle";
 import { ThemeToggle } from "@/components/shell/ThemeToggle";
+import { getDeliveryContext } from "@/server/prefs";
+import { SPOTS } from "@/lib/demo/direcciones";
 import { AppHeader, BottomNav, TopBar } from "@/components/nami";
 
 type AppShellProps = {
@@ -17,7 +19,11 @@ type AppShellProps = {
   topBar?: "full" | "logo";
 };
 
-export function AppShell({ children, activeNav = 0, mobileHeader = true, bottomNav = true, address = "Av. Francisco de Miranda, Chacao", topBar = "full" }: AppShellProps) {
+export async function AppShell({ children, activeNav = 0, mobileHeader = true, bottomNav = true, address: addressProp, topBar = "full" }: AppShellProps) {
+  // Única dirección visible de la app: la zona va primero para que no se pierda al truncarse.
+  const { zone } = await getDeliveryContext();
+  const spot = SPOTS.find((s) => s.zone === zone?.slug);
+  const address = addressProp ?? (zone ? `${zone.name}${spot ? ` · ${spot.addr.split(",")[0]}` : ""}` : "Elegir dirección");
   return (
     <div className="flex min-h-dvh flex-col bg-surface">
       <a href="#contenido" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-pill focus:bg-primary focus:px-4 focus:py-2.5 focus:font-bold focus:text-on-primary">Saltar al contenido</a>

@@ -16,12 +16,11 @@ type AppHeaderProps = {
   placeholder?: string;
   unread?: boolean;
   search?: boolean;
-  onAddress?: () => void;
   className?: string;
 };
 
 /** Header rojo móvil (< 1024px). */
-export function AppHeader({ address = "Elegir dirección", placeholder, unread, search = true, onAddress, className }: AppHeaderProps) {
+export function AppHeader({ address = "Elegir dirección", placeholder, unread, search = true, className }: AppHeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   // Manejo de Escape y bloqueo de scroll mientras el menú esté abierto
@@ -48,11 +47,11 @@ export function AppHeader({ address = "Elegir dirección", placeholder, unread, 
           <Link href="/" className="nm-header__logo-link" aria-label="Ir al inicio de Ñami">
             <img className="nm-header__logo" src="/brand/nami-logo.png" alt="Ñami" />
           </Link>
-          <button className="nm-header__addr" type="button" onClick={onAddress} aria-label={`Dirección: ${address}`}>
+          <Link href="/direccion" className="nm-header__addr" aria-label={`Dirección: ${address}. Cambiar`}>
             <Icon name="pin" />
             <span>{address}</span>
             <Icon name="chevronDown" />
-          </button>
+          </Link>
           <div className="nm-header__actions">
             <CartLink variant="header" />
             <button
@@ -207,7 +206,6 @@ type TopBarProps = {
   placeholder?: string;
   logoSrc?: string;
   ordersHref?: string;
-  onAddress?: () => void;
   className?: string;
 };
 
@@ -217,7 +215,6 @@ export function TopBar({
   placeholder,
   logoSrc = "/brand/nami-logo.png",
   ordersHref = "/pedidos",
-  onAddress,
   className,
 }: TopBarProps) {
   return (
@@ -227,11 +224,11 @@ export function TopBar({
           <Link href="/" className="nm-topbar__logo-link" aria-label="Ir al inicio de Ñami">
             <img className="nm-topbar__logo" src={logoSrc} alt="Ñami" />
           </Link>
-          <button className="nm-topbar__addr" type="button" onClick={onAddress} aria-label={`Dirección de entrega: ${address}`}>
+          <Link href="/direccion" className="nm-topbar__addr" aria-label={`Dirección de entrega: ${address}. Cambiar`}>
             <Icon name="pin" />
             <span>{address}</span>
             <Icon name="chevronDown" />
-          </button>
+          </Link>
         </div>
 
         <div className="nm-topbar__center">

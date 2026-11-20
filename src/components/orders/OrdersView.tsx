@@ -54,7 +54,7 @@ export function OrdersView({ demo, money }: { demo: OrderView[]; money?: { curre
           </span>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 desktop:grid-cols-2 desktop:gap-5">
+        <div className="grid grid-cols-1 gap-4 desktop:grid-cols-2 desktop:items-start desktop:gap-5">
           {history.map((o) => (
             <OrderHistoryItem key={o.id} o={o} money={money} />
           ))}

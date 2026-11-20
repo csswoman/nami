@@ -45,7 +45,8 @@ export function OrderHistoryItem({ o, money }: { o: OrderView; money?: { currenc
             </span>
           </span>
           <div className="flex min-w-0 flex-col gap-0.5">
-            <h3 className="truncate text-body-strong font-bold text-ink transition-colors group-hover:text-primary-text">
+            <div className="flex min-w-0 items-center gap-2">
+            <h3 className="min-w-0 truncate text-body-strong font-bold text-ink transition-colors group-hover:text-primary-text">
               <Link
                 href={href}
                 className="outline-none after:absolute after:inset-0 after:rounded-2xl focus-visible:after:ring-2 focus-visible:after:ring-(--focus-ring)"
@@ -53,6 +54,8 @@ export function OrderHistoryItem({ o, money }: { o: OrderView; money?: { currenc
                 {name}
               </Link>
             </h3>
+            <span className="shrink-0"><StatusPill status={o.status} /></span>
+            </div>
             <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-caption text-ink-muted">
               <span className="inline-flex items-center gap-1 shrink-0 [&_.nm-icon]:size-3.5">
                 <Icon name={kindIcon(first.store, first.kindLabel)} />
@@ -66,7 +69,7 @@ export function OrderHistoryItem({ o, money }: { o: OrderView; money?: { currenc
           </div>
         </div>
 
-        <div className="flex shrink-0 flex-col items-end gap-1">
+        <div className="flex shrink-0 flex-col items-end">
           <div className="flex flex-col items-end">
             <span className={`text-price font-bold tabular-nums ${cancelled ? "text-ink-muted line-through decoration-1" : "text-ink"}`}>
               {formatUsd(o.totalCents)}
@@ -75,27 +78,28 @@ export function OrderHistoryItem({ o, money }: { o: OrderView; money?: { currenc
               {formatVes(o.totalCents, rate)}
             </span>
           </div>
-          <StatusPill status={o.status} />
         </div>
       </div>
 
       {/* 2. Cuerpo: Tira de productos con fotos reales y resumen */}
-      <div className="my-3 flex flex-col gap-2">
-        <div className={cancelled ? "opacity-60 grayscale" : undefined}>
-          <span className="block tablet:hidden">
-            <ProductStrip items={thumbs} max={5} size={42} />
-          </span>
-          <span className="hidden tablet:block">
-            <ProductStrip items={thumbs} max={5} size={46} />
-          </span>
+      <div className="my-3 flex flex-1 flex-col gap-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className={cancelled ? "min-w-0 opacity-60 grayscale" : "min-w-0"}>
+            <span className="block tablet:hidden">
+              <ProductStrip items={thumbs} max={5} size={42} />
+            </span>
+            <span className="hidden tablet:block">
+              <ProductStrip items={thumbs} max={5} size={46} />
+            </span>
+          </div>
+          <div className="flex shrink-0 flex-col items-end text-caption text-ink-muted">
+            <span className="font-semibold text-ink">{o.itemCount} {o.itemCount === 1 ? "producto" : "productos"}</span>
+            <span className="tabular-nums">#{o.code}</span>
+          </div>
         </div>
-        <div className="flex items-center justify-between text-caption text-ink-muted">
-          <span>{o.itemCount} {o.itemCount === 1 ? "producto" : "productos"} · Pedido #{o.code}</span>
-        </div>
-
         {/* Motivo de cancelación legible sin recortar */}
         {cancelled && o.cancelReason ? (
-          <div className="mt-1 flex items-start gap-2 rounded-lg border border-border/60 bg-surface-tile px-3 py-2 text-caption text-ink-muted">
+          <div className="flex items-start gap-2 rounded-lg border border-border/60 bg-surface-tile px-3 py-2 text-caption text-ink-muted">
             <Icon name="close" className="mt-0.5 size-3.5 shrink-0 text-danger" />
             <p className="leading-snug">{o.cancelReason}</p>
           </div>
