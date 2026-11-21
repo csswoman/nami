@@ -6,6 +6,7 @@ import type { IconName } from "@/components/nami";
 import type { BrandColor } from "@/lib/demo/home";
 import { STAGE_COUNT, planFor, pickCourier, reachedStage, type Courier } from "@/lib/orders/progress";
 import { cartTotals, minOrderShortfall, sumLines, type DeliveryMode } from "@/lib/pricing";
+import type { Demand } from "@/lib/pricing/demand";
 import { scheduledFor } from "@/lib/orders/schedule";
 import { lineKey } from "@/lib/cart/line";
 import { DEFAULT_LOCATION } from "@/lib/geo";
@@ -43,12 +44,14 @@ export type CartLine = {
   options?: Record<string, string[]>;
   /** Nota escrita por el cliente, sin las opciones. */
   userNote?: string;
+  /** Unidades disponibles ("Quedan N") cuando se agregó; tope de cantidad en el carrito. */
+  stock?: number;
 };
 /** `lat`/`lng`: el punto elegido en el mapa; con él el servidor calcula el envío por distancia. */
 export type Address = { name: string; line: string; reference: string; lat?: number; lng?: number };
 export type PayMethod = "movil" | "zelle" | "efectivo";
 export type CartGroup = { store: CartStore; lines: CartLine[] };
-export type OrderStop = { store: CartStore; lines: CartLine[]; subtotalCents: number };
+export type OrderStop = { store: CartStore; lines: CartLine[]; subtotalCents: number; /** La tienda rechazó su parte o no respondió: no se cobra. */ cancelled?: boolean };
 
 export type OrderStatus = "active" | "delivered" | "cancelled";
 
@@ -94,6 +97,13 @@ export type Order = {
   changes?: string[];
   /** Motivo que dio el cliente al cancelar. */
   cancelReason?: string | null;
+  /** Recargo por demanda (lluvia, hora pico); ya va sumado en `totalCents`. */
+  surchargeCents?: number;
+  surchargeReason?: Demand | null;
+  /** Cupón de disculpa cuando las tiendas cancelaron el pedido. */
+  compensation?: { code: string; amountCents: number } | null;
+  /** Un repartidor de la demo (otra persona, en /repartidor) lleva este pedido. */
+  riderLive?: boolean;
 };
 
 export const DEFAULT_ADDRESS: Address = {
@@ -165,15 +175,21 @@ export const useCartStore = create<State>()(
         set((s) => {
           // Un carrito puede tener varias tiendas: cada una es un grupo con sus propias líneas.
           const key = lineKey(line.productId, line.note);
-          const qty = line.qty ?? 1;
+          let qty = line.qty ?? 1;
           const has = s.groups.some((g) => g.store.slug === store.slug);
+          // Con stock, el total del producto (todas sus variantes con opciones/nota) no pasa de lo que queda.
+          if (line.stock != null) {
+            const inCart = (s.groups.find((g) => g.store.slug === store.slug)?.lines ?? []).filter((l) => l.productId === line.productId).reduce((n, l) => n + l.qty, 0);
+            qty = Math.min(qty, line.stock - inCart);
+            if (qty <= 0) return s;
+          }
           const next = has ? s.groups : [...s.groups, { store, lines: [] }];
           return {
             groups: next.map((g) => {
               if (g.store.slug !== store.slug) return g;
               const found = g.lines.find((l) => l.key === key);
               const lines = found
-                ? g.lines.map((l) => (l.key === key ? { ...l, qty: l.qty + qty } : l))
+                ? g.lines.map((l) => (l.key === key ? { ...l, qty: l.qty + qty, stock: line.stock ?? l.stock } : l))
                 : [...g.lines, { ...line, key, qty }];
               return { ...g, lines };
             }),
@@ -194,6 +210,11 @@ export const useCartStore = create<State>()(
             qty = args[2];
           }
           if (!slug) return s;
+          const line = s.groups.find((g) => g.store.slug === slug)?.lines.find((l) => l.key === key);
+          if (line?.stock != null) {
+            const others = s.groups.find((g) => g.store.slug === slug)!.lines.filter((l) => l.productId === line.productId && l.key !== key).reduce((n, l) => n + l.qty, 0);
+            qty = Math.min(qty, line.stock - others);
+          }
           return {
             groups: s.groups
               .map((g) =>

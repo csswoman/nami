@@ -1,5 +1,6 @@
 /**
- * Borra los pedidos de más de 7 días (y sus paradas y productos, por cascade) y devuelve el catálogo al seed
+ * Borra los pedidos de más de 7 días (y sus paradas y productos, por cascade), las sesiones de repartidor viejas,
+ * los cupones de disculpa vencidos, y devuelve el catálogo al seed
  * (precios, stock, horarios y estado abierto/cerrado que cambió cualquier visitante desde el panel de tienda).
  * Uso: npm run db:cleanup            (DAYS=3 npm run db:cleanup para otro plazo; KEEP_CATALOG=1 para no tocar el catálogo)
  * Igual que el seed: lee .env.development.local y se niega a tocar un host remoto
@@ -7,9 +8,9 @@
  */
 import { loadEnvConfig } from "@next/env";
 import { drizzle } from "drizzle-orm/node-postgres";
-import { lt } from "drizzle-orm";
+import { and, isNotNull, lt } from "drizzle-orm";
 import { Pool } from "pg";
-import { orders, rateLimits } from "../src/server/db/schema";
+import { coupons, orders, rateLimits, riderSessions } from "../src/server/db/schema";
 import { resetSeedStores } from "../src/server/db/seed-data";
 loadEnvConfig(process.cwd(), true);
 const url = process.env.DATABASE_URL;
@@ -31,6 +32,10 @@ async function main() {
     // Contadores del límite de peticiones: pasada su ventana ya no sirven.
     const limits = await db.delete(rateLimits).where(lt(rateLimits.windowStart, new Date(Date.now() - 86_400_000))).returning({ key: rateLimits.key });
     console.log(`${limits.length} contadores de límite de peticiones viejos borrados.`);
+    // Repartidores que cerraron la app y cupones de disculpa (de un solo invitado) ya vencidos.
+    const riders = await db.delete(riderSessions).where(lt(riderSessions.seenAt, new Date(Date.now() - 86_400_000))).returning({ token: riderSessions.token });
+    const sorry = await db.delete(coupons).where(and(isNotNull(coupons.guestToken), lt(coupons.expiresAt, new Date()))).returning({ code: coupons.code });
+    console.log(`${riders.length} sesiones de repartidor y ${sorry.length} cupones de disculpa vencidos borrados.`);
     if (process.env.KEEP_CATALOG !== "1") {
       const n = await db.transaction((tx) => resetSeedStores(tx));
       console.log(`Catálogo repuesto: ${n} tiendas como en el seed.`);

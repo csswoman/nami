@@ -9,5 +9,8 @@ export const PANEL_CHANGED_MESSAGE = "nami:panel-changed";
 /** URL de la tienda vista como cliente. */
 export const clientHrefOf = (slug: string, kind: "restaurante" | "mercado" | undefined) => (kind === "mercado" ? `/mercado/${slug}` : `/tienda/${slug}`);
 
+/** URL de la app del repartidor, embebida o no. */
+export const riderHrefOf = (embedded = false) => `/repartidor${embedded ? `?vista=${SPLIT_VIEW}` : ""}`;
+
 /** URL del panel de la tienda, embebido o no. */
 export const panelHrefOf = (slug: string, embedded = false) => `/tienda-admin/${slug}${embedded ? `?vista=${SPLIT_VIEW}` : ""}`;

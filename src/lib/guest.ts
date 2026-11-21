@@ -7,3 +7,7 @@ export function newGuestToken(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
   return btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
+/** Prefijo de los invitados que crea «Simular pedido entrante»: cualquier repartidor de la demo puede llevar esos pedidos. */
+export const SIMULATED_PREFIX = "simulado-";
+export const newSimulatedToken = () => `${SIMULATED_PREFIX}${newGuestToken().slice(0, 40)}`;
+export const isSimulatedToken = (v: string) => v.startsWith(SIMULATED_PREFIX);

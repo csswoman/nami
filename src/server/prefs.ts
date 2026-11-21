@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { CURRENCY_COOKIE, parseCurrency } from "@/lib/currency";
 import { DEFAULT_LOCATION, LOCATION_COOKIE, nearestZone, type LatLng, type Zone } from "@/lib/geo";
 import type { Currency } from "@/lib/money";
+import { DEMAND_COOKIE, demandOf, type Demand } from "@/lib/pricing/demand";
 import { currentRate } from "./orders";
 
 /** Moneda elegida (cookie `nami_moneda`) y tasa vigente, para pintar precios en el servidor. */
@@ -19,4 +20,8 @@ export function parseLocation(value: string | undefined): LatLng {
 export async function getDeliveryContext(): Promise<DeliveryContext> {
   const location = parseLocation((await cookies()).get(LOCATION_COOKIE)?.value);
   return { location, zone: nearestZone(location)?.zone ?? null };
+}
+/** Demanda del modo demo (cookie `nami_demanda`): despejado, lluvia u hora pico. El recargo lo calcula el servidor. */
+export async function getDemand(): Promise<Demand> {
+  return demandOf((await cookies()).get(DEMAND_COOKIE)?.value);
 }

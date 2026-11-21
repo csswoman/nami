@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, eq, inArray, sql, type AnyColumn, type SQL } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, or, sql, type AnyColumn, type SQL } from "drizzle-orm";
 import type { IconName } from "@/components/nami";
 import type {
   CartExtra,
@@ -278,9 +278,13 @@ export async function getCartExtras(): Promise<Record<string, CartExtra[]>> {
   }
   return out;
 }
-/** Cupones vigentes para mostrar en el checkout: código y qué hacen. */
-export async function getCouponOffers(now: number = Date.now()): Promise<{ code: string; description: string }[]> {
-  const rows = await db.select({ code: coupons.code, description: coupons.description, expiresAt: coupons.expiresAt }).from(coupons).orderBy(asc(coupons.code));
+/** Cupones vigentes para mostrar en el checkout: los de todos y, con `guestToken`, los de disculpa de ese invitado. */
+export async function getCouponOffers(now: number = Date.now(), guestToken?: string | null): Promise<{ code: string; description: string }[]> {
+  const rows = await db
+    .select({ code: coupons.code, description: coupons.description, expiresAt: coupons.expiresAt })
+    .from(coupons)
+    .where(guestToken ? or(isNull(coupons.guestToken), eq(coupons.guestToken, guestToken)) : isNull(coupons.guestToken))
+    .orderBy(asc(coupons.code));
   return rows.filter((r) => r.expiresAt === null || r.expiresAt.getTime() > now).map(({ code, description }) => ({ code, description }));
 }
 /** Productos de la misma tienda con los que se puede reemplazar uno (disponibles; primero los de su sección). */

@@ -16,6 +16,10 @@ export const LIMITS = {
   orders: { limit: 10, windowMs: 10 * 60_000 },
   /** Cambios desde el panel de tienda (acciones, inventario, horario, abrir/cerrar, reponer). */
   panel: { limit: 60, windowMs: 60_000 },
+  /** «Simular pedido entrante» del panel: crea pedidos, así que va aparte y es más corto. */
+  simulate: { limit: 8, windowMs: 10 * 60_000 },
+  /** Acciones de la app del repartidor (tomar, recoger, llegar). */
+  rider: { limit: 60, windowMs: 60_000 },
 } satisfies Record<string, RateLimit>;
 
 /**

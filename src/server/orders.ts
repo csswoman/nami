@@ -15,8 +15,9 @@ import { applyCoupon, normalizeCode } from "@/lib/pricing/coupons";
 import { availableSlots, validateSlot, type Slot } from "@/lib/orders/slots";
 import { describeChange, type Substitution } from "@/lib/orders/substitution";
 import { usdToVesCents } from "@/lib/money";
+import { DEMAND_INFO, isDemand, surchargeFor, type Demand } from "@/lib/pricing/demand";
 import { db } from "./db";
-import { attendedStores, reconcileOrder } from "./order-flow";
+import { COMPENSATION_CENTS, TIMEOUT_REASON, attendedStores, isRiderHold, reconcileOrder } from "./order-flow";
 import {
   coupons,
   exchangeRates,
@@ -162,7 +163,12 @@ async function applyCouponTo(tx: DbLike, code: string | undefined, stops: Priced
   if (!code) return { code: null, discountCents: 0, shippingDiscountCents: 0 };
   const normalized = normalizeCode(code);
   const [row] = await tx.select({ c: coupons, storeSlug: stores.slug }).from(coupons).leftJoin(stores, eq(stores.id, coupons.storeId)).where(eq(coupons.code, normalized)).limit(1);
-  if (!row) throw new OrderError("COUPON_INVALID", `El cupón «${normalized}» no existe.`);
+  // Un cupón de disculpa es de un solo invitado: para los demás no existe. Y se usa una sola vez.
+  if (!row || (row.c.guestToken !== null && row.c.guestToken !== guestToken)) throw new OrderError("COUPON_INVALID", `El cupón «${normalized}» no existe.`);
+  if (row.c.guestToken !== null) {
+    const [{ n: used }] = await tx.select({ n: count() }).from(orders).where(and(eq(orders.guestToken, guestToken), eq(orders.couponCode, normalized), ne(orders.status, "cancelado")));
+    if (used > 0) throw new OrderError("COUPON_NOT_APPLICABLE", `Ya usaste el cupón ${normalized}.`);
+  }
   const [{ n: prior }] = await tx.select({ n: count() }).from(orders).where(and(eq(orders.guestToken, guestToken), ne(orders.status, "cancelado")));
   const res = applyCoupon(
     {
@@ -175,26 +181,32 @@ async function applyCouponTo(tx: DbLike, code: string | undefined, stops: Priced
   if (!res.ok) throw new OrderError(res.code, res.message);
   return { code: normalized, discountCents: res.discountCents, shippingDiscountCents: res.shippingDiscountCents };
 }
-export type OrderQuote = { subtotalCents: number; shippingCents: number; tipCents: number; discountCents: number; shippingDiscountCents: number; totalCents: number; couponCode: string | null };
+export type OrderQuote = { subtotalCents: number; shippingCents: number; tipCents: number; surchargeCents: number; discountCents: number; shippingDiscountCents: number; totalCents: number; couponCode: string | null };
+/** Lo que el servidor sabe del momento del pedido y no viene en el cuerpo: la demanda del modo demo (cookie). */
+export type OrderContext = { demand?: Demand };
 /** Cuánto costaría este pedido con su cupón, sin crearlo. Usa los mismos precios y reglas que `createOrder`. */
-export async function quoteOrder(input: OrderInput, guestToken: string, now: number = Date.now()): Promise<OrderQuote> {
+export async function quoteOrder(input: OrderInput, guestToken: string, now: number = Date.now(), ctx: OrderContext = {}): Promise<OrderQuote> {
   if (!isGuestToken(guestToken)) throw new OrderError("NO_GUEST_TOKEN", "Falta el token de invitado.", 401);
   const { stops, totals } = await priceCart(db, input);
   const c = await applyCouponTo(db, input.coupon, stops, totals.shippingCents, guestToken, now);
+  const surchargeCents = surchargeFor(ctx.demand ?? "normal");
   return {
-    subtotalCents: totals.subtotalCents, shippingCents: totals.shippingCents, tipCents: totals.tipCents,
+    subtotalCents: totals.subtotalCents, shippingCents: totals.shippingCents, tipCents: totals.tipCents, surchargeCents,
     discountCents: c.discountCents, shippingDiscountCents: c.shippingDiscountCents,
-    totalCents: totals.totalCents - c.discountCents - c.shippingDiscountCents, couponCode: c.code,
+    totalCents: totals.totalCents + surchargeCents - c.discountCents - c.shippingDiscountCents, couponCode: c.code,
   };
 }
 /** Crea el pedido de un invitado. Todo se vuelve a leer y calcular aquí; el cliente solo manda ids y cantidades. */
-export async function createOrder(input: OrderInput, guestToken: string, now: number = Date.now()): Promise<Order> {
+export async function createOrder(input: OrderInput, guestToken: string, now: number = Date.now(), ctx: OrderContext = {}): Promise<Order> {
   if (!isGuestToken(guestToken)) throw new OrderError("NO_GUEST_TOKEN", "Falta el token de invitado.", 401);
   const id = await db.transaction(async (tx) => {
     const { stops, totals } = await priceCart(tx, input);
     const coupon = await applyCouponTo(tx, input.coupon, stops, totals.shippingCents, guestToken, now);
     const discountCents = coupon.discountCents + coupon.shippingDiscountCents;
-    const finalTotalCents = totals.totalCents - discountCents;
+    // Recargo por lluvia u hora pico: lo decide el servidor según la demanda, nunca el cliente.
+    const demand = ctx.demand ?? "normal";
+    const surchargeCents = surchargeFor(demand);
+    const finalTotalCents = totals.totalCents + surchargeCents - discountCents;
     const rate = await currentRate(tx);
 
     // Tiendas cerradas (interruptor manual o fuera de horario): el pedido queda programado para la apertura más tardía.
@@ -211,7 +223,7 @@ export async function createOrder(input: OrderInput, guestToken: string, now: nu
       scheduled = input.scheduledFor;
     }
     const start = scheduled ?? now;
-    const plan = planFor(stops.map((s) => ({ kind: s.store.kind, name: s.store.name })), input.delivery);
+    const plan = planFor(stops.map((s) => ({ kind: s.store.kind, name: s.store.name })), input.delivery, DEMAND_INFO[demand].rideFactor);
     const orderId = crypto.randomUUID();
     const courier = pickCourier(parseInt(orderId.slice(0, 8), 16));
     const ride = plan[3] * 60_000;
@@ -227,6 +239,8 @@ export async function createOrder(input: OrderInput, guestToken: string, now: nu
       totalBsCents: usdToVesCents(finalTotalCents, rate),
       couponCode: coupon.code,
       discountCents,
+      surchargeCents,
+      surchargeReason: surchargeCents > 0 ? demand : null,
       exchangeRate: String(rate),
       deliveryAddress: input.address.line,
       deliveryName: input.address.name || null,
@@ -249,7 +263,7 @@ export async function createOrder(input: OrderInput, guestToken: string, now: nu
     for (const [position, s] of stops.entries()) {
       const [stop] = await tx
         .insert(orderStops)
-        .values({ orderId, storeId: s.store.id, position, subtotalCents: s.subtotalCents, status: "recibido" })
+        .values({ orderId, storeId: s.store.id, position, subtotalCents: s.subtotalCents, feeCents: s.feeCents, status: "recibido" })
         .returning({ id: orderStops.id });
       await tx.insert(orderItems).values(
         s.lines.map((l) => ({
@@ -296,8 +310,18 @@ async function loadOrder(conn: DbLike, id: string, guestToken: string): Promise<
           icon: (i.icon ?? "basket") as IconName, note, options: opts.length ? options : undefined, userNote: i.note ?? undefined,
         };
       });
-    return { store, lines, subtotalCents: s.subtotalCents };
+    return { store, lines, subtotalCents: s.subtotalCents, cancelled: s.status === "cancelado" && row.status !== "cancelado" ? true : undefined };
   });
+  // Partes que una tienda rechazó o no atendió a tiempo, cuando el resto del pedido sigue: el cliente tiene que saberlo.
+  const rejected = row.status === "cancelado"
+    ? []
+    : stopRows
+        .filter((s) => s.status === "cancelado")
+        .map((s) => {
+          const name = storeRows.find((x) => x.id === s.storeId)?.name ?? "Una tienda";
+          const why = s.rejectReason === TIMEOUT_REASON ? "no respondió a tiempo" : `no pudo atender su parte${s.rejectReason ? ` (${s.rejectReason})` : ""}`;
+          return `${name} ${why}. No te cobramos sus productos ni su envío.`;
+        });
   const status: Order["status"] = row.status === "entregado" ? "delivered" : row.status === "cancelado" ? "cancelled" : "active";
   const order: Order = {
     id: row.id,
@@ -324,9 +348,13 @@ async function loadOrder(conn: DbLike, id: string, guestToken: string): Promise<
     scheduledFor: row.scheduledFor ? row.scheduledFor.getTime() : null,
     hold: row.holdStage,
     cancelReason: row.cancelReason,
-    changes: itemRows.map((i) => describeChange({ productName: i.productName, resolution: i.resolution })).filter((c): c is string => c !== null),
+    changes: [...rejected, ...itemRows.map((i) => describeChange({ productName: i.productName, resolution: i.resolution })).filter((c): c is string => c !== null)],
     couponCode: row.couponCode,
     discountCents: row.discountCents,
+    surchargeCents: row.surchargeCents,
+    surchargeReason: isDemand(row.surchargeReason) ? row.surchargeReason : null,
+    compensation: row.compensationCode ? { code: row.compensationCode, amountCents: COMPENSATION_CENTS } : null,
+    riderLive: isRiderHold(row.holdStage) && row.riderToken !== null,
   };
   return { row, order };
 }
@@ -394,7 +422,9 @@ export function restartOrder(id: string, guestToken: string, now: number = Date.
   return mutate(id, guestToken, (o) => ({
     status: "recibido",
     holdStage: null,
-    plan: planFor(o.stops.map((s) => ({ kind: s.store.kind, name: s.store.name })), o.delivery),
+    riderToken: null,
+    riderTakenAt: null,
+    plan: planFor(o.stops.map((s) => ({ kind: s.store.kind, name: s.store.name })), o.delivery, DEMAND_INFO[o.surchargeReason ?? "normal"].rideFactor),
     startAt: new Date(now),
     stageAt: [now, null, null, null, null],
     deliveredAt: null,

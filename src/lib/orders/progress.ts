@@ -27,10 +27,11 @@ type StoreLike = { kind: "restaurante" | "mercado"; name: string };
 /**
  * Minutos desde que haces el pedido hasta cada etapa. Es una demo: todo el recorrido dura ~2 min reales
  * y el motorizado se mueve en el mapa durante ~50 s (menos de 1 min). Varias tiendas suman paradas.
+ * `rideFactor` alarga el viaje con lluvia u hora pico (lib/pricing/demand).
  */
-export function planFor(stores: StoreLike[], delivery: "separate" | "combined"): number[] {
+export function planFor(stores: StoreLike[], delivery: "separate" | "combined", rideFactor = 1): number[] {
   const extra = stores.length > 1 && delivery === "combined" ? stores.length - 1 : 0;
-  const ride = 0.85 + extra * 0.15;
+  const ride = (0.85 + extra * 0.15) * rideFactor;
   const go = 0.9 + extra * 0.1; // sale la moto
   return [0, 0.2, 0.5, go, go + ride];
 }

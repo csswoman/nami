@@ -5,9 +5,8 @@ import type { ApiErrorCode } from "@/lib/orders/input";
 import type { BrandColor } from "@/lib/demo/home";
 import { db } from "./db";
 import type { DayHours } from "@/lib/catalog";
-import { usdToVesCents } from "@/lib/money";
 import { MAX_PRICE_CENTS } from "@/lib/panel-input";
-import { replacementUnitCents, totalsAfterChange, type Resolution, type Substitution } from "@/lib/orders/substitution";
+import { replacementUnitCents, type Resolution, type Substitution } from "@/lib/orders/substitution";
 import { validateSchedule } from "@/lib/store-schedule";
 import { orderItems, orderStops, orders, products, storeHours, stores } from "./db/schema";
 import { resetSeedStores } from "./db/seed-data";
@@ -283,7 +282,7 @@ export async function markOutOfStock(slug: string, stopId: string, itemId: strin
       await tx.update(products).set({ isAvailable: false, soldOutUntil: null }).where(eq(products.id, item.productId));
       await markCatalogChanged(store.id, tx);
     }
-    // Totales: la parada, el pedido (con el mismo envío, propina y descuento topado) y los bolívares a la tasa guardada.
+    // Subtotal de la parada; si no queda nada, la parada se cancela.
     const items = await tx.select().from(orderItems).where(eq(orderItems.stopId, stopId));
     const stopSubtotal = items.filter((i) => i.resolution?.kind !== "removed").reduce((n, i) => n + i.quantity * i.unitPriceCents, 0);
     const empty = items.every((i) => i.resolution?.kind === "removed");
@@ -291,13 +290,7 @@ export async function markOutOfStock(slug: string, stopId: string, itemId: strin
       .update(orderStops)
       .set({ subtotalCents: stopSubtotal, ...(empty ? { status: "cancelado" as const, rejectReason: "No hay ninguno de los productos del pedido." } : {}) })
       .where(eq(orderStops.id, stopId));
-    const stops = await tx.select({ subtotalCents: orderStops.subtotalCents }).from(orderStops).where(eq(orderStops.orderId, order.id));
-    const subtotalCents = stops.reduce((n, s) => n + s.subtotalCents, 0);
-    const t = totalsAfterChange({ subtotalCents, shippingCents: order.deliveryFeeCents, tipCents: order.tipCents, discountCents: order.discountCents });
-    await tx
-      .update(orders)
-      .set({ subtotalCents, discountCents: t.discountCents, totalCents: t.totalCents, totalBsCents: usdToVesCents(t.totalCents, Number(order.exchangeRate)) })
-      .where(eq(orders.id, order.id));
+    // Los totales del pedido (envío, propina, recargo, descuento topado y bolívares a la tasa guardada) los recalcula reconcileOrder.
     await reconcileOrder(tx, order.id, now);
   });
 }

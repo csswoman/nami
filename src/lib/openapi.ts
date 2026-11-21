@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { orderInputSchema } from "./orders/input";
 import { hoursSchema, openSchema, outOfStockSchema, productPatchSchema, stopActionSchema } from "./panel-input";
+import { riderActionSchema } from "./rider-input";
 
 /**
  * Especificación OpenAPI 3.1 de la API REST. Los cuerpos de entrada salen de los mismos esquemas Zod que validan
@@ -56,6 +57,7 @@ export function buildOpenApi(serverUrl?: string) {
       { name: "Pedidos", description: "Lado del cliente." },
       { name: "Catálogo" },
       { name: "Panel de tienda", description: "Demo abierta y compartida: los cambios de catálogo se deshacen solos a los 15 minutos." },
+      { name: "Repartidor", description: "App del repartidor. Sin login: el repartidor es el invitado de la cookie. Mientras consulta su tablero, los pedidos listos lo esperan." },
     ],
     components: {
       securitySchemes: { guestCookie: { type: "apiKey", in: "cookie", name: "nami_guest" } },
@@ -80,6 +82,8 @@ export function buildOpenApi(serverUrl?: string) {
             discountCents: { type: "integer" },
             totalCents: { type: "integer" },
             totalBsCents: { type: "integer", description: "Total en bolívares (céntimos) a la tasa del momento del pedido." },
+            surchargeCents: { type: "integer", description: "Recargo por lluvia u hora pico (cookie `nami_demanda` del modo demo). Ya va en el total." },
+            compensation: { type: ["object", "null"], description: "Cupón de disculpa si las tiendas cancelaron el pedido.", properties: { code: { type: "string" }, amountCents: { type: "integer" } } },
             rate: { type: "number", description: "Tasa Bs./$ guardada en el pedido." },
             plan: { type: "array", items: { type: "number" }, description: "Minuto en que se espera cada etapa." },
             startAt: { type: "integer", description: "ms epoch" },
@@ -92,6 +96,7 @@ export function buildOpenApi(serverUrl?: string) {
         ProductPatch: body(productPatchSchema),
         Hours: body(hoursSchema),
         OutOfStock: body(outOfStockSchema),
+        RiderAction: body(riderActionSchema),
       },
     },
     paths: {
@@ -173,6 +178,44 @@ export function buildOpenApi(serverUrl?: string) {
       "/api/tienda-admin/{slug}/hours": {
         get: { tags: ["Panel de tienda"], summary: "Horario semanal", parameters: [slug], responses: { 200: ok("Turnos.", { type: "object" }), 404: err("No existe esa tienda.") } },
         put: { tags: ["Panel de tienda"], summary: "Reemplazar el horario", description: "Turnos en minutos desde la medianoche, hora de Caracas. Lunes = 0.", parameters: [slug], requestBody: { required: true, ...json(ref("Hours")) }, responses: { 200: ok("Horario guardado.", { type: "object" }), 400: err("Turnos inválidos o solapados."), 404: err("No existe esa tienda."), 429: tooMany } },
+      },
+      "/api/tienda-admin/{slug}/simulate": {
+        post: {
+          tags: ["Panel de tienda"],
+          summary: "Simular un pedido entrante",
+          description: "El servidor crea un pedido de prueba para la tienda con el mismo flujo que un cliente real (precios de la BD, transacción, tasa guardada). Límite propio: 8 cada 10 minutos por IP.",
+          parameters: [slug],
+          responses: { 201: ok("Pedido creado.", { type: "object", properties: { id: { type: "string", format: "uuid" }, code: { type: "string" } } }), 404: err("No existe esa tienda."), 409: err("La tienda no tiene productos disponibles o zonas de entrega."), 429: tooMany },
+        },
+      },
+      "/api/tienda-admin/{slug}/metrics": {
+        get: {
+          tags: ["Panel de tienda"],
+          summary: "Ventas y liquidación (7 días)",
+          description: "Pedidos y ventas por día, ticket promedio, productos más vendidos, tiempo de preparación y la liquidación: venta bruta, comisión de Ñami (18 % restaurantes, 12 % mercados), cupones que paga la tienda y neto.",
+          parameters: [slug],
+          responses: { 200: ok("Métricas.", { type: "object" }), 404: err("No existe esa tienda.") },
+        },
+      },
+      "/api/repartidor": {
+        get: {
+          tags: ["Repartidor"],
+          summary: "Tablero del repartidor",
+          description: "Pedidos esperando repartidor, los que lleva este invitado y los que ya entregó. Consultarlo lo marca conectado durante 30 s.",
+          security: [{ guestCookie: [] }],
+          responses: { 200: ok("Tablero.", { type: "object", properties: { available: { type: "array", items: { type: "object" } }, mine: { type: "array", items: { type: "object" } }, done: { type: "array", items: { type: "object" } } } }), 401: err("Falta la cookie de invitado.") },
+        },
+      },
+      "/api/repartidor/orders/{id}": {
+        post: {
+          tags: ["Repartidor"],
+          summary: "Tomar, recoger o avisar que llegó",
+          description: "Tomar solo vale si nadie lo tomó (con dos repartidores a la vez gana uno). Recoger y llegar solo los hace quien lo tomó, en orden; lo demás es un 409.",
+          security: [{ guestCookie: [] }],
+          parameters: [uuidParam("id", "Id del pedido.")],
+          requestBody: { required: true, ...json(ref("RiderAction")) },
+          responses: { 200: ok("Hecho."), 400: err("Acción inválida."), 401: err("Falta la cookie de invitado."), 404: err("No existe el pedido."), 409: err("Ya lo tomó otro repartidor o la acción no va en ese orden."), 429: tooMany },
+        },
       },
       "/api/tienda-admin/{slug}/reset": {
         post: { tags: ["Panel de tienda"], summary: "Reponer catálogo", description: "Devuelve la tienda a los datos de demo.", parameters: [slug], responses: { 200: ok("Hecho."), 404: err("No está en los datos de demo."), 429: tooMany } },

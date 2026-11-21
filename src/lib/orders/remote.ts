@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { create } from "zustand";
 import { advanceOrderAction, cancelOrderAction, confirmOrderAction, restartOrderAction } from "@/app/seguimiento/actions";
 import { useCartStore, type Order } from "@/lib/cart/store";
+import { inspect } from "@/lib/inspector";
 
 /**
  * Pedidos guardados en el servidor: el contenido vive en la BD y aquí solo hay una copia para pintar.
@@ -31,11 +32,28 @@ export const useRemoteOrders = create<RemoteState>((set) => ({
 /** Los pedidos locales llevan ids "ÑM-2101"; los del servidor, uuid. */
 export const isRemoteId = (id: string) => !id.startsWith("ÑM-");
 
+/** Para «Bajo el capó»: qué cambió en el pedido desde la consulta anterior (estado, quién lo atiende, montos). */
+function reportChange(prev: Order | undefined, next: Order) {
+  if (!prev) return;
+  const who = (o: Order) => (o.hold == null ? "el reloj del pedido" : o.hold >= 2 ? "el repartidor de la demo" : "la tienda, desde su panel");
+  const changes: string[] = [];
+  if (prev.status !== next.status) changes.push(`estado: ${prev.status} → ${next.status}`);
+  if ((prev.hold ?? null) !== (next.hold ?? null)) changes.push(`lo controla ahora ${who(next)}${next.hold != null ? ` (detenido en la etapa ${next.hold})` : ""}`);
+  if (prev.totalCents !== next.totalCents) changes.push(`total recalculado en el servidor: ${prev.totalCents} → ${next.totalCents} centavos`);
+  if ((prev.changes?.length ?? 0) !== (next.changes?.length ?? 0)) changes.push("la tienda cambió el pedido");
+  if (!changes.length) return;
+  inspect({ kind: "domain", title: `Pedido ${next.code ?? next.id}: cambió en el servidor`, detail: changes.join(" · "), tone: next.status === "cancelled" ? "warn" : "info", data: { status: next.status, hold: next.hold ?? null, stageAt: next.stageAt, totalCents: next.totalCents } });
+}
+
 async function fetchOrder(id: string) {
-  const { put, settle, drop } = useRemoteOrders.getState();
+  const { put, settle, drop, orders } = useRemoteOrders.getState();
   try {
     const res = await fetch(`/api/orders/${encodeURIComponent(id)}`, { cache: "no-store" });
-    if (res.ok) put((await res.json()).order as Order);
+    if (res.ok) {
+      const next = (await res.json()).order as Order;
+      reportChange(orders[id], next);
+      put(next);
+    }
     else if (res.status === 404) drop(id);
     else settle(id);
   } catch {

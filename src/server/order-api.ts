@@ -4,6 +4,7 @@ import type { ApiError } from "@/lib/orders/input";
 import { orderInputSchema, type OrderInput } from "@/lib/orders/input";
 import type { Order } from "@/lib/cart/store";
 import { currentClientIp, currentGuestToken } from "./guest";
+import { getDemand } from "./prefs";
 import { logError } from "./log";
 import { LIMITS, checkRateLimit, rateLimitMessage } from "./rate-limit";
 import { OrderError, createOrder, quoteOrder, type OrderQuote } from "./orders";
@@ -23,7 +24,7 @@ export async function placeFromUnknown(raw: unknown): Promise<{ status: number; 
   const token = await currentGuestToken();
   if (!token) return { status: 401, body: fail("NO_GUEST_TOKEN", "Falta la cookie de invitado. Abre la página una vez y vuelve a intentar.") };
   try {
-    return { status: 201, body: { order: await createOrder(parsed.data as OrderInput, token) } };
+    return { status: 201, body: { order: await createOrder(parsed.data as OrderInput, token, Date.now(), { demand: await getDemand() }) } };
   } catch (e) {
     if (e instanceof OrderError) return { status: e.status, body: fail(e.code, e.message) };
     await logError("createOrder", e);
@@ -38,7 +39,7 @@ export async function quoteFromUnknown(raw: unknown): Promise<QuoteResult> {
   const token = await currentGuestToken();
   if (!token) return { ok: false, ...fail("NO_GUEST_TOKEN", "Falta la cookie de invitado. Abre la página una vez y vuelve a intentar.") };
   try {
-    return { ok: true, quote: await quoteOrder(parsed.data as OrderInput, token) };
+    return { ok: true, quote: await quoteOrder(parsed.data as OrderInput, token, Date.now(), { demand: await getDemand() }) };
   } catch (e) {
     if (e instanceof OrderError) return { ok: false, ...fail(e.code, e.message) };
     await logError("quoteOrder", e);

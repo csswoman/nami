@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { FRANJA_COOKIE, isFranja } from "@/lib/demo/franja";
+import { DEMAND_COOKIE, isDemand } from "@/lib/pricing/demand";
 import { GUEST_COOKIE, GUEST_COOKIE_MAX_AGE, isGuestToken, newGuestToken } from "@/lib/guest";
 const REQUEST_ID_HEADER = "x-request-id";
 /**
@@ -10,6 +11,7 @@ const REQUEST_ID_HEADER = "x-request-id";
  *    petición en curso para que el primer POST /api/orders ya la vea.
  * 3) Recuerda la franja del modo demo en una cookie para que sobreviva a la navegación.
  *    `?franja=cena` la fija; `?franja=real` la borra (vuelve a la hora real de Caracas).
+ * 4) Igual con la demanda del modo demo: `?demanda=lluvia` o `?demanda=pico`; `?demanda=normal` la borra.
  */
 export function proxy(request: NextRequest) {
   const headers = new Headers(request.headers);
@@ -35,6 +37,9 @@ export function proxy(request: NextRequest) {
   const value = request.nextUrl.searchParams.get("franja");
   if (isFranja(value ?? undefined)) res.cookies.set(FRANJA_COOKIE, value!, { path: "/", sameSite: "lax" });
   else if (value === "real") res.cookies.delete(FRANJA_COOKIE);
+  const demand = request.nextUrl.searchParams.get("demanda");
+  if (isDemand(demand) && demand !== "normal") res.cookies.set(DEMAND_COOKIE, demand, { path: "/", sameSite: "lax" });
+  else if (demand === "normal") res.cookies.delete(DEMAND_COOKIE);
   return res;
 }
 export const config = { matcher: ["/((?!_next|brand|.*\\..*).*)"] };
