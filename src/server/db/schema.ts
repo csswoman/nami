@@ -144,6 +144,8 @@ export const coupons = pgTable(
     // Solo vale en esta tienda; null = en cualquiera.
     storeId: uuid("store_id").references(() => stores.id, { onDelete: "cascade" }),
     firstOrderOnly: boolean("first_order_only").notNull().default(false),
+    // Cupón de compensación de un solo invitado (pedido cancelado por la tienda): solo vale con ese token y una vez.
+    guestToken: text("guest_token"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
@@ -285,8 +287,17 @@ export const orders = pgTable(
     route: jsonb("route").$type<RoutePoint[]>(),
     deliveryStartedAt: timestamp("delivery_started_at", { withTimezone: true }),
     deliveryDurationSeconds: integer("delivery_duration_seconds"),
-    // Etapa máxima (0–1) mientras una tienda atiende el pedido desde su panel; null = avanza solo por tiempo.
+    // Etapa máxima mientras alguien atiende el pedido a mano: 0–1 una tienda desde su panel, 2–3 un repartidor
+    // desde /repartidor. null = avanza solo por tiempo.
     holdStage: integer("hold_stage"),
+    // Repartidor de la demo que tomó el pedido (su token de invitado) y cuándo.
+    riderToken: text("rider_token"),
+    riderTakenAt: timestamp("rider_taken_at", { withTimezone: true }),
+    // Recargo por demanda (lluvia, hora pico): ya va sumado en totalCents.
+    surchargeCents: integer("surcharge_cents").notNull().default(0),
+    surchargeReason: text("surcharge_reason"),
+    // Cupón que se le dio al cliente cuando la tienda canceló su pedido (rechazo o sin respuesta a tiempo).
+    compensationCode: text("compensation_code"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
@@ -310,6 +321,8 @@ export const orderStops = pgTable(
     // Orden en que se recogen las tiendas.
     position: integer("position").notNull().default(0),
     subtotalCents: integer("subtotal_cents").notNull(),
+    // Envío de esta tienda hasta el cliente, tal como se cobró (para recalcular si la tienda rechaza su parte).
+    feeCents: integer("fee_cents").notNull().default(0),
     status: orderStatus("status").notNull().default("recibido"),
     // Motivo que escribió la tienda al rechazar.
     rejectReason: text("reject_reason"),
@@ -368,6 +381,12 @@ export const orderItems = pgTable(
   },
   (t) => [index("order_items_stop_idx").on(t.stopId)],
 );
+
+// Repartidores de la demo con /repartidor abierto: mientras haya uno reciente, los pedidos listos lo esperan.
+export const riderSessions = pgTable("rider_sessions", {
+  token: text("token").primaryKey(),
+  seenAt: timestamp("seen_at", { withTimezone: true }).notNull(),
+});
 
 // Límite de peticiones por ventana fija: una fila por clave ("orders:<ip>"). Ver src/server/rate-limit.ts.
 export const rateLimits = pgTable("rate_limits", {
