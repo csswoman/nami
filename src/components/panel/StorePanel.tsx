@@ -1,6 +1,6 @@
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Badge } from "@/components/nami";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { Badge, Icon } from "@/components/nami";
 import { formatUsd } from "@/lib/money";
 import { useNow } from "@/lib/cart/hooks";
 import { formatSchedule } from "@/lib/orders/progress";
@@ -27,6 +27,40 @@ const ACTION_LABEL: Record<StopAction, string> = {
   listo: "Listo para retirar",
 };
 const EDITABLE: StopStatus[] = ["recibido", "aceptado", "preparando"];
+/** Dos notas cortas cuando entra un pedido nuevo (solo si el navegador ya permite audio: hubo un clic en la página). */
+function chime() {
+  try {
+    const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Ctx) return;
+    const ctx = new Ctx();
+    if (ctx.state === "suspended") return void ctx.close();
+    [880, 1320].forEach((f, i) => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, ctx.currentTime + i * 0.15);
+      g.gain.exponentialRampToValueAtTime(0.15, ctx.currentTime + i * 0.15 + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + i * 0.15 + 0.14);
+      o.connect(g).connect(ctx.destination);
+      o.start(ctx.currentTime + i * 0.15);
+      o.stop(ctx.currentTime + i * 0.15 + 0.15);
+    });
+    setTimeout(() => void ctx.close(), 600);
+  } catch {}
+}
+const SOUND_KEY = "nami_panel_sonido";
+const SOUND_EVENT = "nami:panel-sonido";
+const readSound = () => {
+  try {
+    return window.localStorage.getItem(SOUND_KEY) !== "0";
+  } catch {
+    return true;
+  }
+};
+const subscribeSound = (cb: () => void) => {
+  window.addEventListener(SOUND_EVENT, cb);
+  return () => window.removeEventListener(SOUND_EVENT, cb);
+};
 const clock = (ms: number) => new Date(ms).toLocaleTimeString("es-VE", { hour: "numeric", minute: "2-digit" });
 const tone = (s: StopStatus) => (s === "cancelado" ? "danger" : s === "recibido" ? "promo" : "success");
 /** Qué pidió el cliente que se haga si falta este producto, o qué se hizo ya. */
@@ -158,6 +192,9 @@ export function StorePanel({ slug, initial, onQueueChange }: { slug: string; ini
   const [busyStop, setBusyStop] = useState<string | null>(null);
   const [toggling, setToggling] = useState(false);
   const [showDone, setShowDone] = useState(false);
+  const [simulating, setSimulating] = useState(false);
+  const [simulated, setSimulated] = useState<string | null>(null);
+  const sound = useSyncExternalStore(subscribeSound, readSound, () => true);
   const now = useNow(30_000);
   const seq = useRef(0);
   const refresh = useCallback(async () => {
@@ -198,6 +235,22 @@ export function StorePanel({ slug, initial, onQueueChange }: { slug: string; ini
     await refresh();
     setBusyStop(null);
   }
+  /** Pide al servidor un pedido de prueba para esta tienda (mismo flujo que un cliente real). */
+  async function simulate() {
+    setSimulating(true);
+    setSimulated(null);
+    const r = await callPanel<{ code: string }>(`/api/tienda-admin/${slug}/simulate`, "POST");
+    setError(r.error);
+    if (r.data) setSimulated(r.data.code);
+    await refresh();
+    setSimulating(false);
+  }
+  function toggleSound() {
+    try {
+      window.localStorage.setItem(SOUND_KEY, sound ? "0" : "1");
+    } catch {}
+    window.dispatchEvent(new Event(SOUND_EVENT));
+  }
   async function toggleOpen() {
     setToggling(true);
     const r = await callPanel(`/api/tienda-admin/${slug}/open`, "POST", { open: !data.store.isOpen });
@@ -208,6 +261,14 @@ export function StorePanel({ slug, initial, onQueueChange }: { slug: string; ini
   }
   const market = data.store.kind === "mercado";
   const fresh = data.queue.filter((s) => s.status === "recibido").length;
+  // Pedido nuevo: suena (si está activado) y el título de la pestaña lleva la cuenta, aunque estés en otra pestaña.
+  const seenFresh = useRef(fresh);
+  useEffect(() => {
+    if (fresh > seenFresh.current && sound) chime();
+    seenFresh.current = fresh;
+    const base = document.title.replace(/^\(\d+\) /, "");
+    document.title = fresh ? `(${fresh}) ${base}` : base;
+  }, [fresh, sound]);
   const done = showDone ? data.done : data.done.slice(0, DONE_PREVIEW);
   return (
     <div className="flex flex-col gap-6">
@@ -226,8 +287,17 @@ export function StorePanel({ slug, initial, onQueueChange }: { slug: string; ini
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <h2 className="font-display text-title-lg">Por atender ({data.queue.length})</h2>
           <span className="text-caption font-bold text-primary-text" role="status">{fresh ? (fresh === 1 ? "1 pedido nuevo" : `${fresh} pedidos nuevos`) : ""}</span>
+          <span className="grow" />
+          <button type="button" onClick={toggleSound} aria-pressed={sound} className="nm-btn nm-btn--ghost nm-btn--sm"><Icon name="bell" />{sound ? "Sonido activado" : "Sin sonido"}</button>
+          <button type="button" disabled={simulating} onClick={() => void simulate()} className="nm-btn nm-btn--secondary nm-btn--sm" data-testid="simulate-order"><Icon name="plus" />{simulating ? "Creando…" : "Simular pedido entrante"}</button>
         </div>
-        {data.queue.length === 0 ? <p className="rounded-lg bg-surface-tile p-6 text-center text-body text-ink-muted">No hay pedidos pendientes. Haz un pedido desde la app del cliente y aparecerá aquí en unos segundos.</p> : null}
+        {simulated ? <p role="status" className="text-caption text-ink-muted">Llegó el pedido de prueba {simulated}: lo creó el servidor con el mismo flujo que un cliente real.</p> : null}
+        {data.queue.length === 0 ? (
+          <div className="flex flex-col items-center gap-3 rounded-lg bg-surface-tile p-6 text-center text-body text-ink-muted">
+            <p>No hay pedidos pendientes. Haz un pedido desde la app del cliente o simula uno: aparecerá aquí en unos segundos.</p>
+            <button type="button" disabled={simulating} onClick={() => void simulate()} className="nm-btn nm-btn--primary">{simulating ? "Creando…" : "Simular pedido entrante"}</button>
+          </div>
+        ) : null}
         <div className="grid gap-3 desktop:grid-cols-2">
           {data.queue.map((s) => (
             <StopCard key={s.stopId} stop={s} now={now} busy={busyStop === s.stopId} market={market} slug={slug} onAct={(action, reason) => void act(s.stopId, action, reason)} onChanged={refresh} />

@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Icon, type IconName } from "@/components/nami";
 import { FavoriteButton } from "@/components/shell/FavoriteButton";
 import { CheckIcon, CloseIcon } from "@/components/shell/glyphs";
 import type { OptionGroup } from "@/lib/catalog";
-import { useCartStore, type CartStore } from "@/lib/cart/store";
+import { useCart } from "@/lib/cart/hooks";
+import { groupOf, useCartStore, type CartStore } from "@/lib/cart/store";
 import { formatUsd, formatVes } from "@/lib/money";
 
 type Props = {
@@ -23,6 +24,10 @@ type Props = {
   storeArea: string;
   backHref: string;
   groups: OptionGroup[];
+  /** Unidades que quedan; tope de la cantidad (descontando lo que ya llevas en el carrito). */
+  stock?: number;
+  /** true = se abre encima de la tienda (ruta interceptada): capa fija, cierra con Esc o clic fuera. */
+  modal?: boolean;
 };
 
 const SCATTER: { icon: IconName; x: number; y: number; s: number }[] = [
@@ -36,12 +41,30 @@ const SCATTER: { icon: IconName; x: number; y: number; s: number }[] = [
 ];
 
 /** Detalle de producto: opciones, nota, cantidad y total. Estado local; agregar al carrito lo conecta la lógica. */
-export function ProductoView({ store, productId, name, desc, icon, image, priceCents, rate, storeName, storeArea, backHref, groups }: Props) {
+export function ProductoView({ store, productId, name, desc, icon, image, priceCents, rate, storeName, storeArea, backHref, groups, stock, modal = false }: Props) {
+  const { groups: cartGroups } = useCart();
+  const inCart = (groupOf(cartGroups, store.slug)?.lines ?? []).filter((l) => l.productId === productId).reduce((n, l) => n + l.qty, 0);
+  const maxQty = Math.max(1, Math.min(20, stock != null ? stock - inCart : 20));
+  const noneLeft = stock != null && stock - inCart <= 0;
   const [picked, setPicked] = useState<Record<string, string[]>>(() => Object.fromEntries(groups.map((g) => [g.id, g.defaults])));
   const [qty, setQty] = useState(1);
   const [note, setNote] = useState("");
   const router = useRouter();
   const add = useCartStore((st) => st.add);
+
+  // Como modal, "cerrar" vuelve atrás (la tienda ya está debajo); sin historial previo, va a la tienda.
+  const close = () => (window.history.length > 1 ? router.back() : router.push(backHref));
+  const closeProps = modal ? { onClick: (e: React.MouseEvent) => { e.preventDefault(); close(); } } : {};
+  useEffect(() => {
+    if (!modal) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") close(); };
+    document.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = prev; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modal]);
+  const onBackdrop = modal ? (e: React.MouseEvent) => { if (e.target === e.currentTarget) close(); } : undefined;
 
   const toggle = (g: OptionGroup, id: string) =>
     setPicked((p) => {
@@ -58,7 +81,7 @@ export function ProductoView({ store, productId, name, desc, icon, image, priceC
   function addToCart() {
     const chosen = groups.flatMap((g) => g.options.filter((o) => picked[g.id]?.includes(o.id)).map((o) => o.label));
     const text = [...chosen, note.trim()].filter(Boolean).join(" · ");
-    add(store, { productId, name, unitCents: priceCents + extras, icon, image, note: text || undefined, options: groups.length ? picked : undefined, userNote: note.trim() || undefined, qty });
+    add(store, { productId, name, unitCents: priceCents + extras, icon, image, note: text || undefined, options: groups.length ? picked : undefined, userNote: note.trim() || undefined, qty: Math.min(qty, maxQty), stock });
     router.push(backHref);
   }
 
@@ -148,23 +171,29 @@ export function ProductoView({ store, productId, name, desc, icon, image, priceC
           <svg className="nm-icon size-5" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14" /></svg>
         </button>
         <span className="w-8 text-center text-body-strong font-bold" aria-live="polite">{qty}</span>
-        <button type="button" aria-label="Agregar una unidad" onClick={() => setQty((q) => Math.min(20, q + 1))} className="grid size-11 place-items-center rounded-pill bg-surface-raised text-ink shadow-card">
+        <button type="button" aria-label={qty >= maxQty ? "No quedan más unidades" : "Agregar una unidad"} disabled={qty >= maxQty} onClick={() => setQty((q) => Math.min(maxQty, q + 1))} className="grid size-11 place-items-center rounded-pill bg-surface-raised text-ink shadow-card disabled:opacity-50">
           <Icon name="plus" className="size-5" />
         </button>
       </div>
-      <button type="button" onClick={addToCart} className="nm-btn nm-btn--primary grow">Agregar · {formatUsd(total)}</button>
+      <button type="button" onClick={addToCart} disabled={noneLeft} className="nm-btn nm-btn--primary grow">{noneLeft ? "Ya tienes todas las unidades" : `Agregar · ${formatUsd(total)}`}</button>
     </div>
   );
 
   return (
     <>
       {/* Móvil: hoja */}
-      <div className="flex min-h-dvh flex-col bg-ink/60 pt-13 desktop:hidden">
+      <div
+        role={modal ? "dialog" : undefined}
+        aria-modal={modal || undefined}
+        aria-label={modal ? name : undefined}
+        onClick={onBackdrop}
+        className={modal ? "fixed inset-0 z-50 flex flex-col justify-end overflow-y-auto bg-ink/60 pt-13 desktop:hidden" : "flex min-h-dvh flex-col bg-ink/60 pt-13 desktop:hidden"}
+      >
         <div className="relative flex grow flex-col rounded-t-3xl bg-surface">
           <span className="mx-auto mt-2 h-1 w-10 rounded-pill bg-border" aria-hidden="true" />
           <div className="relative px-4 pt-3">
             {hero}
-            <Link href={backHref} aria-label="Cerrar" className="absolute top-6 right-7 grid size-11 place-items-center rounded-pill bg-surface-raised text-ink shadow-card [&_.nm-icon]:size-5"><CloseIcon /></Link>
+            <Link href={backHref} {...closeProps} aria-label="Cerrar" className="absolute top-6 right-7grid size-11 place-items-center rounded-pill bg-surface-raised text-ink shadow-card [&_.nm-icon]:size-5"><CloseIcon /></Link>
           </div>
           <div className="px-4 pt-5 pb-5">{titleBlock}</div>
           <div className="grow pb-28">{options("m")}</div>
@@ -173,7 +202,13 @@ export function ProductoView({ store, productId, name, desc, icon, image, priceC
       </div>
 
       {/* Escritorio: modal */}
-      <div className="hidden bg-ink/50 px-8 py-10 desktop:block">
+      <div
+        role={modal ? "dialog" : undefined}
+        aria-modal={modal || undefined}
+        aria-label={modal ? name : undefined}
+        onClick={onBackdrop}
+        className={modal ? "fixed inset-0 z-50 hidden overflow-y-auto bg-ink/50 px-8 py-10 desktop:block" : "hidden bg-ink/50 px-8 py-10 desktop:block"}
+      >
         <div className="relative mx-auto grid max-w-250 grid-cols-[minmax(0,5fr)_minmax(0,6fr)] overflow-hidden rounded-3xl bg-surface shadow-card">
           <div className="flex flex-col gap-6 p-9">
             {hero}
@@ -181,7 +216,7 @@ export function ProductoView({ store, productId, name, desc, icon, image, priceC
           </div>
           <div className="flex max-h-[calc(100dvh-10rem)] min-h-0 flex-col">
             <div className="flex justify-end p-6 pb-0">
-              <Link href={backHref} aria-label="Cerrar" className="grid size-11 place-items-center rounded-pill bg-surface-tile text-ink [&_.nm-icon]:size-5"><CloseIcon /></Link>
+              <Link href={backHref} {...closeProps} aria-label="Cerrar" className="grid size-11 place-items-center rounded-pill bg-surface-tile text-ink [&_.nm-icon]:size-5"><CloseIcon /></Link>
             </div>
             <div className="grow overflow-y-auto px-6 pt-2 pb-6">{options("d")}</div>
             {bar}

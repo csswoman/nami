@@ -105,7 +105,7 @@ export function CartPanel({ onNavigate }: { onNavigate?: () => void }) {
                             {l.note ? <span className="truncate text-caption text-ink-muted">{l.note}</span> : null}
                             <span className="text-price text-[13px] font-bold">{formatUsd(l.qty * l.unitCents)}</span>
                           </div>
-                          <Stepper qty={l.qty} name={l.name} onMinus={() => setQty(g.store.slug, l.key, l.qty - 1)} onPlus={() => setQty(g.store.slug, l.key, l.qty + 1)} />
+                          <Stepper qty={l.qty} max={l.stock} name={l.name} onMinus={() => setQty(g.store.slug, l.key, l.qty - 1)} onPlus={() => setQty(g.store.slug, l.key, l.qty + 1)} />
                         </li>
                       );
                     })}

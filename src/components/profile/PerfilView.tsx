@@ -152,6 +152,10 @@ export function PerfilView({ money }: { money: { currency: Currency; rate: numbe
           <span className="flex grow flex-col"><b className="text-body-strong">Panel de tienda</b><span className="text-caption text-ink-muted">Atiende pedidos, agota productos y cambia horarios. Sin login.</span></span>
           <Icon name="chevronRight" className="size-5 text-ink-muted" />
         </Link>
+        <Link href="/repartidor" className="flex items-center gap-3 py-2">
+          <span className="flex grow flex-col"><b className="text-body-strong">App del repartidor</b><span className="text-caption text-ink-muted">Toma pedidos listos y entrégalos. Sin login.</span></span>
+          <Icon name="chevronRight" className="size-5 text-ink-muted" />
+        </Link>
         <Link href="/acerca" className="flex items-center gap-3 py-2">
           <span className="flex grow flex-col"><b className="text-body-strong">Acerca del proyecto</b><span className="text-caption text-ink-muted">Qué es Ñami y cómo probarlo en 2 minutos.</span></span>
           <Icon name="chevronRight" className="size-5 text-ink-muted" />

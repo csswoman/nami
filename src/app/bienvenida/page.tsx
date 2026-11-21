@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import { Icon, type IconName } from "@/components/nami";
+import { StartTourButton } from "@/components/shell/GuidedTour";
 
 export const metadata = { title: "Bienvenida · Ñami" };
 
@@ -36,7 +37,8 @@ export default function BienvenidaPage() {
           ))}
         </ul>
         <div className="mt-2 flex flex-col gap-2 desktop:flex-row desktop:items-center desktop:gap-6">
-          <Link href="/" className="nm-btn nm-btn--primary">Empezar</Link>
+          <StartTourButton />
+          <Link href="/" className="nm-btn nm-btn--secondary">Explorar por mi cuenta</Link>
           <Link href="/acerca" className="min-h-12 text-center text-button leading-12 text-primary-text">Acerca del proyecto</Link>
         </div>
       </div>

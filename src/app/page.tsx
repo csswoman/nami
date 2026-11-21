@@ -6,6 +6,8 @@ import { Badge, CategoryTile, CuisineChip, Icon, type IconName, PromoBanner, Sec
 import { BannerRail, DiscoverRail, FlashCard, PopularTiles, ThemedPanel, type GeoBanner } from "@/components/home/HomeBlocks";
 import { AppShell } from "@/components/shell/AppShell";
 import { DeliveryBar } from "@/components/shell/DeliveryBar";
+import { StartTourButton } from "@/components/shell/GuidedTour";
+import { DEMAND_INFO } from "@/lib/pricing/demand";
 import { StoreMark } from "@/components/shell/StoreMark";
 import { caracasNow, FRANJA_COOKIE, horaToMinutes, resolveFranja, type Franja } from "@/lib/demo/franja";
 import { PromoTabs, type PromoGroup } from "@/components/cart/PromoTabs";
@@ -14,7 +16,7 @@ import { isOpenAt, marketCard, opensText } from "@/lib/catalog";
 import { chipTag } from "@/lib/demo/catalog";
 import { FRANJA_CONTENT, TRUSTED_MARKETS, VERTICALS } from "@/lib/demo/home";
 import { getPromos, getStores } from "@/server/catalog";
-import { getDeliveryContext, getMoneyPrefs } from "@/server/prefs";
+import { getDeliveryContext, getDemand, getMoneyPrefs } from "@/server/prefs";
 
 const PROMO_MARKETS = ["nami-market", "abasto-el-saman", "automercado-avila", "bodegon-la-candelaria", "farmacia-san-onofre", "farmacia-los-proceres"];
 /** Cada tarjeta de categoría abre la pestaña del listado con ese índice (?v=). */
@@ -48,6 +50,7 @@ async function HomeContent({ searchParams }: { searchParams: PageProps<"/">["sea
   const content = FRANJA_CONTENT[franja];
   const minutes = horaToMinutes(content.hora);
   const delivery = await getDeliveryContext();
+  const demand = DEMAND_INFO[await getDemand()];
   const [money, allRestaurants, allMarkets, promos] = await Promise.all([
     getMoneyPrefs(),
     getStores({ vertical: 0, delivery }),
@@ -78,6 +81,11 @@ async function HomeContent({ searchParams }: { searchParams: PageProps<"/">["sea
   return (
     <div className="page-x flex flex-col gap-8 pt-4 desktop:gap-12 desktop:pt-7">
       <DeliveryBar zone={delivery.zone} hidden={hidden} />
+      {demand.notice ? (
+        <p className="flex items-center gap-2 rounded-lg bg-surface-warm px-4 py-3 text-caption [&_.nm-icon]:size-4" data-testid="demand-banner">
+          <Icon name="clock" /><span><b>{demand.label}.</b> {demand.notice} Cámbialo en el reloj de arriba.</span>
+        </p>
+      ) : null}
       {/* Banner de campaña (en escritorio comparte fila con la tarjeta del demo) */}
       <div className="grid gap-6 desktop:grid-cols-[2fr_1fr]">
         <PromoBanner
@@ -95,12 +103,15 @@ async function HomeContent({ searchParams }: { searchParams: PageProps<"/">["sea
             <h2 className="font-display text-[24px] leading-[30px] font-extrabold text-ink tracking-tight">Pide como si estuvieras en Caracas</h2>
             <p className="text-body text-ink-muted leading-snug">Las tiendas siguen la hora de Caracas. Si todo está cerrado, cambia de franja con el modo demo.</p>
           </div>
-          <Link href="/acerca" className="nm-btn nm-btn--secondary self-start bg-surface border border-border/80 shadow-xs transition-transform hover:scale-105 active:scale-95">Cómo funciona</Link>
+          <div className="flex flex-wrap gap-2">
+            <StartTourButton className="nm-btn nm-btn--primary nm-btn--sm" label="Recorrido guiado" />
+            <Link href="/acerca" className="nm-btn nm-btn--secondary nm-btn--sm self-start bg-surface border border-border/80 shadow-xs transition-transform hover:scale-105 active:scale-95">Cómo funciona</Link>
+          </div>
         </aside>
       </div>
 
       {/* Verticales: móvil 2 grandes + fila de pequeñas; escritorio 6 en rejilla */}
-      <section aria-label="Categorías" className="flex flex-col gap-3 desktop:hidden">
+      <section aria-label="Categorías" data-tour="categorias" className="flex flex-col gap-3 desktop:hidden">
         <div className="grid grid-cols-2 gap-3">
           {VERTICALS.slice(0, 2).map((v, i) => (
             <Link key={v.title} href={verticalHref(i)} className="flex"><CategoryTile className="w-full" size="lg" title={v.title} icon={v.icon} tone={v.tone} image={v.image} /></Link>
@@ -110,7 +121,7 @@ async function HomeContent({ searchParams }: { searchParams: PageProps<"/">["sea
           {VERTICALS.slice(2).map((v, i) => <Link key={v.title} href={verticalHref(i + 2)} className="flex shrink-0"><CategoryTile className="w-24 shrink-0" title={v.title} icon={v.icon} tone={v.tone} image={v.image} /></Link>)}
         </div>
       </section>
-      <section aria-label="Categorías" className="hidden grid-cols-6 gap-4 desktop:grid">
+      <section aria-label="Categorías" data-tour="categorias" className="hidden grid-cols-6 gap-4 desktop:grid">
         {VERTICALS.map((v, i) => (
           <Link key={v.title} href={verticalHref(i)} className="flex"><CategoryTile className="w-full" title={v.title} icon={v.icon} tone={v.tone} image={v.image} /></Link>
         ))}

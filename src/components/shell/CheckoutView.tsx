@@ -24,6 +24,8 @@ import { formatUsd, formatVes } from "@/lib/money";
 import { formatWhen } from "@/lib/orders/progress";
 import { useRemoteOrders } from "@/lib/orders/remote";
 import { scheduledFor } from "@/lib/orders/schedule";
+import { DEMAND_INFO, type Demand } from "@/lib/pricing/demand";
+import { inspect } from "@/lib/inspector";
 
 type Extra = { id: string; name: string; priceCents: number; icon: IconName; image?: string };
 type Extras = Record<string, Extra[]>;
@@ -43,7 +45,7 @@ const pill = (on: boolean, tone: "ink" | "primary") =>
   }`;
 
 /** Confirmar pedido. Lee el carrito del invitado; al confirmar guarda el pedido y sigue a pago o seguimiento. */
-export function CheckoutView({ extras, rate, offers = [] }: { extras: Extras; rate: number; offers?: CouponOffer[] }) {
+export function CheckoutView({ extras, rate, offers = [], demand = "normal" }: { extras: Extras; rate: number; offers?: CouponOffer[]; demand?: Demand }) {
   const router = useRouter();
   const { ready, groups, delivery, subtotal, shippingCents } = useCart();
   const address = useCartStore((s) => s.address);
@@ -95,7 +97,10 @@ export function CheckoutView({ extras, rate, offers = [] }: { extras: Extras; ra
   // Lo que descuenta el cupón lo calcula el servidor; aquí solo se resta.
   const discountCents = coupon?.quote?.discountCents ?? 0;
   const shipDiscountCents = coupon?.quote?.shippingDiscountCents ?? 0;
-  const total = subtotal + shippingCents + tipCents - discountCents - shipDiscountCents;
+  // Recargo por lluvia u hora pico (modo demo). El servidor lo vuelve a calcular con la misma regla.
+  const demandInfo = DEMAND_INFO[demand];
+  const surchargeCents = demandInfo.surchargeCents;
+  const total = subtotal + shippingCents + tipCents + surchargeCents - discountCents - shipDiscountCents;
   const orderBase = {
     delivery,
     tipCents,
@@ -104,6 +109,8 @@ export function CheckoutView({ extras, rate, offers = [] }: { extras: Extras; ra
     scheduledFor: slot?.at,
     items: groups.flatMap((g) => g.lines.map((l) => ({ store: g.store.slug, product: l.productId, qty: l.qty, options: l.options, note: l.userNote ?? (l.options ? undefined : l.note), substitution: g.store.kind === "mercado" ? effectiveSubstitution(subs[l.key]) : undefined }))),
   };
+  const surchargeRow = (big: boolean) =>
+    surchargeCents > 0 ? <div className={`flex justify-between ${big ? "text-body" : "text-caption"} text-ink-muted`}><span>{demandInfo.line}</span><span>{formatUsd(surchargeCents)}</span></div> : null;
   const discountRows = coupon?.quote ? (
     <>
       {discountCents > 0 ? <div className="flex justify-between text-body text-success"><span>Cupón {coupon.code}</span><span>−{formatUsd(discountCents)}</span></div> : null}
@@ -136,6 +143,21 @@ export function CheckoutView({ extras, rate, offers = [] }: { extras: Extras; ra
       // Un cupón que ya no sirve se manda igual: el servidor lo rechaza con el motivo y el pedido no se crea.
       const res = await placeOrderAction({ ...orderBase, coupon: coupon?.code });
       if (res.ok) {
+        inspect({
+          kind: "domain",
+          title: res.order.totalCents === total ? "El servidor recalculó el total y coincide" : "El servidor recalculó el total y corrigió el del carrito",
+          detail: `El navegador mandó solo ids y cantidades. El servidor leyó los precios de la BD, aplicó envío, cupón y recargo dentro de una transacción y guardó la tasa ${res.order.rate?.toLocaleString("es-VE")} Bs./$.`,
+          tone: res.order.totalCents === total ? "ok" : "warn",
+          data: {
+            pedido: res.order.code,
+            totalQueMostrabaElCarrito: formatUsd(total),
+            totalCalculadoPorElServidor: formatUsd(res.order.totalCents),
+            totalGuardadoEnBolivares: res.order.totalBsCents !== undefined && res.order.rate ? formatVes(res.order.totalCents, res.order.rate) : null,
+            recargo: res.order.surchargeCents ? formatUsd(res.order.surchargeCents) : null,
+            cupon: res.order.couponCode ?? null,
+            paradas: res.order.stops.map((st) => st.store.name),
+          },
+        });
         useRemoteOrders.getState().put(res.order);
         addOrderId(res.order.id);
         clear();
@@ -166,6 +188,12 @@ export function CheckoutView({ extras, rate, offers = [] }: { extras: Extras; ra
           <span className="text-ink">Confirmar pedido</span>
         </nav>
         <h1 className="hidden font-display text-[40px] leading-11 font-extrabold desktop:block">Confirmar pedido</h1>
+        {demandInfo.notice ? (
+          <p className="flex items-start gap-2 rounded-lg bg-surface-warm p-3 text-caption [&_.nm-icon]:size-4" data-testid="demand-notice">
+            <Icon name="clock" />
+            <span><b>{demandInfo.label}.</b> {demandInfo.notice} Se suma {formatUsd(surchargeCents)} al envío.</span>
+          </p>
+        ) : null}
 
         <div className="grid grid-cols-1 gap-8 desktop:grid-cols-[minmax(0,1fr)_420px] desktop:items-start desktop:gap-10">
           <div className="flex min-w-0 flex-col gap-7 desktop:gap-8">
@@ -245,7 +273,7 @@ export function CheckoutView({ extras, rate, offers = [] }: { extras: Extras; ra
             </section>
 
             <SubstitutionBox groups={groups} value={subs} onChange={setSubs} />
-            <CouponBox offers={offers} base={orderBase} onChange={setCoupon} />
+            <div data-tour="cupon"><CouponBox offers={offers} base={orderBase} onChange={setCoupon} /></div>
             {/* Resumen (móvil) */}
             <section aria-label="Resumen" className="flex flex-col gap-3 rounded-xl border border-border/70 bg-surface-raised p-5 shadow-xs desktop:hidden">
               <h2 className="font-display text-title-lg">Resumen del pedido</h2>
@@ -283,6 +311,7 @@ export function CheckoutView({ extras, rate, offers = [] }: { extras: Extras; ra
               ))}
               <div className="flex justify-between border-t border-border pt-2 text-body text-ink-muted"><span>{shipLabel}</span><span>{formatUsd(shippingCents)}</span></div>
               <div className="flex justify-between border-b border-dashed border-border pb-2 text-body text-ink-muted"><span>Propina</span><span>{formatUsd(tipCents)}</span></div>
+              {surchargeRow(true)}
               {discountRows}
               <div className="flex items-baseline justify-between pt-1">
                 <b className="text-body-strong">Total</b>
@@ -323,7 +352,7 @@ export function CheckoutView({ extras, rate, offers = [] }: { extras: Extras; ra
                           {l.note ? <span className="truncate text-caption text-ink-muted">{l.note}</span> : null}
                           <span className="text-caption font-semibold text-ink-muted">{formatUsd(l.qty * l.unitCents)}</span>
                         </span>
-                        <Stepper qty={l.qty} name={l.name} onMinus={() => setQty(store.slug, l.key, l.qty - 1)} onPlus={() => setQty(store.slug, l.key, l.qty + 1)} />
+                        <Stepper qty={l.qty} max={l.stock} name={l.name} onMinus={() => setQty(store.slug, l.key, l.qty - 1)} onPlus={() => setQty(store.slug, l.key, l.qty + 1)} />
                       </div>
                     );
                   })}
@@ -360,6 +389,7 @@ export function CheckoutView({ extras, rate, offers = [] }: { extras: Extras; ra
               <div className="flex justify-between"><span>Subtotal</span><span>{formatUsd(subtotal)}</span></div>
               <div className="flex justify-between text-caption text-ink-muted"><span>{shipLabel}</span><span>{formatUsd(shippingCents)}</span></div>
               <div className="flex justify-between text-caption text-ink-muted"><span>Propina</span><span>{formatUsd(tipCents)}</span></div>
+              {surchargeRow(false)}
               {discountRows}
               <div className="flex items-baseline justify-between pt-1.5">
                 <b className="text-body-strong">Total</b>
@@ -369,7 +399,7 @@ export function CheckoutView({ extras, rate, offers = [] }: { extras: Extras; ra
             {coverageNotice}
             {blocked ? <MinNotice shortfall={shortfall} min={blocked.store.minOrderCents} href={storeHref(blocked.store)} /> : null}
             {error ? <p role="alert" className="text-caption font-bold text-danger">{error}</p> : null}
-            <button type="button" onClick={() => void confirm()} disabled={!!blocked || noCoverage || busy || !!coupon?.pending} className="nm-btn nm-btn--primary nm-btn--block">{cta}</button>
+            <button type="button" onClick={() => void confirm()} disabled={!!blocked || noCoverage || busy || !!coupon?.pending} className="nm-btn nm-btn--primary nm-btn--block" data-tour="pedir">{cta}</button>
           </aside>
 
           {/* Barra de acción (móvil) */}
@@ -377,7 +407,7 @@ export function CheckoutView({ extras, rate, offers = [] }: { extras: Extras; ra
             {coverageNotice}
             {blocked ? <MinNotice shortfall={shortfall} min={blocked.store.minOrderCents} href={storeHref(blocked.store)} /> : null}
             {error ? <p role="alert" className="text-caption font-bold text-danger">{error}</p> : null}
-            <button type="button" onClick={() => void confirm()} disabled={!!blocked || noCoverage || busy || !!coupon?.pending} className="nm-btn nm-btn--primary nm-btn--block">{cta}</button>
+            <button type="button" onClick={() => void confirm()} disabled={!!blocked || noCoverage || busy || !!coupon?.pending} className="nm-btn nm-btn--primary nm-btn--block" data-tour="pedir">{cta}</button>
           </div>
         </div>
       </div>

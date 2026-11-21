@@ -178,6 +178,10 @@ export function AppHeader({ address = "Elegir dirección", placeholder, unread, 
                     </span>
                     <span className="nm-badge nm-badge--promo text-[10px] py-0.5 px-2">Demo</span>
                   </Link>
+                  <Link href="/repartidor" className="nm-drawer__link" onClick={() => setIsMenuOpen(false)}>
+                    <Icon name="moto" />
+                    <span>App del repartidor</span>
+                  </Link>
                   <Link href="/demo" className="nm-drawer__link" onClick={() => setIsMenuOpen(false)}>
                     <Icon name="repeat" />
                     <span>Pantalla dividida</span>

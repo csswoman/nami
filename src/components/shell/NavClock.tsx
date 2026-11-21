@@ -5,6 +5,7 @@ import { Suspense, useEffect, useRef, useState, useSyncExternalStore } from "rea
 import { Icon } from "@/components/nami";
 import { FRANJAS, isFranja, caracasNow, FRANJA_COOKIE, type Franja } from "@/lib/demo/franja";
 import { FRANJA_CONTENT } from "@/lib/demo/home";
+import { DEMANDS, DEMAND_COOKIE, DEMAND_INFO, demandOf, type Demand } from "@/lib/pricing/demand";
 
 const FRANJA_HOURS: Record<Franja, string> = {
   desayuno: "6:00 a 11:00 a. m.",
@@ -16,6 +17,9 @@ const FRANJA_HOURS: Record<Franja, string> = {
 
 function readCookie(): string | undefined {
   return document.cookie.split("; ").find((c) => c.startsWith(`${FRANJA_COOKIE}=`))?.split("=")[1];
+}
+function readDemand(): string | undefined {
+  return document.cookie.split("; ").find((c) => c.startsWith(`${DEMAND_COOKIE}=`))?.split("=")[1];
 }
 const subscribeNoop = () => () => {};
 type NavClockProps = {
@@ -54,6 +58,9 @@ function NavClockContent({ variant = "topbar" }: NavClockProps) {
   const wrapperRef = useRef<HTMLDivElement | null>(null);
 
   const cookieValue = useSyncExternalStore(subscribeNoop, readCookie, () => undefined);
+  const demandCookie = useSyncExternalStore(subscribeNoop, readDemand, () => undefined);
+  const demandParam = searchParams.get("demanda");
+  const demand: Demand = demandOf(demandParam ?? demandCookie);
   const param = searchParams.get("franja");
   const raw = param !== null ? param : cookieValue;
   const isManual = isFranja(raw ?? undefined);
@@ -90,6 +97,14 @@ function NavClockContent({ variant = "topbar" }: NavClockProps) {
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
   const selectFranja = (f: Franja) => goFranja(f);
+  // El proxy guarda la cookie con ?demanda=; refresh para que el servidor vuelva a pintar con el aviso y el recargo.
+  const goDemand = (d: Demand) => {
+    setIsOpen(false);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("demanda", d);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    router.refresh();
+  };
   const resetToReal = () => goFranja("real");
   return (
     <div ref={wrapperRef} className="relative inline-flex items-center">
@@ -204,6 +219,25 @@ function NavClockContent({ variant = "topbar" }: NavClockProps) {
                   </button>
                 );
               })}
+            </div>
+
+            {/* Clima / demanda: recargo y envíos más lentos */}
+            <div className="flex flex-col gap-2 border-t border-border px-3 py-3">
+              <span className="text-[13px] font-bold text-ink">Clima en Caracas</span>
+              <div role="group" aria-label="Clima y demanda" className="grid grid-cols-3 gap-1.5">
+                {DEMANDS.map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    aria-pressed={d === demand}
+                    onClick={() => goDemand(d)}
+                    className={`min-h-10 rounded-pill px-2 text-[13px] font-bold ${d === demand ? "bg-ink text-surface" : "bg-surface-tile text-ink hover:bg-border/60"}`}
+                  >
+                    {DEMAND_INFO[d].label}
+                  </button>
+                ))}
+              </div>
+              <span className="text-[12px] text-ink-muted">Con lluvia u hora pico el envío lleva recargo y el motorizado tarda más.</span>
             </div>
 
             {/* Footer con opción de restablecer hora real */}

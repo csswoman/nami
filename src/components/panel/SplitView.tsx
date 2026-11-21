@@ -42,9 +42,10 @@ function Pane({ label, hint, title, src, frameRef, notice }: { label: string; hi
  * —precios, stock, horario, abrir o cerrar— y aquí se ofrece recargar el lado del cliente, sin recargarlo a la fuerza
  * (podría estar a mitad de un pedido).
  */
-export function SplitView({ clientHref, panelHref }: { clientHref: string; panelHref: string }) {
+export function SplitView({ clientHref, panelHref, riderHref }: { clientHref: string; panelHref: string; riderHref?: string }) {
   const client = useRef<HTMLIFrameElement>(null);
   const panel = useRef<HTMLIFrameElement>(null);
+  const rider = useRef<HTMLIFrameElement>(null);
   const [stale, setStale] = useState(false);
   useEffect(() => {
     const onMessage = (e: MessageEvent) => {
@@ -71,9 +72,10 @@ export function SplitView({ clientHref, panelHref }: { clientHref: string; panel
     </div>
   ) : null;
   return (
-    <div className="hidden min-h-0 grow grid-cols-2 gap-3 desktop:grid">
+    <div className={`hidden min-h-0 grow gap-3 desktop:grid ${riderHref ? "grid-cols-3" : "grid-cols-2"}`} data-tour="split">
       <Pane label="Cliente" hint="pide algo de esta tienda" title="App del cliente" src={clientHref} frameRef={client} notice={notice} />
       <Pane label="Tienda" hint="acepta y prepara el pedido" title="Panel de tienda" src={panelHref} frameRef={panel} />
+      {riderHref ? <Pane label="Repartidor" hint="tómalo y entrégalo" title="App del repartidor" src={riderHref} frameRef={rider} /> : null}
     </div>
   );
 }

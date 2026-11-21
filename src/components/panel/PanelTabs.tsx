@@ -8,12 +8,14 @@ import { callPanel, notifyCatalogChanged } from "./api";
 import { InventoryPanel } from "./InventoryPanel";
 import { SchedulePanel } from "./SchedulePanel";
 import { ReviewsPanel } from "./ReviewsPanel";
+import { MetricsPanel } from "./MetricsPanel";
 import { StorePanel } from "./StorePanel";
 const TABS = [
   { id: "pedidos", label: "Pedidos" },
   { id: "inventario", label: "Inventario" },
   { id: "horario", label: "Horario" },
   { id: "resenas", label: "Reseñas" },
+  { id: "ventas", label: "Ventas" },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 const isTab = (v: string): v is TabId => TABS.some((t) => t.id === v);
@@ -90,6 +92,7 @@ export function PanelTabs({ slug, orders, inventory, schedule, reviews }: { slug
       <div role="tabpanel" id="panel-inventario" aria-labelledby="tab-inventario" hidden={tab !== "inventario"}><InventoryPanel slug={slug} initial={inventory} /></div>
       <div role="tabpanel" id="panel-horario" aria-labelledby="tab-horario" hidden={tab !== "horario"}><SchedulePanel slug={slug} initial={schedule} /></div>
       <div role="tabpanel" id="panel-resenas" aria-labelledby="tab-resenas" hidden={tab !== "resenas"}><ReviewsPanel reviews={reviews.items} count={reviews.count} sum={reviews.sum} /></div>
+      <div role="tabpanel" id="panel-ventas" aria-labelledby="tab-ventas" hidden={tab !== "ventas"}><MetricsPanel slug={slug} active={tab === "ventas"} /></div>
       <section className="flex flex-wrap items-center gap-3 rounded-lg border border-dashed border-border p-4">
         <div className="grow">
           <p className="text-body-strong font-bold">Zona de demo</p>

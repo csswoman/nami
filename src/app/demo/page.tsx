@@ -3,15 +3,16 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { SplitView } from "@/components/panel/SplitView";
 import { StoreSwitcher } from "@/components/panel/StoreSwitcher";
-import { clientHrefOf, panelHrefOf } from "@/lib/demo/split-view";
+import { InspectorSwitch } from "@/components/shell/Inspector";
+import { clientHrefOf, panelHrefOf, riderHrefOf } from "@/lib/demo/split-view";
 import { listPanelStores } from "@/server/store-panel";
 export const metadata: Metadata = {
   title: "Pantalla dividida · Ñami",
-  description: "La app del cliente y el panel de tienda lado a lado: haz un pedido a la izquierda y atiéndelo a la derecha.",
+  description: "Cliente, tienda y repartidor lado a lado: haz un pedido, atiéndelo como tienda y entrégalo como repartidor.",
   alternates: { canonical: "/demo" },
 };
 const DEFAULT_STORE = "arepera-dona-chela";
-const STEPS = ["Pide algo en la tienda", "Acéptalo y prepáralo en el panel", "Sigue al motorizado en la app"];
+const STEPS = ["Pide algo en la tienda", "Acéptalo y déjalo listo en el panel", "Tómalo y entrégalo como repartidor", "Míralo llegar en el seguimiento"];
 export default async function DemoPage({ searchParams }: PageProps<"/demo">) {
   await connection();
   const [sp, stores] = await Promise.all([searchParams, listPanelStores()]);
@@ -19,6 +20,9 @@ export default async function DemoPage({ searchParams }: PageProps<"/demo">) {
   const store = stores.find((s) => s.slug === wanted) ?? stores.find((s) => s.slug === DEFAULT_STORE) ?? stores[0];
   const slug = store?.slug ?? DEFAULT_STORE;
   const clientHref = clientHrefOf(slug, store?.kind);
+  // ?repartidor=0 vuelve a la vista de dos columnas (cliente y tienda): el motorizado va solo.
+  const withRider = sp.repartidor !== "0";
+  const toggleRider = `/demo?tienda=${slug}${withRider ? "&repartidor=0" : ""}`;
   return (
     <div className="flex h-dvh flex-col gap-3 bg-surface-tile p-3">
       <header className="flex flex-wrap items-end gap-x-4 gap-y-2">
@@ -34,17 +38,22 @@ export default async function DemoPage({ searchParams }: PageProps<"/demo">) {
             ))}
           </ol>
         </div>
+        <div className="hidden items-center gap-2 desktop:flex">
+          <InspectorSwitch className="nm-btn--sm" />
+          <Link href={toggleRider} className="nm-btn nm-btn--ghost nm-btn--sm">{withRider ? "Sin repartidor" : "Con repartidor"}</Link>
+        </div>
         <StoreSwitcher current={slug} stores={stores} base="/demo?tienda=" />
       </header>
       <div className="flex flex-col gap-3 rounded-lg bg-surface p-4 text-body desktop:hidden">
-        <p>La pantalla dividida necesita una pantalla ancha. Abre los dos lados en pestañas separadas:</p>
+        <p>La pantalla dividida necesita una pantalla ancha. Abre cada lado en una pestaña:</p>
         <div className="flex flex-wrap gap-2">
           <Link href={clientHref} className="nm-btn nm-btn--primary">La tienda como cliente</Link>
           <Link href={panelHrefOf(slug)} className="nm-btn nm-btn--secondary">Su panel</Link>
+          <Link href={riderHrefOf()} className="nm-btn nm-btn--secondary">App del repartidor</Link>
         </div>
       </div>
       {/* key: al cambiar de tienda, los dos iframes vuelven a empezar juntos. */}
-      <SplitView key={slug} clientHref={clientHref} panelHref={panelHrefOf(slug, true)} />
+      <SplitView key={`${slug}-${withRider}`} clientHref={clientHref} panelHref={panelHrefOf(slug, true)} riderHref={withRider ? riderHrefOf(true) : undefined} />
     </div>
   );
 }

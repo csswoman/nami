@@ -168,7 +168,7 @@ async function Content({ params, searchParams }: Pick<PageProps<"/tienda/[slug]"
           <div className="flex flex-col gap-9 pt-4 desktop:pt-0">
             <div className="hidden desktop:block"><SearchBar placeholder={`Buscar en el menú de ${store.name}`} /></div>
             {store.menu.map((s) => (
-              <section key={s.id} id={s.id} className="flex scroll-mt-16 flex-col gap-1 desktop:gap-4">
+              <section key={s.id} id={s.id} data-tour={s.id === store.menu[0]?.id ? "menu" : undefined} className="flex scroll-mt-16 flex-col gap-1 desktop:gap-4">
                 <h2 className="py-3 font-display text-title-lg desktop:py-0 desktop:text-[24px] desktop:leading-7.5">{s.title}</h2>
                 <div className="flex flex-col desktop:grid desktop:grid-cols-2 desktop:gap-4">
                   {s.products.map((it) => <MenuCard key={it.id} item={it} store={cartStore} hasOptions={it.hasOptions} slug={store.slug} money={money} />)}
@@ -193,31 +193,38 @@ async function Content({ params, searchParams }: Pick<PageProps<"/tienda/[slug]"
 function MenuCard({ item, slug, store, hasOptions, money }: { item: CatalogProduct; slug: string; store: CartStore; hasOptions: boolean; money: { currency: Currency; rate: number } }) {
   const other: Currency = money.currency === "USD" ? "VES" : "USD";
   const out = item.soldOut;
+  // "Agotado · Vuelve mañana a las…": "Agotado" va sobre la imagen y el regreso como texto bajo el precio.
+  const back = out ? soldOutLabel(item.soldOutUntil).split(" · ")[1] : undefined;
   return (
-    <article className="relative flex min-h-26 gap-4 border-b border-border py-4 desktop:rounded-lg desktop:border desktop:p-4">
-      <div className="flex min-w-0 grow flex-col gap-1">
-        <h3 className="text-body-strong font-semibold">
+    <article className="relative flex gap-3 border-b border-border py-4 desktop:gap-4 desktop:rounded-lg desktop:border desktop:p-4">
+      <div className="flex min-w-0 grow flex-col">
+        <h3 className="line-clamp-2 text-body-strong font-semibold">
           {out ? item.name : <Link href={`/tienda/${slug}/${item.id}`} className="after:absolute after:inset-0">{item.name}</Link>}
         </h3>
-        <p className="text-caption font-normal text-ink-muted">{item.description}</p>
-        <div className="mt-auto flex items-baseline gap-2 pt-1.5 whitespace-nowrap">
-          <span className="text-price">{formatMoney(item.priceCents, money.currency, money.rate)}</span>
-          <span className="text-caption text-ink-muted">{formatMoney(item.priceCents, other, money.rate)}</span>
+        <p className="mt-1 line-clamp-2 text-caption font-normal text-ink-muted">{item.description}</p>
+        <div className="mt-auto flex flex-wrap items-baseline gap-x-2 pt-3">
+          <span className="text-price whitespace-nowrap">{formatMoney(item.priceCents, money.currency, money.rate)}</span>
+          <span className="text-caption whitespace-nowrap text-ink-muted">{formatMoney(item.priceCents, other, money.rate)}</span>
         </div>
-        {item.stock ? <span className="text-badge text-primary-text">Quedan {item.stock}</span> : null}
-        {out ? <span className="self-start rounded-pill bg-surface-tile px-2.5 py-1 text-badge">{soldOutLabel(item.soldOutUntil)}</span> : null}
+        {!out && item.stock ? <span className="mt-1 text-badge text-primary-text">Quedan {item.stock}</span> : null}
+        {back ? <span className="mt-1 text-caption text-ink-muted">{back[0].toUpperCase() + back.slice(1)}</span> : null}
       </div>
-      {/* Agotado: se atenúa solo la imagen; el texto conserva su contraste y la etiqueta dice por qué. */}
-      <div className={`relative size-26 shrink-0 overflow-hidden rounded-md bg-surface-tile ${out ? "opacity-50 grayscale" : ""}`}>
-        {item.image ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={item.image} alt="" className="size-full object-cover" />
+      {/* Sin overflow-hidden aquí para que el botón + no se recorte en la esquina. */}
+      <div className="relative size-26 shrink-0 self-start">
+        {/* Agotado: se atenúa solo la imagen; el texto conserva su contraste. */}
+        <div className={`size-full overflow-hidden rounded-md bg-surface-tile ${out ? "opacity-50 grayscale" : ""}`}>
+          {item.image ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={item.image} alt="" className="size-full object-cover" />
+          ) : (
+            <span className="grid size-full place-items-center text-ink [&_.nm-icon]:size-10"><Icon name={item.icon ?? "utensils"} /></span>
+          )}
+        </div>
+        {out ? (
+          <span className="absolute inset-x-0 bottom-2 mx-auto w-fit rounded-pill bg-surface px-2.5 py-1 text-badge text-ink shadow-card">Agotado</span>
         ) : (
-          <span className="grid size-full place-items-center text-ink [&_.nm-icon]:size-10"><Icon name={item.icon ?? "utensils"} /></span>
+          <AddButton className="absolute -right-2 -bottom-2 z-[1]" store={store} hasOptions={hasOptions} stock={item.stock} href={`/tienda/${slug}/${item.id}`} item={{ id: item.id, name: item.name, priceCents: item.priceCents, icon: item.icon ?? "utensils", image: item.image ?? undefined }} />
         )}
-        {!out ? (
-          <AddButton className="absolute -right-1.5 -bottom-1.5 z-[1]" store={store} hasOptions={hasOptions} href={`/tienda/${slug}/${item.id}`} item={{ id: item.id, name: item.name, priceCents: item.priceCents, icon: item.icon ?? "utensils", image: item.image ?? undefined }} />
-        ) : null}
       </div>
     </article>
   );

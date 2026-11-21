@@ -11,6 +11,7 @@ import { useNow, useOrders } from "@/lib/cart/hooks";
 import { CancelOrder } from "@/components/tracking/CancelOrder";
 import { isRemoteId, useOrderActions } from "@/lib/orders/remote";
 import { STAGE_COUNT, couriersOf, formatClock, formatSchedule, stageHeadline, stageLabels } from "@/lib/orders/progress";
+import { formatUsd } from "@/lib/money";
 
 const pts = (a: [number, number][]) => a.map((q) => `${q[0].toFixed(1)},${q[1].toFixed(1)}`).join(" ");
 
@@ -73,7 +74,7 @@ export function TrackingView({ id }: { id?: string }) {
   });
   const labels = stageLabels(o.stops);
   const [title, text] = cancelled
-    ? ["Pedido cancelado", o.cancelReason ? `Motivo: ${o.cancelReason}` : "Este pedido se canceló."]
+    ? ["Pedido cancelado", o.cancelReason ? `Motivo: ${o.cancelReason}` : "La tienda no pudo atender tu pedido. No te cobramos nada."]
     : done ? ["Pedido entregado", `Lo recibiste a las ${formatClock(p.etaAt)}.`] : stageHeadline(st, o.stops, o.courier);
   const first = o.courier.name.split(" ")[0];
   const range = `entre ${formatClock(p.etaAt - 60_000)} y ${formatClock(p.etaAt + 60_000)}`;
@@ -104,6 +105,15 @@ export function TrackingView({ id }: { id?: string }) {
           </span>
           <h1 className="font-display text-[28px] leading-8 font-extrabold desktop:text-[36px] desktop:leading-10">{title}</h1>
           <p className="text-body text-ink-muted">{text}</p>
+          {cancelled && o.compensation ? (
+            <p className="mt-1 flex flex-col gap-0.5 rounded-md bg-success-tint px-3 py-2 text-caption" data-testid="compensation">
+              <b>Te dejamos {formatUsd(o.compensation.amountCents)} de regalo para tu próximo pedido.</b>
+              <span>Usa el cupón <b className="tracking-wide">{o.compensation.code}</b> al pagar. Vale 7 días y es solo tuyo.</span>
+            </p>
+          ) : null}
+          {o.riderLive && !done ? (
+            <p className="mt-1 flex items-center gap-2 rounded-md bg-surface-tile px-3 py-2 text-caption [&_.nm-icon]:size-4"><Icon name="user" />Un repartidor de la demo lleva tu pedido en vivo desde su app.</p>
+          ) : null}
           {o.scheduledFor && o.scheduledFor > now && !done ? (
             <p className="flex items-center gap-2 rounded-md bg-surface-warm px-3 py-2 text-caption font-bold [&_.nm-icon]:size-4"><Icon name="clock" />Pedido programado: empezamos a prepararlo {formatSchedule(o.scheduledFor, now)}.</p>
           ) : null}
@@ -113,7 +123,7 @@ export function TrackingView({ id }: { id?: string }) {
             ))}
           </div>
         </div>
-        <ol className="flex flex-col">
+        <ol className="flex flex-col" data-tour="etapas">
           {labels.map((label, i) => {
             const isDone = i < st || p.arrived;
             const cur = i === st && !p.arrived;
@@ -164,6 +174,8 @@ export function TrackingView({ id }: { id?: string }) {
             <span className="text-caption font-bold text-ink-muted">Modo demo · El recorrido avanza solo con el tiempo</span>
             {p.arrived ? (
               <button type="button" onClick={() => void restart(o.id)} className="nm-btn nm-btn--secondary nm-btn--block"><Icon name="repeat" />Reiniciar simulación</button>
+            ) : o.hold != null ? (
+              <p className="text-caption text-ink-muted">{o.hold >= 2 ? "Ahora lo lleva el repartidor desde /repartidor: avanza cuando él lo marque." : "La tienda lo está atendiendo desde su panel: avanza cuando ella lo marque."}</p>
             ) : (
               <button type="button" onClick={() => void advance(o.id)} className="nm-btn nm-btn--secondary nm-btn--block"><Icon name="chevronRight" />Saltar a «{labels[st + 1]}»</button>
             )}

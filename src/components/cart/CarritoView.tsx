@@ -82,7 +82,7 @@ export function CarritoView({ extras }: { extras: Record<string, Extra[]> }) {
                           {l.note ? <span className="text-caption text-ink-muted">{l.note}</span> : null}
                           <span className="text-price">{formatUsd(l.qty * l.unitCents)}</span>
                         </span>
-                        <Stepper qty={l.qty} name={l.name} onMinus={() => setQty(store.slug, l.key, l.qty - 1)} onPlus={() => setQty(store.slug, l.key, l.qty + 1)} />
+                        <Stepper qty={l.qty} max={l.stock} name={l.name} onMinus={() => setQty(store.slug, l.key, l.qty - 1)} onPlus={() => setQty(store.slug, l.key, l.qty + 1)} />
                       </li>
                     );
                   })}

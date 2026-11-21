@@ -1,6 +1,7 @@
 import type { Order, PayMethod } from "@/lib/cart/store";
 import { DEMO_RATE } from "@/lib/demo/home";
 import { formatUsd, formatVes } from "@/lib/money";
+import { DEMAND_INFO } from "@/lib/pricing/demand";
 
 const PAY_LABEL: Record<PayMethod, string> = {
   movil: "Pago móvil · Verificado",
@@ -20,8 +21,8 @@ export function OrderSummary({ order: o }: { order: Order }) {
       </div>
       <div className="flex flex-col gap-3 text-body">
         {o.stops.map((s) => (
-          <div key={s.store.slug} className="flex flex-col gap-1.5">
-            {multi ? <span className="text-caption font-bold text-ink-muted">{s.store.name}</span> : null}
+          <div key={s.store.slug} className={`flex flex-col gap-1.5 ${s.cancelled ? "line-through opacity-60" : ""}`}>
+            {multi ? <span className="text-caption font-bold text-ink-muted">{s.store.name}{s.cancelled ? <span className="sr-only"> (no se cobra)</span> : null}</span> : null}
             {s.lines.map((l) => (
               <div key={l.key} className="flex justify-between gap-3">
                 <span>{l.qty}× {l.name}{l.note ? <span className="block text-caption text-ink-muted">{l.note}</span> : null}</span>
@@ -38,13 +39,14 @@ export function OrderSummary({ order: o }: { order: Order }) {
         <div className="flex flex-col gap-1 border-t border-dashed border-border pt-2 text-caption text-ink-muted">
           <div className="flex justify-between"><span>Subtotal</span><span className="tabular-nums">{formatUsd(o.subtotalCents)}</span></div>
           <div className="flex justify-between"><span>{shipLabel}</span><span className="tabular-nums">{formatUsd(o.shippingCents)}</span></div>
+          {o.surchargeCents ? <div className="flex justify-between"><span>{DEMAND_INFO[o.surchargeReason ?? "lluvia"].line ?? "Recargo"}</span><span className="tabular-nums">{formatUsd(o.surchargeCents)}</span></div> : null}
           {o.discountCents ? <div className="flex justify-between text-success"><span>Cupón {o.couponCode}</span><span className="tabular-nums">−{formatUsd(o.discountCents)}</span></div> : null}
           {o.tipCents > 0 ? <div className="flex justify-between"><span>Propina para el motorizado</span><span className="tabular-nums">{formatUsd(o.tipCents)}</span></div> : null}
         </div>
       </div>
       <div className="flex items-baseline justify-between border-t border-dashed border-border pt-2">
         <span className="text-body-strong font-bold">Total</span>
-        <span className="flex flex-col items-end"><span className="text-price tabular-nums">{formatUsd(o.totalCents)}</span><span className="text-caption text-ink-muted">{formatVes(o.totalCents, DEMO_RATE)}</span></span>
+        <span className="flex flex-col items-end"><span className="text-price tabular-nums">{formatUsd(o.totalCents)}</span><span className="text-caption text-ink-muted">{formatVes(o.totalCents, o.rate ?? DEMO_RATE)}</span></span>
       </div>
       <span className="self-start rounded-pill bg-success-tint px-3 py-1.5 text-badge text-ink">{PAY_LABEL[o.payment]}</span>
     </section>

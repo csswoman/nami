@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import Script from "next/script";
+import { Suspense } from "react";
 import { CartProvider } from "@/components/cart/CartProvider";
+import { GuidedTour } from "@/components/shell/GuidedTour";
+import { Inspector } from "@/components/shell/Inspector";
 import { getSiteUrl, OG_IMAGE, SITE_DESCRIPTION, SITE_NAME, SITE_TITLE } from "@/lib/seo";
 import { figtree, nunito } from "./fonts";
 import "./globals.css";
@@ -87,6 +90,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
         <CartProvider />
         {children}
+        {/* «Bajo el capó» y el recorrido guiado: solo se pintan si el visitante los activa. */}
+        <Suspense fallback={null}>
+          <Inspector />
+          <GuidedTour />
+        </Suspense>
       </body>
     </html>
   );

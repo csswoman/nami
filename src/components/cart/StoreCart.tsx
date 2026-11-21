@@ -48,7 +48,7 @@ export function StoreCart({ store, label = "Tu pedido", variant, scheduleText }:
       {rows.map((l) => (
         <div key={l.key} className="flex items-start gap-2.5">
           <span className="flex grow flex-col"><span className="text-body">{l.name}</span>{l.note ? <span className="text-caption text-ink-muted">{l.note}</span> : null}<span className="text-body-strong whitespace-nowrap">{formatUsd(l.qty * l.unitCents)}</span></span>
-          <Stepper qty={l.qty} name={l.name} onMinus={() => setQty(store.slug, l.key, l.qty - 1)} onPlus={() => setQty(store.slug, l.key, l.qty + 1)} />
+          <Stepper qty={l.qty} max={l.stock} name={l.name} onMinus={() => setQty(store.slug, l.key, l.qty - 1)} onPlus={() => setQty(store.slug, l.key, l.qty + 1)} />
         </div>
       ))}
       <div className="flex flex-col gap-1.5 border-t border-dashed border-border pt-3 text-caption">

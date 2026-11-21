@@ -16,6 +16,7 @@ export function MarketProductCard({ store, p, money = { currency: "USD", rate: D
   const last = (groupOf(groups, store.slug)?.lines ?? []).filter((l) => l.productId === p.id).at(-1);
   const qty = (groupOf(groups, store.slug)?.lines ?? []).filter((l) => l.productId === p.id).reduce((n, l) => n + l.qty, 0);
   const out = Boolean(p.soldOut);
+  const maxed = p.stock != null && qty >= p.stock;
 
   return (
     <div className={`flex min-w-0 flex-col gap-1 ${out ? "opacity-55" : ""}`}>
@@ -27,9 +28,9 @@ export function MarketProductCard({ store, p, money = { currency: "USD", rate: D
         badges={p.oldPriceCents ? <Badge tone="brand">Oferta</Badge> : undefined}
         unit={`${p.unit} · ${formatMoney(p.priceCents, other, money.rate)}`}
         image={p.image}
-        onAdd={out ? undefined : () => add(store, { productId: p.id, name: p.name, unitCents: p.priceCents, icon: "basket", image: p.image })}
+        onAdd={out || maxed ? undefined : () => add(store, { productId: p.id, name: p.name, unitCents: p.priceCents, icon: "basket", image: p.image, stock: p.stock })}
       />
-      {p.stock ? <span className="text-badge text-primary-text">Quedan {p.stock}</span> : null}
+      {p.stock && !out ?<span className="text-badge text-primary-text">Quedan {p.stock}</span> : null}
       {qty && last ? (
         <span className="flex items-center gap-2 text-badge text-success">
           {qty} en tu carrito

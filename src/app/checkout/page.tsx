@@ -3,7 +3,9 @@ import { connection } from "next/server";
 import { AppShell } from "@/components/shell/AppShell";
 import { CheckoutView } from "@/components/shell/CheckoutView";
 import { getCartExtras, getCouponOffers } from "@/server/catalog";
+import { currentGuestToken } from "@/server/guest";
 import { currentRate } from "@/server/orders";
+import { getDemand } from "@/server/prefs";
 export const metadata = { title: "Confirmar pedido · Ñami" };
 export default function CheckoutPage() {
   return (
@@ -16,6 +18,6 @@ export default function CheckoutPage() {
 }
 async function Content() {
   await connection();
-  const [extras, rate, offers] = await Promise.all([getCartExtras(), currentRate(), getCouponOffers()]);
-  return <CheckoutView extras={extras} rate={rate} offers={offers} />;
+  const [extras, rate, offers, demand] = await Promise.all([getCartExtras(), currentRate(), currentGuestToken().then((t) => getCouponOffers(undefined, t)), getDemand()]);
+  return <CheckoutView extras={extras} rate={rate} offers={offers} demand={demand} />;
 }

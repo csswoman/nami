@@ -21,7 +21,7 @@ export default async function TiendaAdminPage() {
         <header className="flex flex-col gap-2">
           <h1 className="hidden font-display text-[32px] leading-9 desktop:block">Panel de tienda</h1>
           <p className="text-body">Este es el lado de la tienda. No pide login: elige una tienda de demo y atiende sus pedidos como si fueras su dueño. Lo que hagas aquí lo ve el cliente al instante.</p>
-          <p className="text-caption text-ink-muted">Tip: abre la app del cliente en otra pestaña, haz un pedido a esa tienda y míralo avanzar desde aquí.</p>
+          <p className="text-caption text-ink-muted">Tip: abre la app del cliente en otra pestaña, haz un pedido a esa tienda y míralo avanzar desde aquí. Cuando esté listo, entrégalo desde la <Link href="/repartidor" className="font-bold text-primary-text underline">app del repartidor</Link>.</p>
         </header>
         {([["Restaurantes", "restaurante"], ["Mercados, farmacias y tiendas", "mercado"]] as const).map(([title, kind]) => (
           <section key={kind} className="flex flex-col gap-3" aria-label={title}>

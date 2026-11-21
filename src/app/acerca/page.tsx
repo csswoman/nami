@@ -4,6 +4,8 @@ import Link from "next/link";
 import { AppShell } from "@/components/shell/AppShell";
 import { ScreenBar } from "@/components/shell/ScreenBar";
 import { Icon } from "@/components/nami";
+import { InspectorSwitch } from "@/components/shell/Inspector";
+import { StartTourButton } from "@/components/shell/GuidedTour";
 import { PORTFOLIO_URL, REPO_URL } from "@/lib/links";
 
 export const metadata: Metadata = {
@@ -17,7 +19,9 @@ const STACK = ["Next.js", "React", "TypeScript", "PostgreSQL", "Drizzle", "Tailw
 type Item = { title: string; sub: string; href?: string; external?: boolean };
 const LINKS: Item[] = [
   { title: "Panel de tienda", sub: "Atiende pedidos, agota productos y cambia horarios. Sin login.", href: "/tienda-admin" },
-  { title: "Pantalla dividida", sub: "Cliente y tienda lado a lado (escritorio)", href: "/demo" },
+  { title: "Pantalla dividida", sub: "Cliente, tienda y repartidor lado a lado (escritorio)", href: "/demo" },
+  { title: "App del repartidor", sub: "Toma pedidos listos, recógelos y entrégalos. Sin login.", href: "/repartidor" },
+  { title: "Documentación de la API", sub: "OpenAPI 3.1 generado desde los esquemas Zod", href: "/api/docs" },
   { title: "Mi perfil", sub: "Direcciones guardadas, favoritos, moneda y tema", href: "/perfil" },
   { title: "Código del proyecto", sub: "Repositorio en GitHub", href: REPO_URL, external: true },
   { title: "Portafolio de Karla", sub: PORTFOLIO_URL ? "Más proyectos y contacto" : "Próximamente", href: PORTFOLIO_URL ?? undefined, external: true },
@@ -31,9 +35,19 @@ const TOURS: { title: string; steps: string[]; href: string; cta: string }[] = [
     href: "/listado", cta: "Ver restaurantes",
   },
   {
-    title: "Atiende el pedido como tienda",
-    steps: ["Abre la pantalla dividida: cliente a la izquierda, tienda a la derecha.", "Haz un pedido y acéptalo desde el panel.", "Avanza los estados y mira cómo cambia el seguimiento del cliente."],
+    title: "Los tres lados del marketplace",
+    steps: ["Abre la pantalla dividida: cliente, tienda y repartidor.", "Haz un pedido, acéptalo y déjalo listo desde el panel.", "Tómalo como repartidor y entrégalo: el cliente lo ve paso a paso."],
     href: "/demo", cta: "Abrir pantalla dividida",
+  },
+  {
+    title: "Cuando algo sale mal",
+    steps: ["Pon «Lluvia» en el reloj: el envío lleva recargo y tarda más.", "Pide a dos tiendas y rechaza una desde su panel: el total se recalcula.", "Abre el panel y no aceptes: a los 5 min se cancela y el cliente recibe un cupón."],
+    href: "/demo", cta: "Probarlo",
+  },
+  {
+    title: "Las cuentas de la tienda",
+    steps: ["Entra al panel de una tienda y abre «Ventas».", "Mira ventas por día, ticket promedio y lo más pedido.", "La liquidación separa la comisión de Ñami y los cupones que paga la tienda."],
+    href: "/tienda-admin/arepera-dona-chela#ventas", cta: "Ver ventas",
   },
   {
     title: "Busca con errores de tipeo",
@@ -77,7 +91,17 @@ export default function AcercaPage() {
 
         <section aria-labelledby="dos-minutos" className="flex flex-col gap-4">
           <h2 id="dos-minutos" className="font-display text-title-lg desktop:text-[32px]">Prueba esto en 2 minutos</h2>
-          <div className="scroll-x -mx-4 flex snap-x snap-mandatory gap-4 px-4 pb-2 desktop:mx-0 desktop:grid desktop:grid-cols-4 desktop:overflow-visible desktop:px-0 desktop:pb-0">
+          <div className="flex flex-col gap-3 rounded-xl bg-surface-warm p-5 desktop:flex-row desktop:items-center desktop:gap-6">
+            <p className="grow text-body">
+              <b>Si tienes poco tiempo:</b> el recorrido guiado te lleva por la app y te explica qué hace el servidor en cada paso.
+              «Bajo el capó» muestra cada llamada a la API, sus tiempos y lo que recalculó el servidor.
+            </p>
+            <div className="flex shrink-0 flex-wrap gap-2">
+              <StartTourButton />
+              <InspectorSwitch />
+            </div>
+          </div>
+          <div className="scroll-x -mx-4 flex snap-x snap-mandatory gap-4 px-4 pb-2 desktop:mx-0 desktop:grid desktop:grid-cols-3 desktop:overflow-visible desktop:px-0 desktop:pb-0">
             {TOURS.map((t, i) => (
               <article key={t.title} className="flex w-[78%] shrink-0 snap-start scroll-ml-4 flex-col gap-3 rounded-xl border border-border p-5 desktop:w-auto desktop:shrink">
                 <h3 className="font-display text-title-md"><span className="text-primary-text">{i + 1}.</span> {t.title}</h3>
