@@ -6,7 +6,7 @@ const block = "animate-pulse rounded-xl bg-surface-tile";
 /** Skeleton de carga general: bloques con la forma del inicio y el aviso de la guacamaya. */
 export default function Loading() {
   return (
-    <AppShell>
+    <AppShell address="Cargando dirección…">
       <div className="page-x relative flex flex-col gap-6 pt-4 desktop:gap-12 desktop:pt-7" aria-busy="true" aria-live="polite">
         <div className="grid gap-6 desktop:grid-cols-[2fr_1fr]">
           <div className={`${block} h-42 desktop:h-70`} />

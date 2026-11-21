@@ -21,7 +21,8 @@ type AppShellProps = {
 
 export async function AppShell({ children, activeNav = 0, mobileHeader = true, bottomNav = true, address: addressProp, topBar = "full" }: AppShellProps) {
   // Única dirección visible de la app: la zona va primero para que no se pierda al truncarse.
-  const { zone } = await getDeliveryContext();
+  // Con `address` explícita no se lee la cookie: así el skeleton de loading.tsx se prerenderiza.
+  const zone = addressProp === undefined ? (await getDeliveryContext()).zone : null;
   const spot = SPOTS.find((s) => s.zone === zone?.slug);
   const address = addressProp ?? (zone ? `${zone.name}${spot ? ` · ${spot.addr.split(",")[0]}` : ""}` : "Elegir dirección");
   return (
