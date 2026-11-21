@@ -10,12 +10,16 @@ Next.js (App Router) · React 19 · TypeScript (strict) · PostgreSQL · Drizzle
 
 ## Try it in 2 minutes
 
-1. Open **[/demo](https://nami-taupe.vercel.app/demo)**: the customer app on the left, the store's admin panel on the right (on a phone, open both in separate tabs).
-2. On the left, order something from the selected store. It shows up under "Por atender" in a few seconds.
-3. On the right, accept the order and move it forward: the customer's tracking screen updates stage by stage.
-4. Close the panel (or wait 30 s): the order keeps going on its own, as if the store were on autopilot.
+![The three sides of the demo: customer, store and rider](docs/screenshots/demo.gif)
 
-The store panel is an open, shared demo, so other visitors see your changes. Prices, stock, hours and open/closed state go back to the demo data on their own 15 minutes after the first change.
+1. Open **[/demo](https://nami-taupe.vercel.app/demo)**: customer app, store panel and rider app side by side (on a phone, open each one in its own tab).
+2. On the left, order something. It shows up under "Por atender" in the store panel within a few seconds.
+3. In the middle, accept it and mark it ready. On the right, take it as the rider, pick it up and mark it delivered: the customer's tracking moves with every click.
+4. Close the panel or the rider app: the order keeps going on its own, as if that side were on autopilot.
+
+Short on time? Start the **guided tour** from the home page or [/acerca](https://nami-taupe.vercel.app/acerca). It walks through the app and explains what the server does at each step. Turn on **"Bajo el capó"** ("under the hood", or add `?capo=1` to any URL) to see every API call, its status, timing and request id, and what the server recalculated.
+
+The store panel is an open, shared demo, so other visitors see your catalog changes. Prices, stock, hours and open/closed state go back to the demo data on their own 15 minutes after the first change. The rider app only handles your own orders and the ones you simulate from the panel.
 
 ## Screenshots
 
@@ -35,6 +39,9 @@ The store panel is an open, shared demo, so other visitors see your changes. Pri
 - **Public-demo hardening.** Per-IP rate limiting in Postgres (an atomic `INSERT … ON CONFLICT`, tested with 25 concurrent requests where exactly 10 get through), `429` with `Retry-After`. Self-healing shared catalog. Structured JSON error logs with a request id that is also returned to the browser.
 - **API contract generated from the validators.** [`/api/docs`](https://nami-taupe.vercel.app/api/docs) is Swagger UI over an OpenAPI 3.1 spec built from the same Zod schemas the routes use. A unit test fails if a Route Handler is added without being documented.
 - **Accessibility checked in CI.** axe-core (WCAG 2.1 AA) runs on the main screens in light and dark mode, and Lighthouse runs against the production build. Accessibility and best practices block the build; performance and SEO only warn.
+- **Three-sided marketplace.** Customer, store and rider each drive the same order through one function (`reconcileOrder`). The rider holds the order at "looking for a courier" and "on the way" while their app is open. Five riders taking the same order at once: exactly one wins. Orders resume on their own if the rider leaves, and an unclaimed order waits at most 90 s.
+- **When things go wrong.** A store that doesn't accept within 5 minutes loses its part. If a store rejects its part of a multi-store order, the server reprices the order without that store's products and delivery fee. If the stores cancel the whole order, the customer gets a single-use apology coupon bound to their guest token. Rain or rush hour (picked in the demo clock) adds a surcharge the server computes itself and slows the courier down.
+- **Marketplace accounting.** The store panel's "Ventas" tab shows the last 7 days and a settlement: gross sales, Ñami's commission (18 % restaurants, 12 % markets), coupons paid by the store versus by Ñami, and net payout. The settlement is a pure function with unit tests.
 - **Maps without paid APIs.** Street routes from every store to every delivery zone are computed once with OSRM and stored. The courier's position is interpolated on the client along that route, so tracking needs no external calls.
 
 ## Architecture
@@ -72,14 +79,15 @@ The reasoning behind the main decisions is in [`docs/adr/`](docs/adr):
 | [0003](docs/adr/0003-precomputed-routes.md) | Precomputed street routes and a client-side courier |
 | [0004](docs/adr/0004-shared-demo-panel.md) | Shared store panel that restores itself |
 | [0005](docs/adr/0005-rate-limiting-in-postgres.md) | Rate limiting in Postgres instead of Redis |
+| [0006](docs/adr/0006-rider-app-and-marketplace-rules.md) | Rider app, store timeouts, partial rejections, demand surcharge and settlement |
 
 ## Tests and CI
 
 | Layer | What | Where |
 | --- | --- | --- |
-| Unit | Pricing, coupons, slots, state machine, substitutions, OpenAPI coverage of every route | `src/**/*.test.ts` (Vitest, coverage thresholds) |
-| Integration | Services against a real Postgres (no ORM mocks), including concurrency and rate limiting | `tests/db` |
-| End to end | Order → tracking → delivery, map, profile, filters, accessibility (axe, light and dark) | `tests/e2e` (Playwright) |
+| Unit | Pricing, coupons, slots, state machine, substitutions, repricing after a rejection, settlement, demand surcharge, OpenAPI coverage of every route | `src/**/*.test.ts` (Vitest, coverage thresholds) |
+| Integration | Services against a real Postgres (no ORM mocks), including concurrency (riders racing for an order), store timeouts, apology coupons and rate limiting | `tests/db` |
+| End to end | Order → tracking → delivery, map, profile, filters, simulated orders, sales tab, rider app, "Bajo el capó", guided tour, accessibility (axe, light and dark) | `tests/e2e` (Playwright) |
 | Lighthouse | Home, listing and store page on the production build | `lighthouserc.json` |
 
 `.github/workflows/ci.yml` runs four jobs on every push and pull request: lint + types + unit tests with coverage, integration against Postgres 17, Playwright, and Lighthouse.
@@ -106,6 +114,8 @@ On Windows, run the tests from a path with an uppercase drive letter (`D:\…`, 
 - **Real accounts and payments** (order history, saved cards, Pago Móvil confirmation). They were left out on purpose, so a recruiter can try the whole flow without signing up.
 - **Error tracking** (Sentry or similar) on top of the structured logs.
 - **Visual regression tests** for the design system components.
+
+The demo GIF is recorded with `BASE_URL=http://localhost:3000 node scripts/record-demo.mjs` (Playwright + ffmpeg).
 
 ## Deploy (Vercel + Neon)
 

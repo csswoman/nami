@@ -31,6 +31,8 @@ No usar Supabase como plataforma, ni Express/NestJS, ni microservicios.
 - Endpoints públicos que escriben: límite por IP con `checkRateLimit` (`src/server/rate-limit.ts`) → 429 `RATE_LIMITED` con `Retry-After`.
 - Route Handler nuevo o cambiado: documentarlo en `src/lib/openapi.ts` (una prueba falla si falta).
 - Mutación nueva del panel sobre el catálogo: llamar `markCatalogChanged` para que la tienda vuelva sola al seed (ver `docs/adr/0004`).
+- El estado de un pedido solo lo decide `reconcileOrder` (`src/server/order-flow.ts`): `hold_stage` 0–1 = la tienda desde su panel, 2–3 = el repartidor desde `/repartidor`. Al final llama `settle`, que recalcula montos si una parada se cancela (ver `docs/adr/0006`).
+- Toda regla que mueve dinero (recálculo, recargo, liquidación, cupones) es una función pura en `src/lib/pricing/` con prueba unitaria; los servicios solo la conectan con la BD.
 - Nada de `Date.now()` en código que corre al renderizar una página (cacheComponents): pasar el tiempo como parámetro o calcularlo en SQL.
 - Gestor de paquetes: npm (`package-lock.json`). En Windows, corre las pruebas desde `D:\` en mayúscula.
 ## Moneda

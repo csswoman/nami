@@ -70,6 +70,17 @@ Decisión: opción A. El seed precalcula con OSRM la ruta de cada tienda a una l
 3. **GitHub Actions:** lint, tipos, tests unitarios, integración contra Postgres y Playwright.
 4. **Deploy en Vercel con Neon.** El seed y el cron de limpieza en producción los corre el dueño.
 
+## Fase 7: Marketplace completo y presentación para quien no lee código — hecha
+
+1. **App del repartidor** (`/repartidor`) y tercera columna en `/demo`. Retiene los pedidos en las etapas 2–3 mientras está conectada; solo los del mismo invitado y los simulados; espera máxima de 90 s.
+2. **Cuando algo sale mal:** la tienda con el panel abierto tiene 5 min para aceptar; rechazo parcial con recálculo (envío por parada); cupón de disculpa de un solo invitado; recargo por lluvia u hora pico desde el reloj del modo demo.
+3. **Panel:** «Simular pedido entrante», aviso sonoro y contador en el título, pestaña «Ventas» con liquidación (comisión de Ñami, cupones por quién los paga).
+4. **«Bajo el capó»:** registro de llamadas a la API y Server Actions con explicación, requestId y recálculos del servidor. Se activa con `?capo=1`.
+5. **Recorrido guiado** sobre la propia app (`data-tour`), desde el inicio, `/bienvenida` y `/acerca`.
+6. **Imagen para compartir** por tienda (`opengraph-image`) y **GIF del README** grabado con `scripts/record-demo.mjs`.
+
+Pendiente a propósito: aislar por visitante los cambios de catálogo del panel (ADR 0004, opción 1).
+
 ## Orden y dependencias
 
 Horarios y panel (2) → cupones, franjas, cancelar, reseñas (3) → mapa y zonas (4) → perfil y filtros (5) → presentación (6).

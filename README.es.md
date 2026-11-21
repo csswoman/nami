@@ -2,11 +2,15 @@
 
 [![CI](https://github.com/csswoman/nami/actions/workflows/ci.yml/badge.svg)](https://github.com/csswoman/nami/actions/workflows/ci.yml)
 
-**Demo en vivo: [nami-taupe.vercel.app](https://nami-taupe.vercel.app)** · [Demo cliente + tienda](https://nami-taupe.vercel.app/demo) · [Documentación de la API](https://nami-taupe.vercel.app/api/docs) · [Read in English](README.md)
+**Demo en vivo: [nami-taupe.vercel.app](https://nami-taupe.vercel.app)** · [Demo cliente + tienda + repartidor](https://nami-taupe.vercel.app/demo) · [Documentación de la API](https://nami-taupe.vercel.app/api/docs) · [Read in English](README.md)
 
 App de delivery venezolana (comida, mercado, farmacia y tiendas). Proyecto de portafolio: el pedido, el pago y el seguimiento son simulados, y nada se cobra ni se entrega.
 
 Next.js (App Router) · React · TypeScript · PostgreSQL · Drizzle · Zod · Zustand · MapLibre GL · Tailwind CSS · Vitest · Playwright · axe-core · Lighthouse CI · GitHub Actions.
+
+![Los tres lados de la demo: cliente, tienda y repartidor](docs/screenshots/demo.gif)
+
+¿Poco tiempo? Empieza el **recorrido guiado** desde el inicio o `/acerca`: te lleva por la app y explica qué hace el servidor en cada paso. Activa **«Bajo el capó»** (o agrega `?capo=1` a cualquier URL) para ver cada llamada a la API, su estado, tiempo y `requestId`, y lo que recalculó el servidor.
 
 ## Capturas
 | Inicio y listado con filtros | Tienda | Búsqueda con errores de tipeo |
@@ -96,15 +100,35 @@ El lado de la tienda, sin login: <http://localhost:3000/tienda-admin>.
 - **Inventario:** agotar o reponer productos y cambiar precios. El cliente lo ve en su siguiente consulta y los pedidos nuevos se cobran con ese precio.
 - **Horario:** turnos por día de la semana, hora de Caracas. Un día sin turnos queda cerrado y los pedidos se programan para la próxima apertura.
 - **Reseñas:** lo que los clientes calificaron al recibir su pedido.
+- **Ventas:** últimos 7 días (pedidos y ventas por día, ticket promedio, lo más pedido, tiempo real de preparación contra el prometido) y la **liquidación**: venta bruta, comisión de Ñami (18 % restaurantes, 12 % mercados), cupones que paga la tienda y neto a cobrar. Las reglas están en `src/lib/pricing/settlement.ts`, con pruebas.
+- **Simular pedido entrante:** el servidor crea un pedido de prueba para la tienda con el mismo flujo que un cliente real, para que el panel nunca se vea vacío. Tiene su propio límite por IP. Los pedidos nuevos suenan y el título de la pestaña lleva la cuenta.
 - **Abrir o cerrar** la tienda a mano (se combina con el horario).
 - **Reponer catálogo:** el botón de la "Zona de demo" devuelve esa tienda a los datos del seed. Igual pasa solo 15 minutos después del primer cambio. `npm run db:cleanup` lo hace para todas, borra los pedidos de más de 7 días y los contadores viejos del límite de peticiones.
 
 ### Probarlo en 2 minutos
 
-1. Abre <http://localhost:3000/demo>: cliente a la izquierda, tienda a la derecha (en pantallas anchas; en móvil abre las dos en pestañas).
+1. Abre <http://localhost:3000/demo>: cliente, tienda y repartidor lado a lado (en pantallas anchas; en móvil abre cada uno en su pestaña). `?repartidor=0` vuelve a las dos columnas.
 2. A la izquierda pide algo de la tienda elegida. Aparece en "Por atender" en unos segundos.
-3. A la derecha, acepta y avanza el pedido: el seguimiento del cliente cambia de etapa. El pedido espera a la tienda mientras el panel esté abierto.
-4. Cierra el panel (o espera 30 segundos sin actividad): el pedido sigue solo con el plan de tiempos, como en el modo automático.
+3. En el centro, acepta y deja listo el pedido. A la derecha, tómalo como repartidor, recógelo y marca que llegaste: el seguimiento del cliente cambia con cada clic.
+4. Cierra el panel o la app del repartidor (o espera 30 segundos sin actividad): el pedido sigue solo con el plan de tiempos, como en el modo automático.
+
+## App del repartidor
+
+El tercer lado del marketplace, sin login: <http://localhost:3000/repartidor>.
+
+- Mientras la app está abierta (consulta cada 4 s), los pedidos listos **esperan al repartidor** en vez de asignarse solos. Él los toma, los recoge en la tienda y avisa que llegó; el cliente lo ve en su seguimiento.
+- Solo lleva sus propios pedidos (los de su cookie de invitado; en `/demo` los tres lados la comparten) y los simulados desde el panel. Así un visitante con la app abierta no frena los pedidos de otros. Un pedido sin tomar espera como mucho 90 s.
+- Con varios repartidores tomando el mismo pedido a la vez, gana exactamente uno (`SELECT … FOR UPDATE`, probado con 5 a la vez). Tomar fuera de orden, o un pedido ajeno, es un **409**.
+- Si el repartidor cierra la app, el pedido sigue solo desde esa etapa.
+
+## Cuando algo sale mal
+
+- **La tienda no responde:** con el panel abierto, tiene 5 minutos para aceptar. Después su parte se cancela sola.
+- **Una tienda rechaza su parte** de un pedido con varias tiendas: el servidor recalcula el pedido sin sus productos ni su envío (cada parada guarda su envío), mantiene propina y recargo, topa el descuento y vuelve a calcular los bolívares con la tasa guardada. El cliente lo ve en su pedido.
+- **Las tiendas cancelan todo el pedido:** el cliente recibe un cupón de disculpa `PERDON-<número>` de $ 2, de un solo uso y solo para su token de invitado.
+- **Lluvia u hora pico:** se elige en el reloj del modo demo (cookie `nami_demanda`). El servidor suma el recargo él mismo (el cliente nunca manda montos) y el motorizado tarda más.
+
+Las decisiones están en [ADR 0006](docs/adr/0006-rider-app-and-marketplace-rules.md).
 
 ### Modo automático y manual
 
